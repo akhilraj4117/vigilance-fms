@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}View Communication{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-chat-left-text"></i> View Communication</h2>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('file_movements.communications') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Communications
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ communication.communication_name or communication.document_title }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>File Number</th>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=communication.file_number) }}">
+                                    {{ communication.file_number }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Communication Name</th>
+                            <td>{{ communication.communication_name or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Document Title</th>
+                            <td>{{ communication.document_title or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Document Type</th>
+                            <td>{{ communication.document_type or '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Created Date</th>
+                            <td>{{ communication.created_date or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created By</th>
+                            <td>{{ communication.created_by or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Modified</th>
+                            <td>{{ communication.last_modified or communication.modified_date or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>{{ communication.status or '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if communication.english_summary %}
+            <div class="mb-4">
+                <h5>English Summary</h5>
+                <div class="p-3 bg-light border rounded">
+                    {{ communication.english_summary }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if communication.malayalam_content %}
+            <div class="mb-4">
+                <h5>Malayalam Content</h5>
+                <div class="p-3 bg-light border rounded" style="direction: ltr; font-family: 'Noto Sans Malayalam', sans-serif;">
+                    {{ communication.malayalam_content }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if communication.content %}
+            <div class="mb-4">
+                <h5>Content</h5>
+                <div class="p-3 bg-light border rounded">
+                    <pre style="white-space: pre-wrap;">{{ communication.content }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

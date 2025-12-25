@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Help - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <!-- Navigation -->
+        <div class="card sticky-top" style="top: 80px;">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-list"></i> Contents</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#getting-started" class="list-group-item list-group-item-action">Getting Started</a>
+                <a href="#files" class="list-group-item list-group-item-action">Managing Files</a>
+                <a href="#disciplinary" class="list-group-item list-group-item-action">Disciplinary Actions</a>
+                <a href="#rti" class="list-group-item list-group-item-action">RTI Applications</a>
+                <a href="#employees" class="list-group-item list-group-item-action">Employees</a>
+                <a href="#institutions" class="list-group-item list-group-item-action">Institutions</a>
+                <a href="#reports" class="list-group-item list-group-item-action">Reports</a>
+                <a href="#user-management" class="list-group-item list-group-item-action">User Management</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-question-circle"></i> Help Guide</h4>
+            </div>
+            <div class="card-body">
+                <!-- Getting Started -->
+                <section id="getting-started" class="mb-5">
+                    <h4><i class="bi bi-play-circle"></i> Getting Started</h4>
+                    <hr>
+                    <p>
+                        Welcome to the Vigilance File Management System! This application helps you manage 
+                        vigilance-related files, disciplinary actions, RTI applications, and more.
+                    </p>
+                    <h6>User Roles:</h6>
+                    <ul>
+                        <li><strong>Administrator:</strong> Full access to all features including user management, 
+                            file deletion, and closing files.</li>
+                        <li><strong>Guest:</strong> Read-only access to view files and data. Can create new entries 
+                            but cannot delete or close files.</li>
+                    </ul>
+                </section>
+                
+                <!-- Managing Files -->
+                <section id="files" class="mb-5">
+                    <h4><i class="bi bi-folder"></i> Managing Files</h4>
+                    <hr>
+                    <h6>Creating a New File:</h6>
+                    <ol>
+                        <li>Go to Files → Create New File</li>
+                        <li>Enter the file number (format: YYYY/XXX/Category)</li>
+                        <li>Select the category and file type</li>
+                        <li>Fill in the subject and other details</li>
+                        <li>Click "Create File"</li>
+                    </ol>
+                    
+                    <h6>Closing a File (Admin only):</h6>
+                    <ol>
+                        <li>Open the file you want to close</li>
+                        <li>Click the "Close File" button</li>
+                        <li>Enter closing remarks</li>
+                        <li>Confirm the action</li>
+                    </ol>
+                </section>
+                
+                <!-- Disciplinary Actions -->
+                <section id="disciplinary" class="mb-5">
+                    <h4><i class="bi bi-exclamation-triangle"></i> Disciplinary Actions</h4>
+                    <hr>
+                    <p>Disciplinary actions are linked to files and track employee misconduct proceedings.</p>
+                    <h6>Creating a Disciplinary Action:</h6>
+                    <ol>
+                        <li>Go to Disciplinary → New Action</li>
+                        <li>Enter the associated file number</li>
+                        <li>Enter employee PEN to auto-fill details</li>
+                        <li>Fill in action details (major/minor, MOC, SCN, etc.)</li>
+                        <li>Save the action</li>
+                    </ol>
+                </section>
+                
+                <!-- RTI Applications -->
+                <section id="rti" class="mb-5">
+                    <h4><i class="bi bi-info-circle"></i> RTI Applications</h4>
+                    <hr>
+                    <p>Track RTI applications received and their processing status.</p>
+                    <h6>Creating an RTI Application:</h6>
+                    <ol>
+                        <li>Go to RTI → New Application</li>
+                        <li>Enter the associated file number</li>
+                        <li>Fill in applicant details</li>
+                        <li>Enter subject and fee details</li>
+                        <li>Save the application</li>
+                    </ol>
+                    <h6>Managing Appeals:</h6>
+                    <p>RTI appeals (First Appeal, Second Appeal) can be created from the RTI application view page.</p>
+                </section>
+                
+                <!-- Employees -->
+                <section id="employees" class="mb-5">
+                    <h4><i class="bi bi-people"></i> Employees</h4>
+                    <hr>
+                    <p>Maintain a master list of employees for reference in disciplinary actions.</p>
+                    <h6>Adding an Employee:</h6>
+                    <ol>
+                        <li>Go to Master Data → Employees</li>
+                        <li>Click "Add Employee"</li>
+                        <li>Enter employee details (Name, PEN, Designation, etc.)</li>
+                        <li>Save the employee</li>
+                    </ol>
+                </section>
+                
+                <!-- Institutions -->
+                <section id="institutions" class="mb-5">
+                    <h4><i class="bi bi-building"></i> Institutions</h4>
+                    <hr>
+                    <p>Maintain a master list of health institutions in the district.</p>
+                    <h6>Adding an Institution:</h6>
+                    <ol>
+                        <li>Go to Master Data → Institutions</li>
+                        <li>Click "Create Institution"</li>
+                        <li>Enter institution details</li>
+                        <li>Save the institution</li>
+                    </ol>
+                </section>
+                
+                <!-- Reports -->
+                <section id="reports" class="mb-5">
+                    <h4><i class="bi bi-bar-chart"></i> Reports</h4>
+                    <hr>
+                    <p>Generate various reports for analysis and record-keeping.</p>
+                    <h6>Available Reports:</h6>
+                    <ul>
+                        <li>File Summary - Overview of all files by status and category</li>
+                        <li>Pending Files - List of all pending files</li>
+                        <li>Closed Files - List of closed files with date range filter</li>
+                        <li>Disciplinary Summary - Overview of disciplinary actions</li>
+                        <li>RTI Summary - Overview of RTI applications</li>
+                        <li>UA Report - Unauthorised absentees report</li>
+                        <li>Court Cases - List of ongoing court cases</li>
+                    </ul>
+                    <p>Most reports can be exported to CSV format for further analysis.</p>
+                </section>
+                
+                <!-- User Management -->
+                <section id="user-management" class="mb-5">
+                    <h4><i class="bi bi-person-gear"></i> User Management</h4>
+                    <hr>
+                    <p><strong>Note:</strong> Only administrators can manage users.</p>
+                    <h6>Adding a New User:</h6>
+                    <ol>
+                        <li>Click on your username → Manage Users</li>
+                        <li>Click "Add New User"</li>
+                        <li>Enter username, password, and select role</li>
+                        <li>Click "Register User"</li>
+                    </ol>
+                    
+                    <h6>Changing Your Password:</h6>
+                    <ol>
+                        <li>Click on your username → Change Password</li>
+                        <li>Enter current password and new password</li>
+                        <li>Click "Update Password"</li>
+                    </ol>
+                </section>
+                
+                <!-- Contact -->
+                <section id="contact" class="mb-3">
+                    <h4><i class="bi bi-envelope"></i> Need More Help?</h4>
+                    <hr>
+                    <p>
+                        If you need additional assistance, please contact the system administrator 
+                        at the District Medical Office (Health), Thiruvananthapuram.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

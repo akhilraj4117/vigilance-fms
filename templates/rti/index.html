@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}RTI Info{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-info-circle"></i> RTI Info</h2>
+    
+    <!-- Inner Tab Navigation (matching desktop app) -->
+    <ul class="nav nav-tabs mb-4" id="rtiTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'application' else '' }}" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" type="button" role="tab">
+                <i class="bi bi-file-earmark-text"></i> RTI Application Register
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'appeal' else '' }}" id="appeal-tab" data-bs-toggle="tab" data-bs-target="#appeal" type="button" role="tab">
+                <i class="bi bi-file-earmark-arrow-up"></i> RTI Appeal Register
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'fee' else '' }}" id="fee-tab" data-bs-toggle="tab" data-bs-target="#fee" type="button" role="tab">
+                <i class="bi bi-currency-rupee"></i> RTI Fee Register
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="rtiTabsContent">
+        <!-- RTI Application Register Tab -->
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'application' else '' }}" id="application" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> RTI Application Register ({{ applications|length }} records)</h5>
+                    <div>
+                        <a href="{{ url_for('rti.export_applications') }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-download"></i> Export to Excel
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Search Form -->
+                    <form method="GET" class="mb-4">
+                        <input type="hidden" name="tab" value="application">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label">Search</label>
+                                <input type="text" class="form-control" name="q" 
+                                       value="{{ search }}" 
+                                       placeholder="Search by Application No., Applicant Name, Subject, File Number...">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                <a href="{{ url_for('rti.rti_index', tab='application') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if applications %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Sl.No.</th>
+                                    <th>Original Application No.</th>
+                                    <th>Date of Receipt</th>
+                                    <th>Applicant's Name</th>
+                                    <th>Address</th>
+                                    <th>Subject of Information</th>
+                                    <th>Fee Paid (₹)</th>
+                                    <th>Mode of Payment</th>
+                                    <th>Date of Acknowledgment</th>
+                                    <th>Date of Disposal</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                    <th>File Number</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in applications %}
+                                <tr>
+                                    <td>{{ app.sl_no or loop.index }}</td>
+                                    <td>{{ app.original_application_no or '-' }}</td>
+                                    <td>{{ app.date_of_receipt or '-' }}</td>
+                                    <td>{{ app.applicant_prefix or '' }} {{ app.applicant_name or '-' }}</td>
+                                    <td {% if app.address and app.address|length > 30 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ app.address }}"{% endif %}>
+                                        {{ (app.address or '-')[:30] }}{{ '...' if app.address and app.address|length > 30 else '' }}
+                                    </td>
+                                    <td {% if app.subject_of_information and app.subject_of_information|length > 30 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ app.subject_of_information }}"{% endif %}>
+                                        {{ (app.subject_of_information or '-')[:30] }}{{ '...' if app.subject_of_information and app.subject_of_information|length > 30 else '' }}
+                                    </td>
+                                    <td>{{ app.fee_paid or '-' }}</td>
+                                    <td>{{ app.mode_of_payment or '-' }}</td>
+                                    <td>{{ app.date_of_acknowledgment or '-' }}</td>
+                                    <td>{{ app.date_of_disposal or '-' }}</td>
+                                    <td>
+                                        {% if app.status == 'Replied' %}
+                                        <span class="badge bg-success">Replied</span>
+                                        {% elif app.status == 'Rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">{{ app.status or 'Not replied' }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td {% if app.remarks and app.remarks|length > 20 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ app.remarks }}"{% endif %}>
+                                        {{ (app.remarks or '-')[:20] }}{{ '...' if app.remarks and app.remarks|length > 20 else '' }}
+                                    </td>
+                                    <td>
+                                        {% if app.file_number %}
+                                        <a href="{{ url_for('files.view_file', file_number=app.file_number) }}">
+                                            {{ app.file_number }}
+                                        </a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('rti.edit_rti', id=app.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ url_for('rti.delete_rti', id=app.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this RTI application?')">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No RTI applications found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- RTI Appeal Register Tab -->
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'appeal' else '' }}" id="appeal" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> RTI Appeal Register ({{ appeals|length }} records)</h5>
+                    <div>
+                        <a href="{{ url_for('rti.export_appeals') }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-download"></i> Export to Excel
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Search Form -->
+                    <form method="GET" class="mb-4">
+                        <input type="hidden" name="tab" value="appeal">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label">Search</label>
+                                <input type="text" class="form-control" name="q" 
+                                       value="{{ search }}" 
+                                       placeholder="Search by Appeal No., Application No., Appellant Name, File Number...">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                <a href="{{ url_for('rti.rti_index', tab='appeal') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if appeals %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Sl.No.</th>
+                                    <th>Appeal No.</th>
+                                    <th>Original Application No.</th>
+                                    <th>Date of Receipt</th>
+                                    <th>Appellant's Name</th>
+                                    <th>Date of SPIO Response</th>
+                                    <th>Date of Hearing</th>
+                                    <th>Date of Disposal</th>
+                                    <th>Outcome</th>
+                                    <th>Remarks</th>
+                                    <th>File Number</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appeal in appeals %}
+                                <tr>
+                                    <td>{{ appeal.sl_no or loop.index }}</td>
+                                    <td>{{ appeal.appeal_no or '-' }}</td>
+                                    <td>{{ appeal.original_application_no or '-' }}</td>
+                                    <td>{{ appeal.date_of_receipt or '-' }}</td>
+                                    <td>{{ appeal.appellant_prefix or '' }} {{ appeal.appellant_name or '-' }}</td>
+                                    <td>{{ appeal.date_of_spio_response or '-' }}</td>
+                                    <td>{{ appeal.date_of_hearing or '-' }}</td>
+                                    <td>{{ appeal.date_of_disposal or '-' }}</td>
+                                    <td>
+                                        {% if appeal.outcome == 'Allowed' %}
+                                        <span class="badge bg-success">Allowed</span>
+                                        {% elif appeal.outcome == 'Rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% elif appeal.outcome == 'Partly Allowed' %}
+                                        <span class="badge bg-warning text-dark">Partly Allowed</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ appeal.outcome or '-' }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td {% if appeal.remarks and appeal.remarks|length > 20 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ appeal.remarks }}"{% endif %}>
+                                        {{ (appeal.remarks or '-')[:20] }}{{ '...' if appeal.remarks and appeal.remarks|length > 20 else '' }}
+                                    </td>
+                                    <td>
+                                        {% if appeal.application and appeal.application.file_number %}
+                                        <a href="{{ url_for('files.view_file', file_number=appeal.application.file_number) }}">
+                                            {{ appeal.application.file_number }}
+                                        </a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('rti.edit_appeal', id=appeal.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ url_for('rti.delete_appeal', id=appeal.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this RTI appeal?')">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No RTI appeals found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- RTI Fee Register Tab -->
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'fee' else '' }}" id="fee" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> RTI Fee Register ({{ fee_entries|length }} records)</h5>
+                    <div>
+                        <a href="{{ url_for('rti.export_fees') }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-download"></i> Export to Excel
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Search Form -->
+                    <form method="GET" class="mb-4">
+                        <input type="hidden" name="tab" value="fee">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label">Search</label>
+                                <input type="text" class="form-control" name="q" 
+                                       value="{{ search }}" 
+                                       placeholder="Search by Application No., Applicant Name, Receipt No., File Number...">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                <a href="{{ url_for('rti.rti_index', tab='fee') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% if fee_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Sl.No.</th>
+                                    <th>Application No.</th>
+                                    <th>Applicant's Name</th>
+                                    <th>Fee Paid (Rs.)</th>
+                                    <th>Mode of Payment</th>
+                                    <th>Date of Payment</th>
+                                    <th>Receipt No.</th>
+                                    <th>Additional Fee (Rs.)</th>
+                                    <th>Purpose</th>
+                                    <th>Remarks</th>
+                                    <th>File Number</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fee in fee_entries %}
+                                <tr>
+                                    <td>{{ fee.sl_no or loop.index }}</td>
+                                    <td>{{ fee.original_application_no or '-' }}</td>
+                                    <td>{{ fee.applicant_prefix or '' }} {{ fee.applicant_name or '-' }}</td>
+                                    <td>{{ fee.fee_paid or '-' }}</td>
+                                    <td>{{ fee.mode_of_payment or '-' }}</td>
+                                    <td>{{ fee.date_of_receipt or '-' }}</td>
+                                    <td>{{ fee.receipt_no or '-' }}</td>
+                                    <td>{{ fee.additional_amount_paid or '-' }}</td>
+                                    <td {% if fee.subject_of_information and fee.subject_of_information|length > 20 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ fee.subject_of_information }}"{% endif %}>
+                                        {{ (fee.subject_of_information or '-')[:20] }}{{ '...' if fee.subject_of_information and fee.subject_of_information|length > 20 else '' }}
+                                    </td>
+                                    <td {% if fee.remarks and fee.remarks|length > 20 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ fee.remarks }}"{% endif %}>
+                                        {{ (fee.remarks or '-')[:20] }}{{ '...' if fee.remarks and fee.remarks|length > 20 else '' }}
+                                    </td>
+                                    <td>
+                                        {% if fee.file_number %}
+                                        <a href="{{ url_for('files.view_file', file_number=fee.file_number) }}">
+                                            {{ fee.file_number }}
+                                        </a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('rti.edit_rti', id=fee.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ url_for('rti.delete_rti', id=fee.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this RTI fee entry?')">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No RTI fee entries found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

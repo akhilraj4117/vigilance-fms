@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}Follow-up Files - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Navy Blue Tab Cards */
+    .main-tabs-container {
+        padding: 15px 0;
+    }
+    .tab-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 10px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 10px;
+        color: #fff;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        min-height: 80px;
+        box-shadow: 0 3px 10px rgba(30, 60, 114, 0.3);
+    }
+    .tab-card:hover {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card.active {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+    .tab-card span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    /* Follow-up Inner Tabs */
+    #followUpTabs {
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    #followUpTabs .nav-item {
+        flex: 1 1 auto;
+        min-width: 150px;
+    }
+    #followUpTabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        text-align: center;
+        white-space: nowrap;
+    }
+    #followUpTabs .nav-link:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    #followUpTabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        box-shadow: 0 3px 8px rgba(30, 60, 114, 0.4);
+    }
+    
+    /* Tab-specific colors */
+    #followUpTabs .nav-link[data-tab="today"] {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    #followUpTabs .nav-link[data-tab="today"].active {
+        background: linear-gradient(135deg, #1e7e34 0%, #17a2b8 100%);
+    }
+    #followUpTabs .nav-link[data-tab="5days"] {
+        background: linear-gradient(135deg, #17a2b8 0%, #0d6efd 100%);
+    }
+    #followUpTabs .nav-link[data-tab="5days"].active {
+        background: linear-gradient(135deg, #117a8b 0%, #0a58ca 100%);
+    }
+    #followUpTabs .nav-link[data-tab="10days"] {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    }
+    #followUpTabs .nav-link[data-tab="10days"].active {
+        background: linear-gradient(135deg, #d39e00 0%, #e55a00 100%);
+    }
+    #followUpTabs .nav-link[data-tab="exceeded"] {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    #followUpTabs .nav-link[data-tab="exceeded"].active {
+        background: linear-gradient(135deg, #bd2130 0%, #a71d2a 100%);
+    }
+    #followUpTabs .nav-link[data-tab="completed"] {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+    #followUpTabs .nav-link[data-tab="completed"].active {
+        background: linear-gradient(135deg, #545b62 0%, #343a40 100%);
+    }
+    
+    .badge-count {
+        background-color: rgba(255,255,255,0.3);
+        margin-left: 8px;
+        font-size: 0.9em;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(30, 60, 114, 0.1);
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .main-tabs-container .row {
+            flex-wrap: wrap;
+        }
+        .main-tabs-container .col {
+            flex: 0 0 33.33%;
+            max-width: 33.33%;
+            margin-bottom: 8px;
+        }
+        .tab-card {
+            min-height: 70px;
+            padding: 10px 5px;
+        }
+        .tab-card i {
+            font-size: 1.2rem;
+        }
+        .tab-card span {
+            font-size: 0.65rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .main-tabs-container .col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Main Tabs Navigation -->
+<div class="main-tabs-container mb-4">
+    <div class="row g-2">
+        <div class="col">
+            <a href="{{ url_for('main.dashboard') }}" class="tab-card">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('files.file_management') }}" class="tab-card">
+                <i class="bi bi-folder"></i>
+                <span>File Management</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.index') }}" class="tab-card">
+                <i class="bi bi-arrows-move"></i>
+                <span>File Movements</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('disciplinary.index') }}" class="tab-card">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Disciplinary Action</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.follow_up_files') }}" class="tab-card active">
+                <i class="bi bi-calendar-check"></i>
+                <span>Follow-up Files</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('employees.list_employees') }}" class="tab-card">
+                <i class="bi bi-people"></i>
+                <span>Employee Details</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('reports.index') }}" class="tab-card">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('rti.rti_index') }}" class="tab-card">
+                <i class="bi bi-info-circle"></i>
+                <span>RTI Info</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
+                <i class="bi bi-building"></i>
+                <span>Institutions</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-calendar-check"></i> Follow-up Files</h2>
+    
+    <!-- Follow-up Inner Tabs -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Follow-up Categories</h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-pills mb-4" id="followUpTabs">
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'today' %}active{% endif %}" data-tab="today"
+                       href="{{ url_for('file_movements.follow_up_files', tab='today') }}">
+                        <i class="bi bi-calendar-day"></i> Today
+                        <span class="badge badge-count">{{ today_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == '5days' %}active{% endif %}" data-tab="5days"
+                       href="{{ url_for('file_movements.follow_up_files', tab='5days') }}">
+                        <i class="bi bi-calendar-week"></i> Within 5 Days
+                        <span class="badge badge-count">{{ five_days_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == '10days' %}active{% endif %}" data-tab="10days"
+                       href="{{ url_for('file_movements.follow_up_files', tab='10days') }}">
+                        <i class="bi bi-calendar2-week"></i> Within 10 Days
+                        <span class="badge badge-count">{{ ten_days_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'exceeded' %}active{% endif %}" data-tab="exceeded"
+                       href="{{ url_for('file_movements.follow_up_files', tab='exceeded') }}">
+                        <i class="bi bi-exclamation-triangle"></i> Date Exceeded
+                        <span class="badge badge-count">{{ exceeded_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'completed' %}active{% endif %}" data-tab="completed"
+                       href="{{ url_for('file_movements.follow_up_files', tab='completed') }}">
+                        <i class="bi bi-check-circle"></i> Completed
+                        <span class="badge badge-count">{{ completed_count }}</span>
+                    </a>
+                </li>
+            </ul>
+            
+            {% if tab == 'exceeded' %}
+            <!-- Randomize buttons for Date Exceeded tab -->
+            <div class="mb-3">
+                <form action="{{ url_for('file_movements.randomize_exceeded_dates') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('This will update follow-up dates for all exceeded files.\nFirst 10 files → Tomorrow\nNext 10 files → Day after\nAnd so on...\n\nDo you want to proceed?');">
+                        <i class="bi bi-shuffle"></i> Randomize (Batches of 10)
+                    </button>
+                </form>
+                <form action="{{ url_for('file_movements.randomize_all_files') }}" method="POST" class="d-inline ms-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('This will randomize ALL active files (max 25 per day).\nFiles will be distributed starting from tomorrow.\n\nDo you want to proceed?');">
+                        <i class="bi bi-arrow-repeat"></i> Randomise All Files
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Export button -->
+            <div class="mb-3">
+                <a href="{{ url_for('file_movements.export_follow_up_files', tab=tab) }}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Export to CSV
+                </a>
+            </div>
+            
+            <!-- Files Table -->
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Sl. No.</th>
+                            <th>File Number</th>
+                            <th>Subject</th>
+                            <th>Details</th>
+                            <th>Follow-up Date</th>
+                            <th>Status</th>
+                            {% if tab != 'completed' %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in files %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=file.file_number) }}" class="text-primary fw-bold">
+                                    {{ file.file_number }}
+                                </a>
+                            </td>
+                            <td>{{ (file.subject or '')[:50] }}{% if file.subject and file.subject|length > 50 %}...{% endif %}</td>
+                            <td>{{ (file.details_of_file or '')[:50] }}{% if file.details_of_file and file.details_of_file|length > 50 %}...{% endif %}</td>
+                            <td>
+                                {% if tab == 'exceeded' %}
+                                <span class="badge bg-danger">{{ file.follow_up_date }}</span>
+                                {% elif tab == 'today' %}
+                                <span class="badge bg-success">{{ file.follow_up_date }}</span>
+                                {% else %}
+                                <span class="badge bg-info">{{ file.follow_up_date }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ file.status or '-' }}</td>
+                            {% if tab != 'completed' %}
+                            <td>
+                                <button type="button" class="btn btn-sm btn-success" 
+                                        onclick="openCompletionModal('{{ file.file_number }}')" title="Mark as Completed">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{% if tab != 'completed' %}7{% else %}6{% endif %}" class="text-center text-muted">
+                                No files found in this category
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Completed Modal -->
+<div class="modal fade" id="completionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-check-circle"></i> Mark as Completed</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('file_movements.mark_follow_up_completed') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="file_number" id="modal_file_number">
+                <div class="modal-body">
+                    <p class="fw-bold">File: <span id="modal_file_display"></span></p>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="set_next_followup" name="set_next_followup" onchange="toggleNextFollowupDate()">
+                            <label class="form-check-label" for="set_next_followup">
+                                Set Next Follow-up Date
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="next_followup_container" style="display: none;">
+                        <label for="next_follow_up_date" class="form-label">Next Follow-up Date:</label>
+                        <input type="date" class="form-control" id="next_follow_up_date" name="next_follow_up_date">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="no_further_follow_up" name="no_further_follow_up" onchange="toggleNoFurtherFollowup()">
+                            <label class="form-check-label" for="no_further_follow_up">
+                                No Further Follow-up Needed
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks:</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Enter any remarks..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Mark Completed
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCompletionModal(fileNumber) {
+    document.getElementById('modal_file_number').value = fileNumber;
+    document.getElementById('modal_file_display').textContent = fileNumber;
+    
+    // Reset form
+    document.getElementById('set_next_followup').checked = false;
+    document.getElementById('no_further_follow_up').checked = false;
+    document.getElementById('next_follow_up_date').value = '';
+    document.getElementById('remarks').value = '';
+    document.getElementById('next_followup_container').style.display = 'none';
+    
+    // Set default next follow-up date to 7 days from now
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 7);
+    document.getElementById('next_follow_up_date').value = nextDate.toISOString().split('T')[0];
+    
+    const modal = new bootstrap.Modal(document.getElementById('completionModal'));
+    modal.show();
+}
+
+function toggleNextFollowupDate() {
+    const checkbox = document.getElementById('set_next_followup');
+    const container = document.getElementById('next_followup_container');
+    const noFurtherCheckbox = document.getElementById('no_further_follow_up');
+    
+    if (checkbox.checked) {
+        container.style.display = 'block';
+        noFurtherCheckbox.checked = false;
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+function toggleNoFurtherFollowup() {
+    const checkbox = document.getElementById('no_further_follow_up');
+    const setNextCheckbox = document.getElementById('set_next_followup');
+    const container = document.getElementById('next_followup_container');
+    
+    if (checkbox.checked) {
+        setNextCheckbox.checked = false;
+        container.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Report Builder - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tools"></i> Custom Report Builder</h2>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Reports
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Report Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('reports.custom_result') }}" method="POST" id="reportForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- Data Source -->
+                    <div class="mb-3">
+                        <label class="form-label">Data Source <span class="text-danger">*</span></label>
+                        <select class="form-select" name="data_source" id="dataSource" required>
+                            <option value="">Select Data Source</option>
+                            <option value="files">Files</option>
+                            <option value="disciplinary">Disciplinary Actions</option>
+                            <option value="rti">RTI Applications</option>
+                            <option value="employees">Employees</option>
+                            <option value="institutions">Institutions</option>
+                            <option value="ua">Unauthorised Absentees</option>
+                        </select>
+                    </div>
+
+                    <!-- Columns to Include -->
+                    <div class="mb-3">
+                        <label class="form-label">Columns to Include</label>
+                        <div id="columnsList" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                            <p class="text-muted mb-0">Select data source first</p>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="date" class="form-control" name="date_from" placeholder="From">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" class="form-control" name="date_to" placeholder="To">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="mb-3">
+                        <label class="form-label">Filters</label>
+                        <div id="filtersList">
+                            <div class="filter-row row mb-2">
+                                <div class="col-5">
+                                    <select class="form-select form-select-sm" name="filter_field[]">
+                                        <option value="">Select Field</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <select class="form-select form-select-sm" name="filter_operator[]">
+                                        <option value="equals">Equals</option>
+                                        <option value="contains">Contains</option>
+                                        <option value="starts_with">Starts with</option>
+                                        <option value="not_equals">Not equals</option>
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <input type="text" class="form-control form-control-sm" name="filter_value[]" placeholder="Value">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addFilter()">
+                            <i class="bi bi-plus"></i> Add Filter
+                        </button>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="mb-3">
+                        <label class="form-label">Sort By</label>
+                        <div class="row">
+                            <div class="col-8">
+                                <select class="form-select" name="sort_field" id="sortField">
+                                    <option value="">Default</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <select class="form-select" name="sort_order">
+                                    <option value="asc">Ascending</option>
+                                    <option value="desc">Descending</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Limit -->
+                    <div class="mb-3">
+                        <label class="form-label">Max Records</label>
+                        <select class="form-select" name="limit">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="250">250</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play"></i> Generate Report
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Help & Tips</h5>
+            </div>
+            <div class="card-body">
+                <h6>How to use the Custom Report Builder:</h6>
+                <ol>
+                    <li><strong>Select Data Source:</strong> Choose which type of data you want to report on.</li>
+                    <li><strong>Choose Columns:</strong> Select which fields to include in your report.</li>
+                    <li><strong>Set Date Range:</strong> Optionally filter by date range.</li>
+                    <li><strong>Add Filters:</strong> Apply additional filters to narrow down results.</li>
+                    <li><strong>Sort:</strong> Choose how to order your results.</li>
+                    <li><strong>Generate:</strong> Click Generate to view your report.</li>
+                </ol>
+
+                <h6 class="mt-4">Available Data Sources:</h6>
+                <ul>
+                    <li><strong>Files:</strong> Vigilance case files with categories, status, dates</li>
+                    <li><strong>Disciplinary:</strong> Disciplinary actions against employees</li>
+                    <li><strong>RTI:</strong> RTI applications and their processing status</li>
+                    <li><strong>Employees:</strong> Employee master data</li>
+                    <li><strong>Institutions:</strong> Institution details</li>
+                    <li><strong>UA:</strong> Unauthorised absentee records</li>
+                </ul>
+
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-lightbulb"></i>
+                    <strong>Tip:</strong> For frequently used reports, consider using the pre-built reports from the Reports Dashboard for faster access.
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Reports -->
+        {% if saved_reports %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bookmark"></i> Saved Reports</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for report in saved_reports %}
+                    <a href="{{ url_for('reports.load_saved_report', id=report.id) }}" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ report.name }}
+                        <span class="badge bg-secondary">{{ report.data_source }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dataSourceColumns = {
+    'files': [
+        {id: 'file_no', name: 'File Number'},
+        {id: 'category', name: 'Category'},
+        {id: 'name_of_petitioner', name: 'Petitioner Name'},
+        {id: 'address', name: 'Address'},
+        {id: 'date_received', name: 'Date Received'},
+        {id: 'disposal_date', name: 'Disposal Date'},
+        {id: 'file_status', name: 'Status'},
+        {id: 'how_disposed', name: 'How Disposed'},
+        {id: 'institution', name: 'Institution'},
+        {id: 'remarks', name: 'Remarks'}
+    ],
+    'disciplinary': [
+        {id: 'employee_name', name: 'Employee Name'},
+        {id: 'pen', name: 'PEN'},
+        {id: 'designation', name: 'Designation'},
+        {id: 'institution', name: 'Institution'},
+        {id: 'action_type', name: 'Action Type'},
+        {id: 'is_major', name: 'Major/Minor'},
+        {id: 'action_date', name: 'Action Date'},
+        {id: 'order_no', name: 'Order Number'},
+        {id: 'status', name: 'Status'},
+        {id: 'charges', name: 'Charges'}
+    ],
+    'rti': [
+        {id: 'application_no', name: 'Application Number'},
+        {id: 'applicant_name', name: 'Applicant Name'},
+        {id: 'subject', name: 'Subject'},
+        {id: 'application_date', name: 'Application Date'},
+        {id: 'due_date', name: 'Due Date'},
+        {id: 'reply_date', name: 'Reply Date'},
+        {id: 'status', name: 'Status'},
+        {id: 'fee_amount', name: 'Fee Amount'},
+        {id: 'pio_name', name: 'PIO Name'}
+    ],
+    'employees': [
+        {id: 'name', name: 'Name'},
+        {id: 'pen', name: 'PEN'},
+        {id: 'designation', name: 'Designation'},
+        {id: 'institution_name', name: 'Institution'},
+        {id: 'department', name: 'Department'},
+        {id: 'date_of_birth', name: 'Date of Birth'},
+        {id: 'date_of_joining', name: 'Date of Joining'},
+        {id: 'date_of_retirement', name: 'Date of Retirement'},
+        {id: 'is_active', name: 'Status'},
+        {id: 'phone', name: 'Phone'}
+    ],
+    'institutions': [
+        {id: 'name', name: 'Name'},
+        {id: 'code', name: 'Code'},
+        {id: 'institution_type', name: 'Type'},
+        {id: 'head_name', name: 'Head'},
+        {id: 'phone', name: 'Phone'},
+        {id: 'email', name: 'Email'},
+        {id: 'address', name: 'Address'},
+        {id: 'district', name: 'District'}
+    ],
+    'ua': [
+        {id: 'employee_name', name: 'Employee Name'},
+        {id: 'pen', name: 'PEN'},
+        {id: 'designation', name: 'Designation'},
+        {id: 'institution', name: 'Institution'},
+        {id: 'absence_from', name: 'Absence From'},
+        {id: 'absence_to', name: 'Absence To'},
+        {id: 'total_days', name: 'Total Days'},
+        {id: 'status', name: 'Status'},
+        {id: 'reason', name: 'Reason'}
+    ]
+};
+
+document.getElementById('dataSource').addEventListener('change', function() {
+    const source = this.value;
+    const columnsList = document.getElementById('columnsList');
+    const sortField = document.getElementById('sortField');
+    const filterSelects = document.querySelectorAll('[name="filter_field[]"]');
+    
+    if (!source) {
+        columnsList.innerHTML = '<p class="text-muted mb-0">Select data source first</p>';
+        sortField.innerHTML = '<option value="">Default</option>';
+        return;
+    }
+    
+    const columns = dataSourceColumns[source] || [];
+    
+    // Update columns list
+    columnsList.innerHTML = columns.map(col => `
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="columns[]" value="${col.id}" id="col_${col.id}" checked>
+            <label class="form-check-label" for="col_${col.id}">${col.name}</label>
+        </div>
+    `).join('');
+    
+    // Update sort field
+    sortField.innerHTML = '<option value="">Default</option>' + 
+        columns.map(col => `<option value="${col.id}">${col.name}</option>`).join('');
+    
+    // Update filter fields
+    const filterOptions = '<option value="">Select Field</option>' + 
+        columns.map(col => `<option value="${col.id}">${col.name}</option>`).join('');
+    filterSelects.forEach(select => select.innerHTML = filterOptions);
+});
+
+function addFilter() {
+    const source = document.getElementById('dataSource').value;
+    const columns = dataSourceColumns[source] || [];
+    const filterOptions = '<option value="">Select Field</option>' + 
+        columns.map(col => `<option value="${col.id}">${col.name}</option>`).join('');
+    
+    const filterRow = document.createElement('div');
+    filterRow.className = 'filter-row row mb-2';
+    filterRow.innerHTML = `
+        <div class="col-5">
+            <select class="form-select form-select-sm" name="filter_field[]">
+                ${filterOptions}
+            </select>
+        </div>
+        <div class="col-3">
+            <select class="form-select form-select-sm" name="filter_operator[]">
+                <option value="equals">Equals</option>
+                <option value="contains">Contains</option>
+                <option value="starts_with">Starts with</option>
+                <option value="not_equals">Not equals</option>
+            </select>
+        </div>
+        <div class="col-3">
+            <input type="text" class="form-control form-control-sm" name="filter_value[]" placeholder="Value">
+        </div>
+        <div class="col-1">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.parentElement.remove()">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('filtersList').appendChild(filterRow);
+}
+</script>
+{% endblock %}

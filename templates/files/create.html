@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Create File - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-folder-plus"></i> Create New File</h2>
+        <p class="text-muted">Fill in the details to create a new file.</p>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('files.create_file') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> File Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="file_number" class="form-label">File Number <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="file_number" name="file_number" 
+                           required placeholder="e.g., 2024/001/DA">
+                    <small class="text-muted">Format: YYYY/XXX/Category</small>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                    <select class="form-select" id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="DA">DA - Disciplinary Action</option>
+                        <option value="UA">UA - Unauthorised Absentee</option>
+                        <option value="RTI">RTI - Right to Information</option>
+                        <option value="CC">CC - Court Case</option>
+                        <option value="INQ">INQ - Inquiry</option>
+                        <option value="WH">WH - Women Harassment</option>
+                        <option value="SSP">SSP - Social Security Pension</option>
+                        <option value="GEN">GEN - General</option>
+                        <option value="AUDIT">AUDIT - Audit</option>
+                        <option value="EST">EST - Establishment</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="file_type" class="form-label">File Type</label>
+                    <select class="form-select" id="file_type" name="file_type">
+                        <option value="">Select Type</option>
+                        <option value="Inward">Inward</option>
+                        <option value="Outward">Outward</option>
+                        <option value="Internal">Internal</option>
+                    </select>
+                </div>
+                
+                <div class="col-12">
+                    <label for="subject" class="form-label">Subject <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="subject" name="subject" rows="2" 
+                              required placeholder="Enter file subject"></textarea>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="from_whom_received" class="form-label">From Whom Received</label>
+                    <input type="text" class="form-control" id="from_whom_received" name="from_whom_received" 
+                           placeholder="Enter source">
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="date_of_receipt" class="form-label">Date of Receipt</label>
+                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt">
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="date_received_at_section" class="form-label">Date Received at Section</label>
+                    <input type="date" class="form-control" id="date_received_at_section" name="date_received_at_section">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="reference_number" class="form-label">Reference Number</label>
+                    <input type="text" class="form-control" id="reference_number" name="reference_number" 
+                           placeholder="Enter reference number (if any)">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="reference_date" class="form-label">Reference Date</label>
+                    <input type="date" class="form-control" id="reference_date" name="reference_date">
+                </div>
+                
+                <div class="col-12">
+                    <label for="remarks" class="form-label">Remarks</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="2" 
+                              placeholder="Enter any remarks"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('files.list_files') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Create File
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

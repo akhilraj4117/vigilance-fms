@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Speak Files{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-megaphone"></i> Files with Speak Status</h2>
+    
+    <!-- Sub-tab Navigation -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('file_movements.search_files') }}">
+                <i class="bi bi-search"></i> Search Files
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('file_movements.pr_entries') }}">
+                <i class="bi bi-journal-text"></i> View PR Entries
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('file_movements.physical_files') }}">
+                <i class="bi bi-archive"></i> Physical Files
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('file_movements.pending_files') }}">
+                <i class="bi bi-clock-history"></i> Pending Files
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('file_movements.migrated_files') }}">
+                <i class="bi bi-cloud-upload"></i> Migrated Files
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('file_movements.speak_files') }}">
+                <i class="bi bi-megaphone"></i> Speak
+            </a>
+        </li>
+    </ul>
+    
+    <div class="card">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-megaphone"></i> Files with Speak Status ({{ total }} files)</h5>
+            <a href="{{ url_for('file_movements.export_speak_files') }}" class="btn btn-sm btn-success">
+                <i class="bi bi-download"></i> Export to CSV
+            </a>
+        </div>
+        <div class="card-body">
+            <!-- Search Form (like desktop app) -->
+            <form method="GET" class="mb-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">Search</label>
+                        <input type="text" class="form-control" name="q" 
+                               value="{{ search }}" 
+                               placeholder="Search by File Number, Subject, Institution, etc.">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('file_movements.speak_files') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+            
+            {% if files %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>File Number</th>
+                            <th>Subject</th>
+                            <th>Details</th>
+                            <th>File Type</th>
+                            <th>Category</th>
+                            <th>Institution</th>
+                            <th>Follow-up Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in files %}
+                        <tr ondblclick="window.location='{{ url_for('files.view_file', file_number=file.file_number) }}'" style="cursor: pointer;">
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=file.file_number) }}">
+                                    {{ file.file_number }}
+                                </a>
+                            </td>
+                            <td {% if file.subject and file.subject|length > 50 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ file.subject }}"{% endif %}>
+                                {{ (file.subject or '-')[:50] }}{{ '...' if file.subject and file.subject|length > 50 else '' }}
+                            </td>
+                            <td {% if file.details_of_file and file.details_of_file|length > 40 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ file.details_of_file }}"{% endif %}>
+                                {{ (file.details_of_file or '-')[:40] }}{{ '...' if file.details_of_file and file.details_of_file|length > 40 else '' }}
+                            </td>
+                            <td>{{ file.type_of_file or '-' }}</td>
+                            <td>{{ file.category or '-' }}</td>
+                            <td>{{ file.institution_name or '-' }}</td>
+                            <td>
+                                {% if file.follow_up_date %}
+                                    {{ file.follow_up_date }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{ 'disabled' if page == 1 else '' }}">
+                        <a class="page-link" href="{{ url_for('file_movements.speak_files', page=page-1, q=search) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p >= page - 2 and p <= page + 2 %}
+                        <li class="page-item {{ 'active' if p == page else '' }}">
+                            <a class="page-link" href="{{ url_for('file_movements.speak_files', page=p, q=search) }}">{{ p }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {{ 'disabled' if page == total_pages else '' }}">
+                        <a class="page-link" href="{{ url_for('file_movements.speak_files', page=page+1, q=search) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            
+            <p class="text-muted mt-3">
+                <i class="bi bi-info-circle"></i> Double-click a row to view file details.
+                Showing {{ files|length }} of {{ total }} speak files.
+            </p>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No files with Speak status found.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

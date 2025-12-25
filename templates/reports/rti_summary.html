@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}RTI Summary - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-file-earmark-text"></i> RTI Applications Summary</h2>
+    <div>
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.rti_summary') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select class="form-select" name="year">
+                    <option value="">All Years</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if year == y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{{ url_for('reports.rti_summary') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-2 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.total }}</h3>
+                <p class="mb-0">Total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.pending }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.provided }}</h3>
+                <p class="mb-0">Provided</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.rejected }}</h3>
+                <p class="mb-0">Rejected</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.transferred }}</h3>
+                <p class="mb-0">Transferred</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card bg-secondary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.appeals }}</h3>
+                <p class="mb-0">Appeals</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Distribution -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            {% for status in status_summary %}
+                            <tr>
+                                <td>{{ status.status }}</td>
+                                <td class="text-end">
+                                    <span class="badge 
+                                        {% if status.status == 'Pending' %}bg-warning text-dark
+                                        {% elif status.status == 'Information Provided' %}bg-success
+                                        {% elif status.status == 'Rejected' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ status.count }}
+                                    </span>
+                                </td>
+                                <td width="50%">
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar 
+                                            {% if status.status == 'Pending' %}bg-warning
+                                            {% elif status.status == 'Information Provided' %}bg-success
+                                            {% elif status.status == 'Rejected' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}" 
+                                             style="width: {{ (status.count / summary.total * 100)|round(1) if summary.total > 0 else 0 }}%">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-muted">No data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> Response Time Analysis</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-success">Within 30 days</span>
+                        <span class="badge bg-success">{{ response_time.within_30 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-warning">31-45 days</span>
+                        <span class="badge bg-warning text-dark">{{ response_time.within_45 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-danger">Over 45 days</span>
+                        <span class="badge bg-danger">{{ response_time.over_45 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Average Response Time</span>
+                        <strong>{{ response_time.average }} days</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Trend -->
+{% if monthly_data %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Monthly Trend</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Month</th>
+                        <th class="text-center">Received</th>
+                        <th class="text-center">Disposed</th>
+                        <th class="text-center">Pending (End)</th>
+                        <th class="text-center">Appeals</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month in monthly_data %}
+                    <tr>
+                        <td>{{ month.month_name }}</td>
+                        <td class="text-center">{{ month.received }}</td>
+                        <td class="text-center">{{ month.disposed }}</td>
+                        <td class="text-center">{{ month.pending }}</td>
+                        <td class="text-center">{{ month.appeals }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Overdue Applications -->
+{% if overdue_applications %}
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Overdue Applications</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Application No</th>
+                        <th>Applicant</th>
+                        <th>Subject</th>
+                        <th>Due Date</th>
+                        <th>Days Overdue</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in overdue_applications %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('rti.view_application', id=app.id) }}">
+                                {{ app.application_no }}
+                            </a>
+                        </td>
+                        <td>{{ app.applicant_name }}</td>
+                        <td>{{ app.subject[:40] }}{% if app.subject|length > 40 %}...{% endif %}</td>
+                        <td>{{ app.due_date }}</td>
+                        <td>
+                            <span class="badge bg-danger">{{ app.days_overdue }} days</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('rti.edit_application', id=app.id) }}" 
+                               class="btn btn-sm btn-warning" title="Edit RTI Application">
+                                <i class="bi bi-pencil"></i> Update
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Links -->
+<div class="card">
+    <div class="card-body d-flex justify-content-center gap-3">
+        <a href="{{ url_for('rti.list_applications') }}" class="btn btn-outline-primary">
+            <i class="bi bi-list"></i> All Applications
+        </a>
+        <a href="{{ url_for('rti.pending_applications') }}" class="btn btn-outline-warning">
+            <i class="bi bi-clock"></i> Pending RTI
+        </a>
+        <a href="{{ url_for('rti.list_appeals') }}" class="btn btn-outline-info">
+            <i class="bi bi-arrow-up-circle"></i> All Appeals
+        </a>
+    </div>
+</div>
+{% endblock %}

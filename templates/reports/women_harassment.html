@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Women Harassment Cases - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-shield-exclamation"></i> Women Harassment Cases</h2>
+    <div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('disciplinary.create_women_harassment') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Case
+        </a>
+        {% endif %}
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ statistics.total }}</h3>
+                <small>Total Cases</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning">
+            <div class="card-body text-center">
+                <h3>{{ statistics.pending }}</h3>
+                <small>Pending</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>{{ statistics.under_inquiry }}</h3>
+                <small>Under Inquiry</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ statistics.disposed }}</h3>
+                <small>Disposed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ request.args.get('search', '') }}" 
+                       placeholder="Case No, Complainant, Accused...">
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" {% if request.args.get('status') == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Under Inquiry" {% if request.args.get('status') == 'Under Inquiry' %}selected{% endif %}>Under Inquiry</option>
+                    <option value="Report Submitted" {% if request.args.get('status') == 'Report Submitted' %}selected{% endif %}>Report Submitted</option>
+                    <option value="Disposed" {% if request.args.get('status') == 'Disposed' %}selected{% endif %}>Disposed</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="year" class="form-label">Year</label>
+                <select class="form-select" id="year" name="year">
+                    <option value="">All Years</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if request.args.get('year')|int == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="institution" class="form-label">Institution</label>
+                <select class="form-select" id="institution" name="institution">
+                    <option value="">All Institutions</option>
+                    {% for inst in institutions %}
+                    <option value="{{ inst.id }}" {% if request.args.get('institution')|int == inst.id %}selected{% endif %}>{{ inst.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{{ url_for('reports.women_harassment') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Cases Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Cases List</h5>
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="exportToCSV()">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if cases %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" id="casesTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Case No</th>
+                        <th>Complainant</th>
+                        <th>Accused</th>
+                        <th>Institution</th>
+                        <th>Filed Date</th>
+                        <th>Status</th>
+                        <th>ICC Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+                        <td><code>{{ case.case_number or '-' }}</code></td>
+                        <td>{{ case.complainant_name or 'N/A' }}</td>
+                        <td>
+                            {% if case.accused_employee %}
+                            <a href="{{ url_for('employees.view_employee', id=case.accused_employee.id) }}">
+                                {{ case.accused_employee.name }}
+                            </a>
+                            {% else %}
+                            {{ case.accused_name or 'N/A' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if case.institution %}
+                            {{ case.institution.name }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if case.filed_date %}
+                            {{ case.filed_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if case.status == 'Pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif case.status == 'Under Inquiry' %}
+                            <span class="badge bg-info">Under Inquiry</span>
+                            {% elif case.status == 'Report Submitted' %}
+                            <span class="badge bg-primary">Report Submitted</span>
+                            {% elif case.status == 'Disposed' %}
+                            <span class="badge bg-success">Disposed</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ case.status or 'Unknown' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if case.icc_constituted %}
+                            <span class="badge bg-success"><i class="bi bi-check"></i> Formed</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Formed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('reports.view_women_harassment', id=case.id) }}" 
+                                   class="btn btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if current_user.is_admin() %}
+                                <a href="{{ url_for('disciplinary.edit_women_harassment', id=case.id) }}" 
+                                   class="btn btn-outline-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reports.women_harassment', page=pagination.page-1, **request.args) }}">
+                        Previous
+                    </a>
+                </li>
+                {% for p in range(1, pagination.pages + 1) %}
+                    {% if p == pagination.page %}
+                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                    {% elif p == 1 or p == pagination.pages or (p >= pagination.page - 2 and p <= pagination.page + 2) %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('reports.women_harassment', page=p, **request.args) }}">{{ p }}</a>
+                    </li>
+                    {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reports.women_harassment', page=pagination.page+1, **request.args) }}">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <p class="text-center text-muted">
+            Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to 
+            {{ min(pagination.page * pagination.per_page, pagination.total) }} of 
+            {{ pagination.total }} cases
+        </p>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-shield-check display-1 text-muted"></i>
+            <p class="mt-3">No women harassment cases found.</p>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('disciplinary.create_women_harassment') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Add Case
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Important Note -->
+<div class="card mt-4 border-info">
+    <div class="card-header bg-info text-white">
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Important Information</h6>
+    </div>
+    <div class="card-body">
+        <p class="mb-1"><strong>Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013</strong></p>
+        <ul class="mb-0 small">
+            <li>All complaints must be addressed within 90 days of receipt</li>
+            <li>Internal Complaints Committee (ICC) must be constituted in every workplace with 10+ employees</li>
+            <li>ICC must have a presiding officer who is a senior woman employee</li>
+            <li>Annual reports must be submitted to the District Officer</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportToCSV() {
+    const table = document.getElementById('casesTable');
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+    
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('th, td');
+        const rowData = [];
+        cols.forEach((col, index) => {
+            if (index < cols.length - 1) {
+                let text = col.textContent.trim().replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            }
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'women_harassment_cases.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ employee.name }} - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-pencil"></i> Edit Employee</h2>
+    <a href="{{ url_for('employees.view_employee', id=employee.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Details
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('employees.edit_employee', id=employee.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Personal Information -->
+            <h5 class="mb-3"><i class="bi bi-person"></i> Personal Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="{{ employee.name }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="pen" class="form-label">PEN</label>
+                    <input type="text" class="form-control" id="pen" name="pen" 
+                           value="{{ employee.pen or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="father_name" class="form-label">Father's Name</label>
+                    <input type="text" class="form-control" id="father_name" name="father_name" 
+                           value="{{ employee.father_name or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_of_birth" class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                           value="{{ employee.date_of_birth or '' }}">
+                </div>
+            </div>
+
+            <!-- Employment Information -->
+            <h5 class="mb-3"><i class="bi bi-briefcase"></i> Employment Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label for="designation" class="form-label">Designation</label>
+                    <input type="text" class="form-control" id="designation" name="designation" 
+                           value="{{ employee.designation or '' }}" list="designation_list">
+                    <datalist id="designation_list">
+                        {% for desig in designations %}
+                        <option value="{{ desig }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="institution_id" class="form-label">Institution</label>
+                    <select class="form-select" id="institution_id" name="institution_id">
+                        <option value="">Select Institution</option>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}" {% if employee.institution_id == inst.id %}selected{% endif %}>
+                            {{ inst.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="department" class="form-label">Department</label>
+                    <input type="text" class="form-control" id="department" name="department" 
+                           value="{{ employee.department or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_of_joining" class="form-label">Date of Joining</label>
+                    <input type="date" class="form-control" id="date_of_joining" name="date_of_joining" 
+                           value="{{ employee.date_of_joining or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_of_retirement" class="form-label">Date of Retirement</label>
+                    <input type="date" class="form-control" id="date_of_retirement" name="date_of_retirement" 
+                           value="{{ employee.date_of_retirement or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="is_active" class="form-label">Status</label>
+                    <select class="form-select" id="is_active" name="is_active">
+                        <option value="Yes" {% if employee.is_active == 'Yes' %}selected{% endif %}>Active</option>
+                        <option value="No" {% if employee.is_active == 'No' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <h5 class="mb-3"><i class="bi bi-telephone"></i> Contact Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label for="phone" class="form-label">Phone</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" 
+                           value="{{ employee.phone or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           value="{{ employee.email or '' }}">
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="2">{{ employee.address or '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <h5 class="mb-3"><i class="bi bi-journal-text"></i> Additional Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3">{{ employee.notes or '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('employees.view_employee', id=employee.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Update Employee
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-calculate retirement date based on DOB (60 years)
+    document.getElementById('date_of_birth').addEventListener('change', function() {
+        if (confirm('Update retirement date based on new date of birth (60 years)?')) {
+            const dob = new Date(this.value);
+            if (dob) {
+                const retirementDate = new Date(dob);
+                retirementDate.setFullYear(retirementDate.getFullYear() + 60);
+                // Set to last day of the month
+                retirementDate.setMonth(retirementDate.getMonth() + 1);
+                retirementDate.setDate(0);
+                document.getElementById('date_of_retirement').value = retirementDate.toISOString().split('T')[0];
+            }
+        }
+    });
+</script>
+{% endblock %}

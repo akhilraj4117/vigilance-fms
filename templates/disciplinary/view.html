@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action.employee_name or 'View' }} - Disciplinary Action{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-exclamation-triangle"></i> Disciplinary Action Details</h2>
+    <div>
+        <a href="{{ url_for('disciplinary.create_disciplinary_action', file_number=action.file_number) }}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Edit in DA Window
+        </a>
+        <a href="{{ url_for('files.view_file', file_number=action.file_number) }}" class="btn btn-secondary">
+            <i class="bi bi-folder2-open"></i> View File
+        </a>
+        <a href="{{ url_for('disciplinary.list_disciplinary_actions') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Employee Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Employee Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="45%">Name:</th>
+                        <td>{{ action.employee_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>PEN:</th>
+                        <td>{{ action.pen or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Designation:</th>
+                        <td>{{ action.designation or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Institution:</th>
+                        <td>{{ action.institution or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Entry Cadre:</th>
+                        <td>{{ action.entry_cadre or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Joining Date:</th>
+                        <td>{{ action.joining_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Service Regularised:</th>
+                        <td>{{ action.service_regularised or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Regularisation:</th>
+                        <td>{{ action.date_regularisation or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Probation:</th>
+                        <td>{{ action.probation or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Probation Declared Date:</th>
+                        <td>{{ action.date_probation_declared or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Superannuation Date:</th>
+                        <td>{{ action.date_superannuation or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Unauthorised/Others:</th>
+                        <td>
+                            {% if action.unauthorised_others == 'Unauthorised' %}
+                            <span class="badge bg-danger">{{ action.unauthorised_others }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ action.unauthorised_others or '-' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Details -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-file-text"></i> Action Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="55%">Action Taking Office:</th>
+                        <td>{{ action.action_taking_office or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>PTN:</th>
+                        <td>{{ action.probation_termination_notice or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>PTN Reply Received:</th>
+                        <td>{{ action.ptn_reply_received or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>PTN Reply Date:</th>
+                        <td>{{ action.ptn_reply_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC Issued:</th>
+                        <td>
+                            {% if action.moc_issued == 'Issued' %}
+                            <span class="badge bg-success">{{ action.moc_issued }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ action.moc_issued or '-' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>MOC Issued By:</th>
+                        <td>{{ action.moc_issued_by or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Major/Minor:</th>
+                        <td>
+                            {% if action.major_minor == 'Major' %}
+                            <span class="badge bg-danger">{{ action.major_minor }}</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ action.major_minor or '-' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>MOC Number:</th>
+                        <td>{{ action.moc_number or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC Date:</th>
+                        <td>{{ action.moc_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC Receipt Date:</th>
+                        <td>{{ action.moc_receipt_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Finalised Date:</th>
+                        <td>
+                            {% if action.finalised_date %}
+                            <span class="badge bg-success">{{ action.finalised_date }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- File & Communication Details -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> File & Communication</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="55%">File Number:</th>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=action.file_number) }}">
+                                {{ action.file_number }}
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>DHS File Number:</th>
+                        <td>{{ action.dhs_file_number or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC at DMO Date:</th>
+                        <td>{{ action.moc_received_at_dmo_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC Letter No.:</th>
+                        <td>{{ action.moc_received_letter_no or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>MOC to DHS Date:</th>
+                        <td>{{ action.moc_sent_to_dhs_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>WSD Received Date:</th>
+                        <td>{{ action.wsd_received_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>WSD Letter No.:</th>
+                        <td>{{ action.wsd_letter_no or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>WSD to DHS Date:</th>
+                        <td>{{ action.wsd_sent_to_dhs_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>WSD Sent Letter No.:</th>
+                        <td>{{ action.wsd_sent_letter_no or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCN Details -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-envelope"></i> SCN Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="45%">SCN Issued Date:</th>
+                        <td>{{ action.scn_issued_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN Issued By:</th>
+                        <td>{{ action.scn_issued_by or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN Receipt Date:</th>
+                        <td>{{ action.scn_receipt_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN Receipt to DHS Date:</th>
+                        <td>{{ action.scn_receipt_sent_to_dhs_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN at DMO Date:</th>
+                        <td>{{ action.scn_received_at_dmo_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN Reply Date:</th>
+                        <td>{{ action.scn_reply_date or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>SCN Reply to DHS Date:</th>
+                        <td>{{ action.scn_reply_sent_to_dhs_date or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unauthorised Absentee Details (if applicable) -->
+    {% if ua_details %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-person-x"></i> Unauthorised Absentee Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="45%">Date from (UA):</th>
+                        <td>{{ ua_details.date_from_ua or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Willingness:</th>
+                        <td>
+                            {% if ua_details.willingness == 'Given' %}
+                            <span class="badge bg-success">{{ ua_details.willingness }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ ua_details.willingness or '-' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Bond Submitted:</th>
+                        <td>{{ ua_details.bond_submitted or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Communication Address:</th>
+                        <td>{{ ua_details.communication_address or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Reported to DMO Date:</th>
+                        <td>{{ ua_details.date_reported_to_dmo or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Letter No. (DMO):</th>
+                        <td>{{ ua_details.letter_no_reported_to_dmo or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Reported to DHS Date:</th>
+                        <td>{{ ua_details.date_reported_to_dhs or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Letter No. (DHS):</th>
+                        <td>{{ ua_details.letter_no_reported_to_dhs or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Weather Reported:</th>
+                        <td>{{ ua_details.weather_reported_to_dhs or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Present Status:</th>
+                        <td>
+                            {% if ua_details.present_status %}
+                            <span class="badge bg-info">{{ ua_details.present_status }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Disc. Action Status:</th>
+                        <td>{{ ua_details.disc_action_status or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Actions -->
+<div class="card">
+    <div class="card-body d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('disciplinary.create_disciplinary_action', file_number=action.file_number) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this disciplinary action for <strong>{{ action.employee_name }}</strong>?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('disciplinary.delete_action', id=action.id) }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}File Movements - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-folder2-open"></i> File Movements</h2>
+    
+    <!-- Sub-tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="fileMovementsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" href="{{ url_for('file_movements.search_files') }}">
+                <i class="bi bi-search"></i> Search Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pr_entries') }}">
+                <i class="bi bi-journal-text"></i> View PR Entries
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.physical_files') }}">
+                <i class="bi bi-archive"></i> Physical Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pending_files') }}">
+                <i class="bi bi-clock-history"></i> Pending Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.migrated_files') }}">
+                <i class="bi bi-cloud-upload"></i> Migrated Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.speak_files') }}">
+                <i class="bi bi-megaphone"></i> Speak
+            </a>
+        </li>
+    </ul>
+    
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-folder"></i> Total Files</h5>
+                    <h3>{{ stats.total_files if stats else 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-check-circle"></i> Active Files</h5>
+                    <h3>{{ stats.active_files if stats else 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-clock"></i> Pending</h5>
+                    <h3>{{ stats.pending_files if stats else 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-megaphone"></i> Speak</h5>
+                    <h3>{{ stats.speak_files if stats else 0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Select a tab above to navigate to different file movement sections.
+    </div>
+</div>
+{% endblock %}

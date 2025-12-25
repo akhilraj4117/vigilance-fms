@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}File Summary Report - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bar-chart"></i> File Summary Report</h2>
+    <div>
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.file_summary') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Date From</label>
+                <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date To</label>
+                <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select class="form-select" name="year">
+                    <option value="">All Years</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if year == y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{{ url_for('reports.file_summary') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.total_files }}</h3>
+                <p class="mb-0">Total Files</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.pending_files }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.closed_files }}</h3>
+                <p class="mb-0">Closed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.new_files }}</h3>
+                <p class="mb-0">New This Period</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category-wise Summary -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Category-wise Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">Closed</th>
+                        <th class="text-center">New</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in category_summary %}
+                    <tr>
+                        <td>{{ cat.category }}</td>
+                        <td class="text-center">{{ cat.total }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-warning text-dark">{{ cat.pending }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-success">{{ cat.closed }}</span>
+                        </td>
+                        <td class="text-center">{{ cat.new }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-secondary">
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-center">{{ summary.total_files }}</th>
+                        <th class="text-center">{{ summary.pending_files }}</th>
+                        <th class="text-center">{{ summary.closed_files }}</th>
+                        <th class="text-center">{{ summary.new_files }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Trend -->
+{% if monthly_data %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Monthly Trend</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Month</th>
+                        <th class="text-center">Files Opened</th>
+                        <th class="text-center">Files Closed</th>
+                        <th class="text-center">Net Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month in monthly_data %}
+                    <tr>
+                        <td>{{ month.month_name }}</td>
+                        <td class="text-center">{{ month.opened }}</td>
+                        <td class="text-center">{{ month.closed }}</td>
+                        <td class="text-center">
+                            {% if month.net > 0 %}
+                            <span class="text-danger">+{{ month.net }}</span>
+                            {% elif month.net < 0 %}
+                            <span class="text-success">{{ month.net }}</span>
+                            {% else %}
+                            <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Age-wise Analysis -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Pending Files Age Analysis</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h4 class="text-success">{{ age_analysis.within_30_days }}</h4>
+                        <small>Within 30 days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <h4 class="text-info">{{ age_analysis.within_90_days }}</h4>
+                        <small>30-90 days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h4 class="text-warning">{{ age_analysis.within_180_days }}</h4>
+                        <small>90-180 days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-danger">
+                    <div class="card-body text-center">
+                        <h4 class="text-danger">{{ age_analysis.over_180_days }}</h4>
+                        <small>Over 180 days</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

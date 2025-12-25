@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application.original_application_no }} - RTI Application{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-file-earmark-text"></i> RTI Application: {{ application.original_application_no }}
+        {% if application.status == 'Not replied' %}
+        <span class="badge bg-warning text-dark">Not replied</span>
+        {% elif application.status == 'Replied' %}
+        <span class="badge bg-success">Replied</span>
+        {% elif application.status == 'Rejected' %}
+        <span class="badge bg-danger">Rejected</span>
+        {% else %}
+        <span class="badge bg-info">{{ application.status or 'N/A' }}</span>
+        {% endif %}
+    </h2>
+    <div>
+        <a href="{{ url_for('rti.edit_rti', id=application.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{{ url_for('rti.rti_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Application Details -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-file-text"></i> Application Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Sl. No.:</th>
+                        <td>{{ application.sl_no or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Application No.:</th>
+                        <td><strong>{{ application.original_application_no }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Date of Receipt:</th>
+                        <td>{{ application.date_of_receipt or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>File Number:</th>
+                        <td>
+                            {% if application.file_number %}
+                            <a href="{{ url_for('files.view_file', file_number=application.file_number) }}">{{ application.file_number }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if application.status == 'Not replied' %}
+                            <span class="badge bg-warning text-dark">{{ application.status }}</span>
+                            {% elif application.status == 'Replied' %}
+                            <span class="badge bg-success">{{ application.status }}</span>
+                            {% elif application.status == 'Rejected' %}
+                            <span class="badge bg-danger">{{ application.status }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ application.status or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applicant Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Applicant Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Name:</th>
+                        <td>{{ application.applicant_prefix }} {{ application.applicant_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Address:</th>
+                        <td>{{ application.address or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Subject of Information</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ application.subject_of_information or 'Not specified.' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Details -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Fee Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Fee Paid:</th>
+                        <td>₹{{ application.fee_paid or '0' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Mode of Payment:</th>
+                        <td>{{ application.mode_of_payment or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Additional Amount:</th>
+                        <td>{% if application.additional_amount_paid %}₹{{ application.additional_amount_paid }}{% else %}-{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Receipt No.:</th>
+                        <td>{{ application.receipt_no or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dates and Status -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar"></i> Dates</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="50%">Acknowledgment Date:</th>
+                        <td>{{ application.date_of_acknowledgment or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Disposal Date:</th>
+                        <td>{{ application.date_of_disposal or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remarks -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-chat-text"></i> Remarks</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ application.remarks or 'No remarks.' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Appeals Section -->
+{% if application.appeal_submitted %}
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Appeals</h5>
+        <a href="{{ url_for('rti.create_appeal', rti_id=application.id) }}" class="btn btn-sm btn-light" title="Add New Appeal">
+            <i class="bi bi-plus"></i> Add Appeal
+        </a>
+    </div>
+    <div class="card-body">
+        {% if appeals %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Sl. No.</th>
+                        <th>Appeal No.</th>
+                        <th>Date of Receipt</th>
+                        <th>Appellant</th>
+                        <th>Outcome</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appeal in appeals %}
+                    <tr>
+                        <td>{{ appeal.sl_no or '-' }}</td>
+                        <td>{{ appeal.appeal_no }}</td>
+                        <td>{{ appeal.date_of_receipt or '-' }}</td>
+                        <td>{{ appeal.appellant_prefix }} {{ appeal.appellant_name }}</td>
+                        <td>{{ appeal.outcome or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('rti.edit_appeal', id=appeal.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDeleteAppeal({{ appeal.id }}, '{{ appeal.appeal_no }}')" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No appeals have been added yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="card">
+    <div class="card-body d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        {% if not application.appeal_submitted %}
+        <a href="{{ url_for('rti.create_appeal', rti_id=application.id) }}" class="btn btn-info">
+            <i class="bi bi-arrow-up-circle"></i> Add Appeal
+        </a>
+        {% endif %}
+        <a href="{{ url_for('rti.edit_rti', id=application.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<!-- Delete RTI Application Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete RTI Application</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete RTI application <strong>{{ application.original_application_no }}</strong>?</p>
+                {% if appeals %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This application has {{ appeals|length }} appeal(s) which will also be deleted.
+                </div>
+                {% endif %}
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('rti.delete_rti', id=application.id) }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Delete Appeal Confirmation Modal -->
+<div class="modal fade" id="deleteAppealModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete Appeal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete appeal <strong id="deleteAppealNo"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteAppealForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete() {
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+    
+    function confirmDeleteAppeal(appealId, appealNo) {
+        document.getElementById('deleteAppealNo').textContent = appealNo;
+        document.getElementById('deleteAppealForm').action = '{{ url_for("rti.delete_appeal", id=0) }}'.replace('/0', '/' + appealId);
+        const modal = new bootstrap.Modal(document.getElementById('deleteAppealModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

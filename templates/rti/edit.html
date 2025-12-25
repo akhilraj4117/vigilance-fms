@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Edit RTI Application - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-pencil"></i> Edit RTI Application: {{ application.original_application_no }}</h2>
+    <a href="{{ url_for('rti.view_rti', id=application.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Details
+    </a>
+</div>
+
+<div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-file-text"></i> RTI Application Details</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('rti.edit_rti', id=application.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Row 1: Sl. No., Application No., Date of Receipt -->
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label for="sl_no" class="form-label fw-bold">Sl. No.</label>
+                    <input type="text" class="form-control" id="sl_no" name="sl_no" value="{{ application.sl_no or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="original_application_no" class="form-label fw-bold">Application No. <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="original_application_no" name="original_application_no" value="{{ application.original_application_no }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_of_receipt" class="form-label fw-bold">Date of Receipt <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" value="{{ application.date_of_receipt or '' }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label fw-bold">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="Not replied" {% if application.status == 'Not replied' %}selected{% endif %}>Not replied</option>
+                        <option value="Replied" {% if application.status == 'Replied' %}selected{% endif %}>Replied</option>
+                        <option value="Rejected" {% if application.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Row 2: Applicant Name with Prefix -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Applicant <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select class="form-select" id="applicant_prefix" name="applicant_prefix" style="max-width: 100px;">
+                            <option value="Sri." {% if application.applicant_prefix == 'Sri.' %}selected{% endif %}>Sri.</option>
+                            <option value="Smt." {% if application.applicant_prefix == 'Smt.' %}selected{% endif %}>Smt.</option>
+                            <option value="Dr." {% if application.applicant_prefix == 'Dr.' %}selected{% endif %}>Dr.</option>
+                        </select>
+                        <input type="text" class="form-control" id="applicant_name" name="applicant_name" value="{{ application.applicant_name }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Row 3: Fee Paid, Mode of Payment, Additional Amount -->
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label for="fee_paid" class="form-label fw-bold">Fee Paid (₹)</label>
+                    <input type="number" step="0.01" class="form-control" id="fee_paid" name="fee_paid" value="{{ application.fee_paid or 0 }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="mode_of_payment" class="form-label fw-bold">Mode</label>
+                    <select class="form-select" id="mode_of_payment" name="mode_of_payment">
+                        <option value="Cash" {% if application.mode_of_payment == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="DD" {% if application.mode_of_payment == 'DD' %}selected{% endif %}>DD</option>
+                        <option value="Stamp" {% if application.mode_of_payment == 'Stamp' %}selected{% endif %}>Stamp</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="additional_amount_checkbox" {% if application.additional_amount_paid %}checked{% endif %} onchange="toggleAdditionalAmount()">
+                        Additional Amount (₹)
+                    </label>
+                    <input type="number" step="0.01" class="form-control" id="additional_amount_paid" name="additional_amount_paid" value="{{ application.additional_amount_paid or '' }}" {% if not application.additional_amount_paid %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="receipt_no_checkbox" {% if application.receipt_no %}checked{% endif %} onchange="toggleReceiptNo()">
+                        Receipt No.
+                    </label>
+                    <input type="text" class="form-control" id="receipt_no" name="receipt_no" value="{{ application.receipt_no or '' }}" {% if not application.receipt_no %}disabled{% endif %}>
+                </div>
+            </div>
+            
+            <!-- Row 4: Acknowledgment Date, Disposal Date -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="acknowledgment_checkbox" {% if application.date_of_acknowledgment %}checked{% endif %} onchange="toggleAcknowledgmentDate()">
+                        Acknowledgment Date
+                    </label>
+                    <input type="date" class="form-control" id="date_of_acknowledgment" name="date_of_acknowledgment" value="{{ application.date_of_acknowledgment or '' }}" {% if not application.date_of_acknowledgment %}disabled{% endif %}>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="disposal_checkbox" {% if application.date_of_disposal %}checked{% endif %} onchange="toggleDisposalDate()">
+                        Disposal Date
+                    </label>
+                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" value="{{ application.date_of_disposal or '' }}" {% if not application.date_of_disposal %}disabled{% endif %}>
+                </div>
+            </div>
+            
+            <!-- Row 5: Address -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="address" class="form-label fw-bold">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="2">{{ application.address or '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Row 6: Subject of Information -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="subject_of_information" class="form-label fw-bold">Subject of Information</label>
+                    <textarea class="form-control" id="subject_of_information" name="subject_of_information" rows="2">{{ application.subject_of_information or '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Row 7: Remarks -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="remarks" class="form-label fw-bold">Remarks</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="2">{{ application.remarks or '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Row 8: Appeal Submitted -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="appeal_submitted" name="appeal_submitted" {% if application.appeal_submitted %}checked{% endif %}>
+                        <label class="form-check-label fw-bold" for="appeal_submitted">Appeal Submitted</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('rti.view_rti', id=application.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Update Application
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleAdditionalAmount() {
+        const checkbox = document.getElementById('additional_amount_checkbox');
+        const input = document.getElementById('additional_amount_paid');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function toggleReceiptNo() {
+        const checkbox = document.getElementById('receipt_no_checkbox');
+        const input = document.getElementById('receipt_no');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function toggleAcknowledgmentDate() {
+        const checkbox = document.getElementById('acknowledgment_checkbox');
+        const input = document.getElementById('date_of_acknowledgment');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function toggleDisposalDate() {
+        const checkbox = document.getElementById('disposal_checkbox');
+        const input = document.getElementById('date_of_disposal');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+</script>
+{% endblock %}

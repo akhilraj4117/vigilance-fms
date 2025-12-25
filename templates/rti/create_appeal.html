@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}RTI Appeal Details - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-arrow-up-circle"></i> Appeal Details for Application: {{ application.original_application_no }}</h2>
+    <a href="{{ url_for('rti.view_rti', id=application.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Application
+    </a>
+</div>
+
+<!-- Application Reference -->
+<div class="alert alert-info">
+    <strong>RTI Application:</strong> {{ application.original_application_no }} - {{ application.applicant_prefix }} {{ application.applicant_name }}
+    <br><small>Subject: {{ application.subject_of_information or 'N/A' }}</small>
+</div>
+
+<!-- Appeal Entry Form -->
+<div class="card border-danger mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> RTI Appeal Details</h5>
+    </div>
+    <div class="card-body">
+        <form id="appealForm" action="{{ url_for('rti.create_appeal', rti_id=application.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Row 1: Sl. No., Appeal No., Original Application No., Date of Receipt -->
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label for="sl_no" class="form-label fw-bold">Sl. No.</label>
+                    <input type="text" class="form-control" id="sl_no" name="sl_no">
+                </div>
+                <div class="col-md-3">
+                    <label for="appeal_no" class="form-label fw-bold">Appeal No. <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="appeal_no" name="appeal_no" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="original_application_no" class="form-label fw-bold">Original Application No.</label>
+                    <input type="text" class="form-control bg-light" id="original_application_no" value="{{ application.original_application_no }}" readonly>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_of_receipt" class="form-label fw-bold">Date of Receipt <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" required>
+                </div>
+            </div>
+            
+            <!-- Row 2: Appellant Name with Prefix -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Appellant's Name <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select class="form-select" id="appellant_prefix" name="appellant_prefix" style="max-width: 100px;">
+                            <option value="Sri." {% if application.applicant_prefix == 'Sri.' %}selected{% endif %}>Sri.</option>
+                            <option value="Smt." {% if application.applicant_prefix == 'Smt.' %}selected{% endif %}>Smt.</option>
+                            <option value="Dr." {% if application.applicant_prefix == 'Dr.' %}selected{% endif %}>Dr.</option>
+                        </select>
+                        <input type="text" class="form-control" id="appellant_name" name="appellant_name" value="{{ application.applicant_name }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Row 3: Date of SPIO Response, Date of Hearing -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="spio_response_checkbox" name="spio_response_checkbox" onchange="toggleSpioResponseDate()">
+                        Date of SPIO Response
+                    </label>
+                    <input type="date" class="form-control" id="date_of_spio_response" name="date_of_spio_response" disabled>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="hearing_checkbox" name="hearing_checkbox" onchange="toggleHearingDate()">
+                        Date of Hearing
+                    </label>
+                    <input type="date" class="form-control" id="date_of_hearing" name="date_of_hearing" disabled>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <input type="checkbox" class="form-check-input" id="disposal_checkbox" name="disposal_checkbox" onchange="toggleAppealDisposalDate()">
+                        Date of Disposal
+                    </label>
+                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" disabled>
+                </div>
+            </div>
+            
+            <!-- Row 4: Outcome -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="outcome" class="form-label fw-bold">Outcome</label>
+                    <select class="form-select" id="outcome" name="outcome">
+                        <option value="">Select Outcome</option>
+                        <option value="Replied">Replied</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Partly Allowed">Partly Allowed</option>
+                        <option value="Allowed">Allowed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Row 5: Remarks -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="remarks" class="form-label fw-bold">Remarks</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-success" onclick="clearForm()">
+                    <i class="bi bi-plus-circle"></i> Add New Appeal
+                </button>
+                <button type="submit" class="btn btn-danger" id="saveBtn">
+                    <i class="bi bi-check-circle"></i> Save New Appeal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Existing Appeals Table -->
+<div class="card border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Existing Appeals for this RTI Application</h5>
+    </div>
+    <div class="card-body">
+        {% if existing_appeals %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl. No.</th>
+                        <th>Appeal No.</th>
+                        <th>Date of Receipt</th>
+                        <th>Appellant Name</th>
+                        <th>Outcome</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="existingAppealsBody">
+                    {% for appeal in existing_appeals %}
+                    <tr data-id="{{ appeal.id }}">
+                        <td>{{ appeal.sl_no or '-' }}</td>
+                        <td>{{ appeal.appeal_no }}</td>
+                        <td>{{ appeal.date_of_receipt or '-' }}</td>
+                        <td>{{ appeal.appellant_prefix }} {{ appeal.appellant_name }}</td>
+                        <td>
+                            {% if appeal.outcome %}
+                            <span class="badge bg-{{ 'success' if appeal.outcome == 'Allowed' else ('info' if appeal.outcome == 'Partly Allowed' else ('danger' if appeal.outcome == 'Rejected' else 'secondary')) }}">
+                                {{ appeal.outcome }}
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="loadAppeal({{ appeal.id }})" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteAppeal({{ appeal.id }})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">No appeals found for this RTI application.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this appeal?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentEditingId = null;
+    
+    function toggleSpioResponseDate() {
+        const checkbox = document.getElementById('spio_response_checkbox');
+        const input = document.getElementById('date_of_spio_response');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function toggleHearingDate() {
+        const checkbox = document.getElementById('hearing_checkbox');
+        const input = document.getElementById('date_of_hearing');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function toggleAppealDisposalDate() {
+        const checkbox = document.getElementById('disposal_checkbox');
+        const input = document.getElementById('date_of_disposal');
+        input.disabled = !checkbox.checked;
+        if (!checkbox.checked) input.value = '';
+    }
+    
+    function clearForm() {
+        document.getElementById('appealForm').reset();
+        currentEditingId = null;
+        document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Save New Appeal';
+        document.getElementById('appealForm').action = "{{ url_for('rti.create_appeal', rti_id=application.id) }}";
+        
+        // Reset all disabled fields
+        document.getElementById('date_of_spio_response').disabled = true;
+        document.getElementById('date_of_hearing').disabled = true;
+        document.getElementById('date_of_disposal').disabled = true;
+        
+        // Reset checkbox states
+        document.getElementById('spio_response_checkbox').checked = false;
+        document.getElementById('hearing_checkbox').checked = false;
+        document.getElementById('disposal_checkbox').checked = false;
+        
+        // Set default appellant name from RTI application
+        document.getElementById('appellant_name').value = "{{ application.applicant_name }}";
+        document.getElementById('appellant_prefix').value = "{{ application.applicant_prefix }}";
+        
+        // Clear highlighting from table rows
+        document.querySelectorAll('#existingAppealsBody tr').forEach(row => {
+            row.classList.remove('table-primary');
+        });
+    }
+    
+    function loadAppeal(id) {
+        currentEditingId = id;
+        
+        // Fetch appeal data and populate form
+        fetch("{{ url_for('rti.get_appeal_json', id=0) }}".replace('0', id))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const appeal = data.appeal;
+                    
+                    // Populate form fields
+                    document.getElementById('sl_no').value = appeal.sl_no || '';
+                    document.getElementById('appeal_no').value = appeal.appeal_no || '';
+                    document.getElementById('date_of_receipt').value = appeal.date_of_receipt || '';
+                    document.getElementById('appellant_prefix').value = appeal.appellant_prefix || 'Sri.';
+                    document.getElementById('appellant_name').value = appeal.appellant_name || '';
+                    
+                    // Handle date fields with checkboxes
+                    if (appeal.date_of_spio_response) {
+                        document.getElementById('spio_response_checkbox').checked = true;
+                        document.getElementById('date_of_spio_response').disabled = false;
+                        document.getElementById('date_of_spio_response').value = appeal.date_of_spio_response;
+                    } else {
+                        document.getElementById('spio_response_checkbox').checked = false;
+                        document.getElementById('date_of_spio_response').disabled = true;
+                        document.getElementById('date_of_spio_response').value = '';
+                    }
+                    
+                    if (appeal.date_of_hearing) {
+                        document.getElementById('hearing_checkbox').checked = true;
+                        document.getElementById('date_of_hearing').disabled = false;
+                        document.getElementById('date_of_hearing').value = appeal.date_of_hearing;
+                    } else {
+                        document.getElementById('hearing_checkbox').checked = false;
+                        document.getElementById('date_of_hearing').disabled = true;
+                        document.getElementById('date_of_hearing').value = '';
+                    }
+                    
+                    if (appeal.date_of_disposal) {
+                        document.getElementById('disposal_checkbox').checked = true;
+                        document.getElementById('date_of_disposal').disabled = false;
+                        document.getElementById('date_of_disposal').value = appeal.date_of_disposal;
+                    } else {
+                        document.getElementById('disposal_checkbox').checked = false;
+                        document.getElementById('date_of_disposal').disabled = true;
+                        document.getElementById('date_of_disposal').value = '';
+                    }
+                    
+                    document.getElementById('outcome').value = appeal.outcome || '';
+                    document.getElementById('remarks').value = appeal.remarks || '';
+                    
+                    // Update form action and button text
+                    document.getElementById('appealForm').action = "{{ url_for('rti.edit_appeal', id=0) }}".replace('0', id);
+                    document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Update Appeal';
+                    
+                    // Highlight selected row
+                    document.querySelectorAll('#existingAppealsBody tr').forEach(row => {
+                        row.classList.remove('table-primary');
+                        if (row.dataset.id == id) {
+                            row.classList.add('table-primary');
+                        }
+                    });
+                    
+                    // Scroll to form
+                    document.querySelector('.card.border-danger').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Error loading appeal: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading appeal data');
+            });
+    }
+    
+    function deleteAppeal(id) {
+        document.getElementById('deleteForm').action = "{{ url_for('rti.delete_appeal', id=0) }}".replace('0', id);
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

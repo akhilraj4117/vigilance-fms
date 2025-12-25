@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Inquiry Details - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-search"></i> Inquiry Details</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('reports.inquiries') }}">Inquiries</a></li>
+                <li class="breadcrumb-item active">{{ inquiry.inquiry_number or 'INQ-' ~ inquiry.id }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('disciplinary.edit_inquiry', id=inquiry.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        {% endif %}
+        <a href="{{ url_for('reports.inquiries') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Inquiry Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Inquiry Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Inquiry Number</label>
+                        <p class="mb-0"><strong>{{ inquiry.inquiry_number or 'N/A' }}</strong></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Inquiry Type</label>
+                        <p class="mb-0">{{ inquiry.inquiry_type or 'N/A' }}</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Status</label>
+                        <p class="mb-0">
+                            {% if inquiry.status == 'Pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif inquiry.status == 'Ongoing' %}
+                            <span class="badge bg-info">Ongoing</span>
+                            {% elif inquiry.status == 'Completed' %}
+                            <span class="badge bg-success">Completed</span>
+                            {% elif inquiry.status == 'Dropped' %}
+                            <span class="badge bg-secondary">Dropped</span>
+                            {% else %}
+                            <span class="badge bg-primary">{{ inquiry.status or 'Unknown' }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Started Date</label>
+                        <p class="mb-0">
+                            {% if inquiry.start_date %}
+                            {{ inquiry.start_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Order Reference</label>
+                        <p class="mb-0">{{ inquiry.order_reference or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Order Date</label>
+                        <p class="mb-0">
+                            {% if inquiry.order_date %}
+                            {{ inquiry.order_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject/Allegations -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-text"></i> Subject & Allegations</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted">Subject</label>
+                    <p>{{ inquiry.subject or 'No subject recorded' }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Allegations</label>
+                    <p>{{ inquiry.allegations or 'No allegations recorded' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inquiry Officer Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Inquiry Officer</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ inquiry.inquiry_officer or 'Not appointed' }}</p>
+                        <p><strong>Designation:</strong> {{ inquiry.io_designation or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Phone:</strong> {{ inquiry.io_phone or 'N/A' }}</p>
+                        <p><strong>Email:</strong> {{ inquiry.io_email or 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delinquent Details -->
+        {% if inquiry.employee %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-exclamation"></i> Delinquent Officer</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> 
+                            <a href="{{ url_for('employees.view_employee', id=inquiry.employee.id) }}">
+                                {{ inquiry.employee.name }}
+                            </a>
+                        </p>
+                        <p><strong>PEN:</strong> {{ inquiry.employee.pen or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Designation:</strong> {{ inquiry.employee.designation or 'N/A' }}</p>
+                        <p><strong>Institution:</strong> 
+                            {% if inquiry.employee.institution %}
+                            <a href="{{ url_for('institutions.view_institution', id=inquiry.employee.institution.id) }}">
+                                {{ inquiry.employee.institution.name }}
+                            </a>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Findings & Outcome (if completed) -->
+        {% if inquiry.status == 'Completed' %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Findings & Outcome</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted">Findings</label>
+                    <p>{{ inquiry.findings or 'No findings recorded' }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Recommendations</label>
+                    <p>{{ inquiry.recommendations or 'No recommendations recorded' }}</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="text-muted">Report Submitted Date</label>
+                        <p>
+                            {% if inquiry.report_date %}
+                            {{ inquiry.report_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Final Action Taken</label>
+                        <p>{{ inquiry.final_action or 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Remarks -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Remarks</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ inquiry.remarks or 'No remarks' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Status Card -->
+        <div class="card mb-4">
+            <div class="card-header 
+                {% if inquiry.status == 'Pending' %}bg-warning
+                {% elif inquiry.status == 'Ongoing' %}bg-info text-white
+                {% elif inquiry.status == 'Completed' %}bg-success text-white
+                {% else %}bg-secondary text-white{% endif %}">
+                <h5 class="mb-0">Inquiry Status</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3>{{ inquiry.status or 'Unknown' }}</h3>
+                {% if inquiry.status == 'Ongoing' and inquiry.start_date %}
+                <p class="text-muted mb-0">
+                    Duration: {{ (today - inquiry.start_date).days }} days
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Timeline Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% if inquiry.order_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-primary"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">{{ inquiry.order_date.strftime('%d-%m-%Y') }}</small>
+                            <p class="mb-0">Inquiry Ordered</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if inquiry.start_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-info"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">{{ inquiry.start_date.strftime('%d-%m-%Y') }}</small>
+                            <p class="mb-0">Inquiry Started</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if inquiry.report_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-success"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">{{ inquiry.report_date.strftime('%d-%m-%Y') }}</small>
+                            <p class="mb-0">Report Submitted</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if inquiry.completion_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge bg-success"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">{{ inquiry.completion_date.strftime('%d-%m-%Y') }}</small>
+                            <p class="mb-0">Inquiry Completed</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Related File -->
+        {% if inquiry.file %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Related File</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('files.view_file', id=inquiry.file.id) }}" class="text-decoration-none">
+                    <i class="bi bi-folder2"></i> {{ inquiry.file.file_no }}
+                </a>
+                <p class="text-muted small mb-0 mt-1">{{ inquiry.file.subject or '' }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('disciplinary.edit_inquiry', id=inquiry.id) }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-pencil"></i> Edit Details
+                </a>
+                {% if inquiry.status == 'Pending' %}
+                <a href="{{ url_for('disciplinary.start_inquiry', id=inquiry.id) }}" class="list-group-item list-group-item-action text-info">
+                    <i class="bi bi-play-circle"></i> Start Inquiry
+                </a>
+                {% endif %}
+                {% if inquiry.status == 'Ongoing' %}
+                <a href="{{ url_for('disciplinary.submit_inquiry_report', id=inquiry.id) }}" class="list-group-item list-group-item-action text-success">
+                    <i class="bi bi-check-circle"></i> Submit Report
+                </a>
+                {% endif %}
+                {% endif %}
+                <button type="button" class="list-group-item list-group-item-action" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Details
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Proceedings/Updates -->
+{% if proceedings %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-journal-text"></i> Proceedings & Updates</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Proceedings</th>
+                        <th>Next Date</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proc in proceedings %}
+                    <tr>
+                        <td>{{ proc.date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ proc.description or '-' }}</td>
+                        <td>
+                            {% if proc.next_date %}
+                            {{ proc.next_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ proc.remarks or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 15px;
+    padding-left: 15px;
+    border-left: 2px solid #dee2e6;
+}
+.timeline-item:last-child {
+    border-left: 2px solid transparent;
+}
+.timeline-badge {
+    position: absolute;
+    left: -8px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+.timeline-content {
+    padding-left: 10px;
+}
+
+@media print {
+    .btn, nav, footer, .list-group-item-action {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

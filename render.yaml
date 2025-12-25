@@ -1,0 +1,23 @@
+# render.yaml - Render.com deployment configuration
+# This file defines the infrastructure for deploying the Vigilance FMS web app
+# Using external Supabase PostgreSQL database
+
+services:
+  - type: web
+    name: vigilance-fms
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false  # Set this manually in Render dashboard with Supabase URL
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    autoDeploy: true
+    healthCheckPath: /api/health

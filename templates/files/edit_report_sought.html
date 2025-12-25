@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Report Sought - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('files.file_management', file=record.file_number) }}">File Management</a></li>
+                    <li class="breadcrumb-item active">Edit Report Sought</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-down"></i> Edit Report Sought</h5>
+                    <small class="text-muted">File: {{ record.file_number }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('files.edit_report_sought', id=record.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="body" class="form-label">Body/Authority</label>
+                                <select class="form-select" id="body" name="body">
+                                    <option value="">-- Select Body --</option>
+                                    <option value="DHS" {% if record.body == 'DHS' %}selected{% endif %}>DHS (Director of Health Services)</option>
+                                    <option value="DME" {% if record.body == 'DME' %}selected{% endif %}>DME (Director of Medical Education)</option>
+                                    <option value="DMOH" {% if record.body == 'DMOH' %}selected{% endif %}>DMOH</option>
+                                    <option value="Institution" {% if record.body == 'Institution' %}selected{% endif %}>Institution</option>
+                                    <option value="Other" {% if record.body == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="report_sought_date" class="form-label">Report Sought Date</label>
+                                <input type="date" class="form-control" id="report_sought_date" name="report_sought_date"
+                                       value="{{ record.report_sought_date or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="institution" class="form-label">Institution</label>
+                                <input type="text" class="form-control" id="institution" name="institution"
+                                       value="{{ record.institution or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status</label>
+                                <input type="text" class="form-control" id="status" name="status"
+                                       value="{{ record.status or '' }}" placeholder="e.g., Pending, In Progress">
+                            </div>
+                            <div class="col-12">
+                                <label for="details" class="form-label">Details</label>
+                                <textarea class="form-control" id="details" name="details" rows="3">{{ record.details or '' }}</textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="submitted" class="form-label">Submitted</label>
+                                <select class="form-select" id="submitted" name="submitted" onchange="toggleSubmittedDate()">
+                                    <option value="No" {% if record.submitted != 'Yes' %}selected{% endif %}>No</option>
+                                    <option value="Yes" {% if record.submitted == 'Yes' %}selected{% endif %}>Yes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="submittedDateDiv" {% if record.submitted != 'Yes' %}style="display: none;"{% endif %}>
+                                <label for="submitted_date" class="form-label">Submitted Date</label>
+                                <input type="date" class="form-control" id="submitted_date" name="submitted_date"
+                                       value="{{ record.submitted_date or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-warning"><i class="bi bi-save"></i> Update</button>
+                            <a href="{{ url_for('files.file_management', file=record.file_number) }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleSubmittedDate() {
+        const select = document.getElementById('submitted');
+        const dateDiv = document.getElementById('submittedDateDiv');
+        if (select.value === 'Yes') {
+            dateDiv.style.display = 'block';
+        } else {
+            dateDiv.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

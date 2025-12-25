@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}New Inquiry - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-search"></i> New Inquiry</h2>
+    <a href="{{ url_for('reports.inquiries') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('disciplinary.create_inquiry') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-info-circle"></i> Inquiry Information</h5>
+                    
+                    <div class="mb-3">
+                        <label for="inquiry_number" class="form-label">Inquiry Number</label>
+                        <input type="text" class="form-control" id="inquiry_number" name="inquiry_number"
+                               placeholder="e.g., INQ/2024/001">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inquiry_type" class="form-label">Inquiry Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="inquiry_type" name="inquiry_type" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="Departmental Inquiry">Departmental Inquiry</option>
+                            <option value="Preliminary Inquiry">Preliminary Inquiry</option>
+                            <option value="Vigilance Inquiry">Vigilance Inquiry</option>
+                            <option value="Fact Finding">Fact Finding</option>
+                            <option value="Major Penalty Proceedings">Major Penalty Proceedings</option>
+                            <option value="Minor Penalty Proceedings">Minor Penalty Proceedings</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="order_date" class="form-label">Order Date</label>
+                            <input type="date" class="form-control" id="order_date" name="order_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="order_reference" class="form-label">Order Reference</label>
+                        <input type="text" class="form-control" id="order_reference" name="order_reference"
+                               placeholder="Order number/reference">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Pending" selected>Pending</option>
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Report Submitted">Report Submitted</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Dropped">Dropped</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-person-exclamation"></i> Delinquent Officer</h5>
+
+                    <div class="mb-3">
+                        <label for="employee_pen" class="form-label">Employee PEN</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="employee_pen" name="employee_pen"
+                                   placeholder="Enter PEN to search">
+                            <button type="button" class="btn btn-outline-secondary" onclick="lookupEmployee()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="employee_details" class="mb-3 d-none">
+                        <div class="alert alert-info">
+                            <strong id="emp_name"></strong><br>
+                            <small id="emp_designation"></small><br>
+                            <small id="emp_institution"></small>
+                        </div>
+                        <input type="hidden" id="employee_id" name="employee_id">
+                    </div>
+
+                    <h5 class="mb-3 mt-4"><i class="bi bi-person-badge"></i> Inquiry Officer</h5>
+
+                    <div class="mb-3">
+                        <label for="inquiry_officer" class="form-label">IO Name</label>
+                        <input type="text" class="form-control" id="inquiry_officer" name="inquiry_officer"
+                               placeholder="Name of Inquiry Officer">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="io_designation" class="form-label">IO Designation</label>
+                        <input type="text" class="form-control" id="io_designation" name="io_designation">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="io_phone" class="form-label">IO Phone</label>
+                            <input type="text" class="form-control" id="io_phone" name="io_phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="io_email" class="form-label">IO Email</label>
+                            <input type="email" class="form-control" id="io_email" name="io_email">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-file-text"></i> Subject & Allegations</h5>
+
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <textarea class="form-control" id="subject" name="subject" rows="3"
+                                  placeholder="Brief subject of the inquiry"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="allegations" class="form-label">Allegations</label>
+                        <textarea class="form-control" id="allegations" name="allegations" rows="4"
+                                  placeholder="Details of allegations/charges"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-link-45deg"></i> Related Records</h5>
+
+                    <div class="mb-3">
+                        <label for="file_id" class="form-label">Related File</label>
+                        <select class="form-select" id="file_id" name="file_id">
+                            <option value="">-- Select File --</option>
+                            {% for file in files %}
+                            <option value="{{ file.id }}">{{ file.file_no }} - {{ file.subject[:50] }}...</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="disciplinary_action_id" class="form-label">Related Disciplinary Action</label>
+                        <select class="form-select" id="disciplinary_action_id" name="disciplinary_action_id">
+                            <option value="">-- Select Action --</option>
+                            {% for action in disciplinary_actions %}
+                            <option value="{{ action.id }}">{{ action.action_type }} - {{ action.employee.name if action.employee else 'N/A' }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Create Inquiry
+                </button>
+                <a href="{{ url_for('reports.inquiries') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function lookupEmployee() {
+    const pen = document.getElementById('employee_pen').value;
+    if (!pen) {
+        alert('Please enter a PEN');
+        return;
+    }
+    
+    fetch(`{{ url_for('api.get_employee_by_pen') }}?pen=${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('emp_name').textContent = data.employee.name;
+                document.getElementById('emp_designation').textContent = data.employee.designation || 'N/A';
+                document.getElementById('emp_institution').textContent = data.employee.institution || 'N/A';
+                document.getElementById('employee_id').value = data.employee.id;
+                document.getElementById('employee_details').classList.remove('d-none');
+            } else {
+                alert('Employee not found with PEN: ' + pen);
+                document.getElementById('employee_details').classList.add('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error looking up employee');
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #ECF0F1;
+    }
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .login-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        padding: 40px;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+    }
+    .welcome-text {
+        color: #2C3E50;
+        font-family: 'Calibri', sans-serif;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .office-name {
+        color: #34495E;
+        font-family: 'Calibri', sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 25px;
+    }
+    .logo-img {
+        width: 200px;
+        height: 200px;
+        object-fit: contain;
+        margin-bottom: 30px;
+    }
+    .logo-container {
+        margin-bottom: 30px;
+    }
+    .logo-placeholder {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .logo-placeholder i {
+        font-size: 60px;
+        color: white;
+    }
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+    .form-group label {
+        font-weight: 500;
+        color: #2C3E50;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .form-control {
+        height: 45px;
+        border: 1px solid #BDC3C7;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 1rem;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-control:focus {
+        border-color: #28A745;
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+    }
+    .btn-login {
+        background-color: #28A745;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 40px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        width: 100%;
+        max-width: 300px;
+        margin-top: 10px;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+    .btn-login:hover {
+        background-color: #218838;
+        color: white;
+        transform: translateY(-2px);
+    }
+    .btn-login:active {
+        transform: translateY(0);
+    }
+    .error-message {
+        color: #dc3545;
+        font-weight: bold;
+        margin-top: 15px;
+    }
+    .input-icon {
+        position: relative;
+    }
+    .input-icon i {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #BDC3C7;
+    }
+    .input-icon input {
+        padding-right: 45px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <!-- Welcome Message -->
+        <h1 class="welcome-text">WELCOME</h1>
+        <div class="office-name">
+            Vigilance Section<br>
+            District Medical Office (Health)<br>
+            Thiruvananthapuram
+        </div>
+        
+        <!-- Logo/Image -->
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-img" 
+                 onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+            <div id="logo-fallback" class="logo-placeholder" style="display: none;">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </div>
+        
+        <!-- Login Form -->
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="username">User ID:</label>
+                <div class="input-icon">
+                    <input type="text" class="form-control" id="username" name="username" 
+                           required autofocus placeholder="User ID">
+                    <i class="bi bi-person"></i>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <div class="input-icon">
+                    <input type="password" class="form-control" id="password" name="password" 
+                           required placeholder="Password">
+                    <i class="bi bi-key"></i>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-login">
+                Login
+            </button>
+        </form>
+        
+        <!-- Error Message -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="error-message {% if category == 'success' %}text-success{% endif %}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+{% endblock %}

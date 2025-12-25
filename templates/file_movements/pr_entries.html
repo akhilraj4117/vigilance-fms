@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}View PR Entries - File Movements{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-journal-text"></i> PR Entries</h2>
+    
+    <!-- Sub-tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="fileMovementsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.search_files') }}">
+                <i class="bi bi-search"></i> Search Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" href="{{ url_for('file_movements.pr_entries') }}">
+                <i class="bi bi-journal-text"></i> View PR Entries
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.physical_files') }}">
+                <i class="bi bi-archive"></i> Physical Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pending_files') }}">
+                <i class="bi bi-clock-history"></i> Pending Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.migrated_files') }}">
+                <i class="bi bi-cloud-upload"></i> Migrated Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.speak_files') }}">
+                <i class="bi bi-megaphone"></i> Speak
+            </a>
+        </li>
+    </ul>
+    
+    <!-- Filter Options -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">View:</label>
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('file_movements.pr_entries', view='current', file=current_file) }}" 
+                           class="btn btn-{{ 'primary' if view_mode == 'current' else 'outline-primary' }}">
+                            Current File Only
+                        </a>
+                        <a href="{{ url_for('file_movements.pr_entries', view='all') }}" 
+                           class="btn btn-{{ 'primary' if view_mode == 'all' else 'outline-primary' }}">
+                            All Files
+                        </a>
+                    </div>
+                </div>
+                {% if current_file %}
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-primary">Current File: {{ current_file }}</label>
+                </div>
+                {% endif %}
+                <div class="col-md-{{ '5' if current_file else '8' }} text-end">
+                    {% if view_mode == 'current' and current_file %}
+                    <a href="{{ url_for('file_movements.export_pr_entries', file=current_file) }}" 
+                       class="btn btn-success" title="Export Current File's PR Entries">
+                        <i class="bi bi-download"></i> Export Current File PRs
+                    </a>
+                    {% elif view_mode == 'all' %}
+                    <a href="{{ url_for('file_movements.export_pr_entries') }}" 
+                       class="btn btn-success" title="Export All PR Entries from All Files">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export All PRs to Excel
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PR Entries Table (Tree-like view) -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>PR Entries {% if pagination %}({{ pagination.total }} total){% endif %}</span>
+        </div>
+        <div class="card-body">
+            {% if no_file_loaded %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 d-block mb-2"></i>
+                <h5>No File Loaded</h5>
+                <p class="mb-0">Please load a file first to view its PR entries, or switch to "All Files" view to see all PR entries.</p>
+            </div>
+            {% elif grouped_entries %}
+            <div class="accordion" id="prEntriesAccordion">
+                {% for file_number, entries in grouped_entries.items() %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button {{ '' if loop.first else 'collapsed' }}" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" 
+                                aria-expanded="{{ 'true' if loop.first else 'false' }}">
+                            <strong>{{ file_number }}</strong> 
+                            <span class="badge bg-primary ms-2">{{ entries|length }} entries</span>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {{ 'show' if loop.first else '' }}" 
+                         aria-labelledby="heading{{ loop.index }}" data-bs-parent="#prEntriesAccordion">
+                        <div class="accordion-body">
+                            <div class="mb-2 text-end">
+                                <a href="{{ url_for('files.manage_pr_entries', file_number=file_number) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil-square"></i> Manage PR Entries
+                                </a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Sl No.</th>
+                                            <th>Current No.</th>
+                                            <th>Date Receipt</th>
+                                            <th>Title</th>
+                                            <th>From Whom (Name)</th>
+                                            <th>From Whom (No.)</th>
+                                            <th>From Whom (Date)</th>
+                                            <th>Submitted Date</th>
+                                            <th>Return Date</th>
+                                            <th>Ref. Issued To</th>
+                                            <th>Ref. Date</th>
+                                            <th>Disposal</th>
+                                            <th>Disposal Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                        <tr>
+                                            <td>{{ entry.serial_number or '-' }}</td>
+                                            <td>{{ entry.current_number or '-' }}</td>
+                                            <td>{{ entry.date_receipt_clerk or '-' }}</td>
+                                            <td title="{{ entry.title or '' }}">{{ (entry.title or '-')[:30] }}{{ '...' if entry.title and entry.title|length > 30 else '' }}</td>
+                                            <td>{{ entry.from_whom_outside_name or '-' }}</td>
+                                            <td>{{ entry.from_whom_outside_number or '-' }}</td>
+                                            <td>{{ entry.from_whom_outside_date or '-' }}</td>
+                                            <td>{{ entry.submitted_by_clerk_date or '-' }}</td>
+                                            <td>{{ entry.return_to_clerk_date or '-' }}</td>
+                                            <td>{{ entry.reference_issued_to_whom or '-' }}</td>
+                                            <td>{{ entry.reference_issued_date or '-' }}</td>
+                                            <td>{{ entry.disposal_nature or '-' }}</td>
+                                            <td>{{ entry.disposal_date or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-center text-muted">No PR entries found{% if view_mode == 'current' and current_file %} for file {{ current_file }}{% endif %}.</p>
+            {% endif %}
+            
+            <!-- Pagination -->
+            {% if pagination and pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.pr_entries', page=pagination.prev_num, view=view_mode, file=current_file) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+                            <a class="page-link" href="{{ url_for('file_movements.pr_entries', page=p, view=view_mode, file=current_file) }}">{{ p }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.pr_entries', page=pagination.next_num, view=view_mode, file=current_file) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

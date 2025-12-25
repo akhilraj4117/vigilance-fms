@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Institution Types - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tags"></i> Institution Types</h2>
+    <div>
+        {% if current_user.is_admin() %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTypeModal">
+            <i class="bi bi-plus-lg"></i> Add Type
+        </button>
+        {% endif %}
+        <a href="{{ url_for('institutions.list_institutions') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Institutions
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Institution Types</h5>
+            </div>
+            <div class="card-body">
+                {% if types %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Type Name</th>
+                                <th>Description</th>
+                                <th>Institutions Count</th>
+                                {% if current_user.is_admin() %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for type in types %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><strong>{{ type.name }}</strong></td>
+                                <td>{{ type.description or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('institutions.list_institutions', type=type.name) }}" class="text-decoration-none">
+                                        <span class="badge bg-primary">{{ type.institution_count }}</span> institutions
+                                    </a>
+                                </td>
+                                {% if current_user.is_admin() %}
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-warning" 
+                                                onclick="editType('{{ type.id }}', '{{ type.name }}', '{{ type.description or '' }}')"
+                                                title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if type.institution_count == 0 %}
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="confirmDelete('{{ type.id }}', '{{ type.name }}')"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-outline-secondary" disabled
+                                                title="Cannot delete - has institutions">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-tags display-1 text-muted"></i>
+                    <p class="mt-3">No institution types defined yet.</p>
+                    {% if current_user.is_admin() %}
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTypeModal">
+                        <i class="bi bi-plus-lg"></i> Add First Type
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Statistics Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Types:</strong> {{ types|length }}</p>
+                <p><strong>Total Institutions:</strong> {{ total_institutions }}</p>
+                <p><strong>Untyped Institutions:</strong> 
+                    <a href="{{ url_for('institutions.list_institutions', type='None') }}">
+                        {{ untyped_count }}
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Common Types Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Common Types</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Click to add if not already present:</p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for common_type in ['PHC', 'CHC', 'Taluk Hospital', 'District Hospital', 'Medical College', 'DMO Office', 'Sub Centre', 'FHC', 'Urban PHC'] %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary quick-add-type" 
+                            data-type="{{ common_type }}">
+                        {{ common_type }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Type Modal -->
+<div class="modal fade" id="addTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('institutions.add_type') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Add Institution Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="type_name" class="form-label">Type Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="type_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="type_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="type_description" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Type Modal -->
+<div class="modal fade" id="editTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('institutions.update_type') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="type_id" id="edit_type_id">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Institution Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_type_name" class="form-label">Type Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_type_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_type_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_type_description" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('institutions.delete_type') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="type_id" id="delete_type_id">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle"></i> Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the institution type "<strong id="delete_type_name"></strong>"?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editType(id, name, description) {
+    document.getElementById('edit_type_id').value = id;
+    document.getElementById('edit_type_name').value = name;
+    document.getElementById('edit_type_description').value = description;
+    new bootstrap.Modal(document.getElementById('editTypeModal')).show();
+}
+
+function confirmDelete(id, name) {
+    document.getElementById('delete_type_id').value = id;
+    document.getElementById('delete_type_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteTypeModal')).show();
+}
+
+// Quick add type functionality
+document.querySelectorAll('.quick-add-type').forEach(button => {
+    button.addEventListener('click', function() {
+        const typeName = this.getAttribute('data-type');
+        document.getElementById('type_name').value = typeName;
+        new bootstrap.Modal(document.getElementById('addTypeModal')).show();
+    });
+});
+</script>
+{% endblock %}

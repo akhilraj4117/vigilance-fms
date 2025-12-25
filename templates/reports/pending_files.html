@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Files - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-hourglass-split"></i> Pending Files</h2>
+    <a href="{{ url_for('reports.export_report', report_type='pending-files') }}" class="btn btn-success">
+        <i class="bi bi-download"></i> Export CSV
+    </a>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.pending_files') }}" method="GET" class="row g-3">
+            <div class="col-md-4">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header">
+        Total: {{ pagination.total }} pending files
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>File Number</th>
+                        <th>Category</th>
+                        <th>Subject</th>
+                        <th>Date of Receipt</th>
+                        <th>From</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=file.file_number) }}">
+                                {{ file.file_number }}
+                            </a>
+                        </td>
+                        <td>{{ file.category or '-' }}</td>
+                        <td>{{ file.subject[:50] + '...' if file.subject and file.subject|length > 50 else file.subject or '-' }}</td>
+                        <td>{{ file.date_of_receipt or '-' }}</td>
+                        <td>{{ file.from_whom_received[:30] + '...' if file.from_whom_received and file.from_whom_received|length > 30 else file.from_whom_received or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No pending files found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.pending_files', page=pagination.prev_num, category=selected_category) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.pending_files', page=page_num, category=selected_category) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.pending_files', page=pagination.next_num, category=selected_category) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

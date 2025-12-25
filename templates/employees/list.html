@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Details - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main Tabs Navigation */
+    .main-tabs-container {
+        padding: 15px 0;
+    }
+    .tab-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 10px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 10px;
+        color: #fff;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        min-height: 80px;
+        box-shadow: 0 3px 10px rgba(30, 60, 114, 0.3);
+    }
+    .tab-card:hover {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card.active {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+    .tab-card span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    /* Form styling */
+    .employee-form-group {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #1e3c72;
+    }
+    
+    /* Table styling */
+    .table-hover tbody tr {
+        cursor: pointer;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(30, 60, 114, 0.1) !important;
+    }
+    .table-hover tbody tr.selected-row {
+        background-color: rgba(30, 60, 114, 0.2) !important;
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .main-tabs-container .row {
+            flex-wrap: wrap;
+        }
+        .main-tabs-container .col {
+            flex: 0 0 33.33%;
+            max-width: 33.33%;
+            margin-bottom: 8px;
+        }
+        .tab-card {
+            min-height: 70px;
+            padding: 10px 5px;
+        }
+        .tab-card i {
+            font-size: 1.2rem;
+        }
+        .tab-card span {
+            font-size: 0.65rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .main-tabs-container .col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Main Tabs Navigation -->
+<div class="main-tabs-container mb-4">
+    <div class="row g-2">
+        <div class="col">
+            <a href="{{ url_for('main.dashboard') }}" class="tab-card">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('files.file_management') }}" class="tab-card">
+                <i class="bi bi-folder"></i>
+                <span>File Management</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.index') }}" class="tab-card">
+                <i class="bi bi-arrows-move"></i>
+                <span>File Movements</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('disciplinary.index') }}" class="tab-card">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Disciplinary Action</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.follow_up_files') }}" class="tab-card">
+                <i class="bi bi-calendar-check"></i>
+                <span>Follow-up Files</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('employees.list_employees') }}" class="tab-card active">
+                <i class="bi bi-people"></i>
+                <span>Employee Details</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('reports.index') }}" class="tab-card">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('rti.rti_index') }}" class="tab-card">
+                <i class="bi bi-info-circle"></i>
+                <span>RTI Info</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
+                <i class="bi bi-building"></i>
+                <span>Institutions</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-people"></i> Employee Details Management</h2>
+    
+    <!-- Search Box -->
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="bi bi-search"></i> Search Employee</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" id="searchInput" 
+                           placeholder="Enter Name or PEN to search..." value="{{ search_query }}"
+                           onkeyup="filterEmployeeTable()">
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-secondary" onclick="clearSearch()">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Employee Details Form -->
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="bi bi-person-badge"></i> Employee Details Form</h6>
+        </div>
+        <div class="card-body employee-form-group">
+            <form id="employeeForm" action="{{ url_for('employees.save_employee_ajax') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="editMode" name="edit_mode" value="">
+                <input type="hidden" id="editId" name="edit_id" value="">
+                
+                <div class="row">
+                    <!-- Left Column -->
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="pen" class="form-label">PEN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="pen" name="pen" 
+                                   placeholder="Enter PEN (Unique ID)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="date_of_birth" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                        </div>
+                    </div>
+                    
+                    <!-- Center Column -->
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="designation" class="form-label">Designation</label>
+                            <input type="text" class="form-control" id="designation" name="designation"
+                                   list="designation_list">
+                            <datalist id="designation_list">
+                                {% for desig in designations %}
+                                <option value="{{ desig }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="mb-3">
+                            <label for="joining_date" class="form-label">Joining Date</label>
+                            <input type="date" class="form-control" id="joining_date" name="joining_date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="institution_name" class="form-label">Institution Name</label>
+                            <input type="text" class="form-control" id="institution_name" name="institution_name"
+                                   list="institution_list" placeholder="Type to search institution...">
+                            <datalist id="institution_list">
+                                {% for inst in institutions %}
+                                <option value="{{ inst }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column -->
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="permanent_address" class="form-label">Permanent Address</label>
+                            <textarea class="form-control" id="permanent_address" name="permanent_address" 
+                                      rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="communication_address" class="form-label">Communication Address</label>
+                            <textarea class="form-control" id="communication_address" name="communication_address" 
+                                      rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="d-flex justify-content-center gap-2 mt-3">
+                    <button type="button" class="btn btn-success" id="saveBtn" onclick="saveEmployee()">
+                        <i class="bi bi-check-circle"></i> Save Employee
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                        <i class="bi bi-x-circle"></i> Clear Form
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="showUploadModal()">
+                        <i class="bi bi-upload"></i> Upload from Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Existing Employees Table -->
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-table"></i> Existing Employees</h6>
+            <span class="badge bg-light text-dark">Total: {{ pagination.total }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="employeeTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>PEN</th>
+                            <th>Name</th>
+                            <th>Date of Birth</th>
+                            <th>Designation</th>
+                            <th>Joining Date</th>
+                            <th>Institution Name</th>
+                            <th>Permanent Address</th>
+                            <th>Communication Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in employees %}
+                        <tr class="employee-row" 
+                            data-id="{{ emp.id }}"
+                            data-pen="{{ emp.pen or '' }}"
+                            data-name="{{ emp.name or '' }}"
+                            data-dob="{{ emp.date_of_birth or '' }}"
+                            data-designation="{{ emp.designation or '' }}"
+                            data-joining="{{ emp.joining_date or '' }}"
+                            data-institution="{{ emp.institution_name or '' }}"
+                            data-permanent="{{ emp.permanent_address or '' }}"
+                            data-communication="{{ emp.communication_address or '' }}">
+                            <td>{{ emp.pen or '-' }}</td>
+                            <td>{{ emp.name }}</td>
+                            <td>{{ emp.date_of_birth or '-' }}</td>
+                            <td>{{ emp.designation or '-' }}</td>
+                            <td>{{ emp.joining_date or '-' }}</td>
+                            <td>{{ emp.institution_name[:40] + '...' if emp.institution_name and emp.institution_name|length > 40 else emp.institution_name or '-' }}</td>
+                            <td>{{ emp.permanent_address[:30] + '...' if emp.permanent_address and emp.permanent_address|length > 30 else emp.permanent_address or '-' }}</td>
+                            <td>{{ emp.communication_address[:30] + '...' if emp.communication_address and emp.communication_address|length > 30 else emp.communication_address or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No employees found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Table Buttons -->
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-warning" onclick="editSelectedEmployee()">
+                    <i class="bi bi-pencil"></i> Edit Selected
+                </button>
+                <a href="{{ url_for('employees.export_employees') }}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Export to Excel
+                </a>
+            </div>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('employees.list_employees', page=pagination.prev_num, q=search_query, institution=institution_filter, designation=designation_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('employees.list_employees', page=page_num, q=search_query, institution=institution_filter, designation=designation_filter) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('employees.list_employees', page=pagination.next_num, q=search_query, institution=institution_filter, designation=designation_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upload Excel Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-upload"></i> Upload Employee Data from Excel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('employees.import_employees') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p class="text-muted">Excel/CSV file should have these columns:</p>
+                    <ul class="small text-muted">
+                        <li>PEN, Name, Date of Birth, Designation</li>
+                        <li>Joining Date, Institution Name</li>
+                        <li>Permanent Address, Communication Address</li>
+                    </ul>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select Excel/CSV File</label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".xlsx,.xls,.csv" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedRow = null;
+let selectedEmployeeId = null;
+
+// Add double-click listeners to all rows
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.employee-row');
+    rows.forEach(row => {
+        row.addEventListener('dblclick', function() {
+            loadEmployeeToForm(this);
+        });
+        row.addEventListener('click', function() {
+            selectRow(this);
+        });
+    });
+});
+
+function selectRow(row) {
+    // Remove previous selection
+    if (selectedRow) {
+        selectedRow.classList.remove('selected-row');
+    }
+    // Select new row
+    selectedRow = row;
+    selectedRow.classList.add('selected-row');
+    selectedEmployeeId = row.getAttribute('data-id');
+}
+
+function filterEmployeeTable() {
+    const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.employee-row');
+    
+    rows.forEach(row => {
+        const pen = (row.getAttribute('data-pen') || '').toLowerCase();
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        
+        if (pen.includes(searchText) || name.includes(searchText)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    filterEmployeeTable();
+}
+
+function clearForm() {
+    document.getElementById('pen').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('date_of_birth').value = '';
+    document.getElementById('designation').value = '';
+    document.getElementById('joining_date').value = '';
+    document.getElementById('institution_name').value = '';
+    document.getElementById('permanent_address').value = '';
+    document.getElementById('communication_address').value = '';
+    
+    document.getElementById('editMode').value = '';
+    document.getElementById('editId').value = '';
+    document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Save Employee';
+    
+    // Clear selected row highlight
+    if (selectedRow) {
+        selectedRow.classList.remove('selected-row');
+        selectedRow = null;
+    }
+    selectedEmployeeId = null;
+}
+
+function loadEmployeeToForm(row) {
+    // Highlight selected row
+    if (selectedRow) {
+        selectedRow.classList.remove('selected-row');
+    }
+    selectedRow = row;
+    selectedRow.classList.add('selected-row');
+    selectedEmployeeId = row.getAttribute('data-id');
+    
+    // Populate form
+    document.getElementById('pen').value = row.getAttribute('data-pen') || '';
+    document.getElementById('name').value = row.getAttribute('data-name') || '';
+    document.getElementById('date_of_birth').value = row.getAttribute('data-dob') || '';
+    document.getElementById('designation').value = row.getAttribute('data-designation') || '';
+    document.getElementById('joining_date').value = row.getAttribute('data-joining') || '';
+    document.getElementById('institution_name').value = row.getAttribute('data-institution') || '';
+    document.getElementById('permanent_address').value = row.getAttribute('data-permanent') || '';
+    document.getElementById('communication_address').value = row.getAttribute('data-communication') || '';
+    
+    // Set edit mode
+    document.getElementById('editMode').value = 'update';
+    document.getElementById('editId').value = selectedEmployeeId;
+    document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Update Employee';
+    
+    // Scroll to form
+    document.querySelector('.employee-form-group').scrollIntoView({ behavior: 'smooth' });
+}
+
+function editSelectedEmployee() {
+    if (!selectedRow) {
+        alert('Please select an employee to edit by clicking or double-clicking a row.');
+        return;
+    }
+    loadEmployeeToForm(selectedRow);
+}
+
+function saveEmployee() {
+    const pen = document.getElementById('pen').value.trim();
+    const name = document.getElementById('name').value.trim();
+    
+    if (!pen) {
+        alert('PEN is required to save employee details.');
+        return;
+    }
+    
+    const formData = {
+        pen: pen,
+        name: name,
+        date_of_birth: document.getElementById('date_of_birth').value,
+        designation: document.getElementById('designation').value,
+        joining_date: document.getElementById('joining_date').value,
+        institution_name: document.getElementById('institution_name').value,
+        permanent_address: document.getElementById('permanent_address').value,
+        communication_address: document.getElementById('communication_address').value,
+        edit_mode: document.getElementById('editMode').value,
+        edit_id: document.getElementById('editId').value
+    };
+    
+    fetch('{{ url_for("employees.save_employee_ajax") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            clearForm();
+            // Reload page to show updated data
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving employee details.');
+    });
+}
+
+function showUploadModal() {
+    const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    modal.show();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+F to focus search
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+    // Escape to clear form
+    if (e.key === 'Escape') {
+        clearForm();
+    }
+});
+</script>
+{% endblock %}

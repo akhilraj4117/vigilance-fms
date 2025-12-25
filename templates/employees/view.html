@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.name }} - Employee Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person"></i> {{ employee.name }}</h2>
+    <div>
+        <a href="{{ url_for('employees.edit_employee', id=employee.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Personal Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Name:</th>
+                        <td>{{ employee.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>PEN:</th>
+                        <td>{{ employee.pen or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Father's Name:</th>
+                        <td>{{ employee.father_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Birth:</th>
+                        <td>{{ employee.date_of_birth or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if employee.is_active == 'Yes' %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employment Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Employment Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Designation:</th>
+                        <td>{{ employee.designation or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Institution:</th>
+                        <td>{{ employee.institution_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Department:</th>
+                        <td>{{ employee.department or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Joining:</th>
+                        <td>{{ employee.date_of_joining or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Retirement:</th>
+                        <td>{{ employee.date_of_retirement or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-telephone"></i> Contact Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Phone:</th>
+                        <td>
+                            {% if employee.phone %}
+                            <a href="tel:{{ employee.phone }}">{{ employee.phone }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>
+                            {% if employee.email %}
+                            <a href="mailto:{{ employee.email }}">{{ employee.email }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Address:</th>
+                        <td>{{ employee.address or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-journal-text"></i> Notes</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ employee.notes or 'No notes available.' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Records -->
+<div class="row">
+    <!-- Files Related to Employee -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Related Files</h5>
+                <span class="badge bg-primary">{{ related_files|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if related_files %}
+                <ul class="list-group list-group-flush">
+                    {% for file in related_files[:5] %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('files.view_file', id=file.id) }}">
+                            {{ file.file_no }}
+                        </a>
+                        <small class="text-muted">{{ file.category }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if related_files|length > 5 %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('files.list_files', q=employee.name) }}" class="btn btn-sm btn-outline-primary">
+                        View All {{ related_files|length }} Files
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted text-center mb-0">No related files found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Disciplinary Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Disciplinary Actions</h5>
+                <span class="badge bg-warning text-dark">{{ disciplinary_actions|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if disciplinary_actions %}
+                <ul class="list-group list-group-flush">
+                    {% for action in disciplinary_actions[:5] %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('disciplinary.view_action', id=action.id) }}">
+                            {{ action.action_type }}
+                        </a>
+                        <small>
+                            {% if action.is_major == 'Yes' %}
+                            <span class="badge bg-danger">Major</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Minor</span>
+                            {% endif %}
+                        </small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if disciplinary_actions|length > 5 %}
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('disciplinary.list_actions', q=employee.pen) }}" class="btn btn-sm btn-outline-warning">
+                        View All {{ disciplinary_actions|length }} Actions
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted text-center mb-0">No disciplinary actions found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="card">
+    <div class="card-body d-flex justify-content-end gap-2">
+        <a href="{{ url_for('employees.edit_employee', id=employee.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit Employee
+        </a>
+        <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete employee <strong>{{ employee.name }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('employees.delete_employee', id=employee.id) }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete() {
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Institutions - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-building"></i> Institutions</h2>
+    <div>
+        <a href="{{ url_for('institutions.export_institutions') }}" class="btn btn-success me-2">
+            <i class="bi bi-download"></i> Export All to Excel
+        </a>
+        <a href="{{ url_for('institutions.import_institutions') }}" class="btn btn-info me-2">
+            <i class="bi bi-upload"></i> Upload from Excel
+        </a>
+        <a href="{{ url_for('institutions.manage_categories') }}" class="btn btn-secondary me-2">
+            <i class="bi bi-gear"></i> Manage Categories
+        </a>
+        <a href="{{ url_for('institutions.create_institution') }}" class="btn btn-primary">
+            <i class="bi bi-building-add"></i> Add Institution
+        </a>
+    </div>
+</div>
+
+<!-- Category Filter (matching desktop app) -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('institutions.list_institutions') }}" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" name="type" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    {% for inst_type in types %}
+                    <option value="{{ inst_type }}" {% if institution_type == inst_type %}selected{% endif %}>
+                        {{ inst_type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="q" value="{{ search_query }}" 
+                       placeholder="Search by name, category, address, head name...">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{{ url_for('institutions.list_institutions') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Total: {{ pagination.total }} institutions</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 60px;">Sl. No.</th>
+                        <th>Name of Institution</th>
+                        <th>E-mail</th>
+                        <th style="width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in institutions %}
+                    <tr ondblclick="window.location='{{ url_for('institutions.view_institution', id=inst.id) }}'" style="cursor: pointer;">
+                        <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+                        <td>
+                            <a href="{{ url_for('institutions.view_institution', id=inst.id) }}">
+                                {{ inst.name }}
+                            </a>
+                        </td>
+                        <td>{{ inst.email or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('institutions.edit_institution', id=inst.id) }}" 
+                               class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form action="{{ url_for('institutions.delete_institution', id=inst.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete institution {{ inst.name }}?')">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No institutions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('institutions.list_institutions', page=pagination.prev_num, q=search_query, type=institution_type) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('institutions.list_institutions', page=page_num, q=search_query, type=institution_type) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('institutions.list_institutions', page=pagination.next_num, q=search_query, type=institution_type) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<p class="text-muted mt-3">
+    <i class="bi bi-info-circle"></i> Double-click a row to view institution details.
+</p>
+{% endblock %}

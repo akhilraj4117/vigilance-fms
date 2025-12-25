@@ -1,0 +1,866 @@
+{% extends "base.html" %}
+
+{% block title %}Statement Generator - {{ 'Preliminary' if inquiry_type == 'preliminary' else 'Rule 15(ii)' }} - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .statement-container {
+        background-color: #E6F0FF;
+        min-height: calc(100vh - 120px);
+        padding: 15px;
+    }
+    .statement-tabs .nav-link {
+        background: #d0d0d0;
+        border: 1px solid #999;
+        padding: 10px 20px;
+        margin-right: 2px;
+        color: #333;
+        font-weight: 500;
+    }
+    .statement-tabs .nav-link:hover {
+        background: #c0c0c0;
+    }
+    .statement-tabs .nav-link.active {
+        background: #17a2b8;
+        border-color: #17a2b8;
+        color: white;
+        font-weight: bold;
+    }
+    .info-group {
+        background-color: #FFFFFF;
+        border: 1px solid gray;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .info-group-title {
+        background: linear-gradient(#E6F0FF, #FFFFFF);
+        padding: 5px 10px;
+        margin: -15px -15px 15px -15px;
+        border-bottom: 1px solid gray;
+        font-weight: bold;
+        border-radius: 5px 5px 0 0;
+    }
+    .malayalam-input {
+        font-family: 'Noto Sans Malayalam', 'Manjari', 'Rachana', sans-serif;
+        font-size: 14px;
+    }
+    .btn-statement {
+        background-color: #4CAF50;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: none;
+    }
+    .btn-statement:hover {
+        background-color: #45a049;
+        color: white;
+    }
+    .btn-statement-danger {
+        background-color: #f44336;
+    }
+    .btn-statement-danger:hover {
+        background-color: #da190b;
+    }
+    .btn-statement-info {
+        background-color: #2196F3;
+    }
+    .btn-statement-info:hover {
+        background-color: #0b7dda;
+    }
+    .qa-list-container {
+        min-height: 400px;
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .qa-list-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+    }
+    .qa-list-item:hover {
+        background-color: #f5f5f5;
+    }
+    .qa-list-item.selected {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .qa-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .respondent-select {
+        min-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="statement-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="bi bi-file-earmark-text"></i> Statement Generator - 
+            <span class="badge {{ 'bg-info' if inquiry_type == 'preliminary' else 'bg-warning text-dark' }}">
+                {{ 'Preliminary Inquiry' if inquiry_type == 'preliminary' else 'Rule 15(ii) Inquiry' }}
+            </span>
+        </h4>
+        <a href="{{ url_for('files.file_management', file=file_number) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to File
+        </a>
+    </div>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs statement-tabs" id="statementTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#infoTabPane" type="button" role="tab">
+                <i class="bi bi-info-circle"></i> Information
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="qa-tab" data-bs-toggle="tab" data-bs-target="#qaTabPane" type="button" role="tab">
+                <i class="bi bi-question-circle"></i> Questions and Answers
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content bg-white border border-top-0 p-3" id="statementTabContent">
+        <!-- Information Tab -->
+        <div class="tab-pane fade show active" id="infoTabPane" role="tabpanel">
+            <div class="row">
+                <!-- Basic Information Column -->
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <div class="info-group-title">Basic Information</div>
+                        
+                        <!-- File Number -->
+                        <div class="mb-3">
+                            <label class="form-label">File Number:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="fileNoOffice" value="DMOH-TVM/" style="max-width: 120px;">
+                                <input type="text" class="form-control" id="fileNoNumber" placeholder="Number">
+                                <span class="input-group-text">/</span>
+                                <input type="text" class="form-control" id="fileNoYear" value="{{ current_year }}" style="max-width: 80px;">
+                                <span class="input-group-text">-</span>
+                                <input type="text" class="form-control" id="fileNoSection" value="A6" style="max-width: 60px;">
+                            </div>
+                        </div>
+                        
+                        <!-- Subject -->
+                        <div class="mb-3">
+                            <label class="form-label">Subject (വിഷയം):</label>
+                            <textarea class="form-control malayalam-input" id="subject" rows="4">{{ basic_info.subject if basic_info and basic_info.subject else (file.subject if file else '') }}</textarea>
+                        </div>
+                        
+                        <!-- Date -->
+                        <div class="mb-3">
+                            <label class="form-label">Date (തീയതി):</label>
+                            <input type="text" class="form-control" id="statementDate" placeholder="DD/MM/YYYY"
+                                   value="{{ basic_info.date if basic_info else '' }}">
+                        </div>
+                        
+                        <!-- Investigation Officer -->
+                        <div class="mb-3">
+                            <label class="form-label">Investigation Officer (അന്വേഷണ ഉദ്യോഗസ്ഥൻ):</label>
+                            <input type="text" class="form-control malayalam-input" id="officer" 
+                                   value="{{ basic_info.officer if basic_info else '' }}">
+                        </div>
+                        
+                        <!-- Basic Info Buttons -->
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-statement" onclick="saveBasicInfo()">
+                                <i class="bi bi-save"></i> Save
+                            </button>
+                            <button type="button" class="btn btn-statement btn-statement-info" onclick="loadBasicInfo()">
+                                <i class="bi bi-folder-open"></i> Load
+                            </button>
+                            <button type="button" class="btn btn-statement" onclick="testValues()">
+                                <i class="bi bi-eye"></i> Test Values
+                            </button>
+                            <button type="button" class="btn btn-statement" onclick="clearBasicInfo()">
+                                <i class="bi bi-eraser"></i> Clear
+                            </button>
+                            <button type="button" class="btn btn-statement btn-statement-danger" onclick="deleteDataFile()">
+                                <i class="bi bi-trash"></i> Delete File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Respondent Details Column -->
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <div class="info-group-title">Respondent Details (മൊഴി നൽകുന്നയാൾ)</div>
+                        
+                        <!-- Respondent Selection -->
+                        <div class="d-flex gap-2 mb-3">
+                            <select class="form-select respondent-select" id="respondentSelect" onchange="switchRespondent()">
+                                {% if respondents %}
+                                    {% for resp in respondents %}
+                                    <option value="{{ loop.index0 }}">
+                                        {{ resp.perm_emp_name or resp.temp_emp_name or resp.public_name or ('Respondent ' ~ loop.index) }}
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="0">Respondent 1</option>
+                                {% endif %}
+                            </select>
+                            <button type="button" class="btn btn-statement" onclick="addRespondent()">
+                                <i class="bi bi-person-plus"></i> Add Respondent
+                            </button>
+                        </div>
+                        
+                        <!-- Respondent Type -->
+                        <div class="mb-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="respondentType" id="typeEmployee" value="employee" checked onchange="toggleRespondentType()">
+                                <label class="form-check-label" for="typeEmployee">Employee</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="respondentType" id="typePublic" value="public" onchange="toggleRespondentType()">
+                                <label class="form-check-label" for="typePublic">Public</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Employee Details -->
+                        <div id="employeeDetails">
+                            <!-- Employee Type -->
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="employeeType" id="empPermanent" value="permanent" checked onchange="toggleEmployeeType()">
+                                    <label class="form-check-label" for="empPermanent">Permanent</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="employeeType" id="empTemporary" value="temporary" onchange="toggleEmployeeType()">
+                                    <label class="form-check-label" for="empTemporary">Temporary</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Permanent Employee Fields -->
+                            <div id="permanentFields">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Name:</label>
+                                        <input type="text" class="form-control malayalam-input" id="permName">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">PEN:</label>
+                                        <input type="text" class="form-control" id="permPen">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Designation:</label>
+                                        <input type="text" class="form-control malayalam-input" id="permDesig">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Institution:</label>
+                                        <input type="text" class="form-control malayalam-input" id="permInst">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Temporary Employee Fields -->
+                            <div id="temporaryFields" style="display: none;">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Name:</label>
+                                        <input type="text" class="form-control malayalam-input" id="tempName">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Designation:</label>
+                                        <input type="text" class="form-control malayalam-input" id="tempDesig">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">ID Type:</label>
+                                        <select class="form-select" id="tempIdType">
+                                            <option value="ആധാർ">ആധാർ</option>
+                                            <option value="വോട്ടർ ഐ.ഡി">വോട്ടർ ഐ.ഡി</option>
+                                            <option value="ഡ്രൈവിംഗ് ലൈസൻസ്">ഡ്രൈവിംഗ് ലൈസൻസ്</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">ID No.:</label>
+                                        <input type="text" class="form-control" id="tempIdNo">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small">Address:</label>
+                                        <textarea class="form-control malayalam-input" id="tempAddress" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Public Details -->
+                        <div id="publicDetails" style="display: none;">
+                            <div class="row g-2">
+                                <div class="col-md-12">
+                                    <label class="form-label small">Name:</label>
+                                    <input type="text" class="form-control malayalam-input" id="publicName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">ID Type:</label>
+                                    <select class="form-select" id="publicIdType">
+                                        <option value="ആധാർ">ആധാർ</option>
+                                        <option value="വോട്ടർ ഐ.ഡി">വോട്ടർ ഐ.ഡി</option>
+                                        <option value="ഡ്രൈവിംഗ് ലൈസൻസ്">ഡ്രൈവിംഗ് ലൈസൻസ്</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">ID No.:</label>
+                                    <input type="text" class="form-control" id="publicIdNo">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Address:</label>
+                                    <textarea class="form-control malayalam-input" id="publicAddress" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Respondent Buttons -->
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="button" class="btn btn-statement" onclick="saveRespondentInfo()">
+                                <i class="bi bi-save"></i> Save Respondent
+                            </button>
+                            <button type="button" class="btn btn-statement" onclick="clearRespondentInfo()">
+                                <i class="bi bi-eraser"></i> Clear Respondent
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Questions and Answers Tab -->
+        <div class="tab-pane fade" id="qaTabPane" role="tabpanel">
+            <!-- Statement Time -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Statement Time (സമയം):</label>
+                    <input type="text" class="form-control" id="qaTime" readonly placeholder="Time will be set when first Q&A is entered">
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Q&A Input -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Question (ചോദ്യം):</label>
+                        <textarea class="form-control malayalam-input" id="question" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Answer (ഉത്തരം):</label>
+                        <textarea class="form-control malayalam-input" id="answer" rows="5"></textarea>
+                    </div>
+                    
+                    <!-- Q&A Buttons -->
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-statement" id="addQaBtn" onclick="addQA()">
+                            <i class="bi bi-plus-circle"></i> Add Q&A
+                        </button>
+                        <button type="button" class="btn btn-statement btn-statement-danger" onclick="deleteSelectedQA()">
+                            <i class="bi bi-trash"></i> Delete Selected Q&A
+                        </button>
+                        <button type="button" class="btn btn-statement" onclick="clearQASection()">
+                            <i class="bi bi-eraser"></i> Clear Q&A Section
+                        </button>
+                        <button type="button" class="btn btn-statement btn-statement-info" onclick="generateDocument()">
+                            <i class="bi bi-file-earmark-word"></i> Generate Document
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Q&A List -->
+                <div class="col-md-6">
+                    <label class="form-label">Q&A List:</label>
+                    <div class="d-flex">
+                        <div class="qa-list-container flex-grow-1" id="qaListContainer">
+                            <!-- Q&A items will be populated here -->
+                        </div>
+                        <div class="qa-controls ms-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="moveQAUp()" title="Move Up">
+                                <i class="bi bi-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="moveQADown()" title="Move Down">
+                                <i class="bi bi-arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for CSRF -->
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // =====================================================
+    // GLOBAL VARIABLES
+    // =====================================================
+    let respondents = {{ respondents | tojson | safe if respondents else '[]' }};
+    let qaPairs = {{ qa_pairs | tojson | safe if qa_pairs else '[]' }};
+    let currentRespondentIndex = 0;
+    let editingQAIndex = -1;
+    let selectedQAIndex = -1;
+    
+    const fileNumber = '{{ file_number }}';
+    const inquiryType = '{{ inquiry_type }}';
+    const currentYear = new Date().getFullYear();
+    
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        parseAndSetFileNumber(fileNumber);
+        
+        if (respondents.length === 0) {
+            respondents.push({
+                type: 'employee', employee_type: 'permanent',
+                perm_emp_name: '', perm_emp_pen: '', perm_emp_desig: '', perm_emp_inst: '',
+                qa_pairs: [], qa_time: ''
+            });
+        }
+        
+        loadRespondentData(0);
+        if (respondents[0] && respondents[0].qa_pairs && respondents[0].qa_pairs.length > 0) {
+            qaPairs = respondents[0].qa_pairs;
+        }
+        updateQAList();
+        
+        if (respondents[0] && respondents[0].qa_time) {
+            document.getElementById('qaTime').value = respondents[0].qa_time;
+        }
+        
+        {% if inquiry_details %}
+        {% if inquiry_type == 'preliminary' and inquiry_details.prelim_io_name %}
+        if (!document.getElementById('officer').value) {
+            document.getElementById('officer').value = '{{ inquiry_details.prelim_io_name }}';
+        }
+        {% elif inquiry_type == 'rule15' and inquiry_details.rule15_io_name %}
+        if (!document.getElementById('officer').value) {
+            document.getElementById('officer').value = '{{ inquiry_details.rule15_io_name }}';
+        }
+        {% endif %}
+        {% endif %}
+        
+        if (!document.getElementById('statementDate').value) {
+            const today = new Date();
+            document.getElementById('statementDate').value = 
+                today.getDate().toString().padStart(2, '0') + '/' + 
+                (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                today.getFullYear();
+        }
+    });
+    
+    function parseAndSetFileNumber(fileNum) {
+        if (!fileNum) return;
+        try {
+            if (fileNum.includes('DMOH-TVM')) {
+                const parts = fileNum.split('/');
+                document.getElementById('fileNoOffice').value = parts[0] + '/';
+                document.getElementById('fileNoNumber').value = parts[1];
+                const yearSection = parts[2].split('-');
+                document.getElementById('fileNoYear').value = yearSection[0];
+                document.getElementById('fileNoSection').value = yearSection[1] || 'A6';
+            } else {
+                const parts = fileNum.split('/');
+                const sectionNumber = parts[0].split('-');
+                document.getElementById('fileNoOffice').value = 'DMO(H)T/';
+                document.getElementById('fileNoSection').value = sectionNumber[0];
+                document.getElementById('fileNoNumber').value = sectionNumber[1];
+                document.getElementById('fileNoYear').value = parts[1];
+            }
+        } catch (e) {
+            document.getElementById('fileNoNumber').value = fileNum;
+        }
+    }
+    
+    function getFileNumber() {
+        return `${document.getElementById('fileNoOffice').value}${document.getElementById('fileNoNumber').value}/${document.getElementById('fileNoYear').value}-${document.getElementById('fileNoSection').value}`;
+    }
+    
+    // =====================================================
+    // RESPONDENT FUNCTIONS
+    // =====================================================
+    function toggleRespondentType() {
+        const isEmployee = document.getElementById('typeEmployee').checked;
+        document.getElementById('employeeDetails').style.display = isEmployee ? 'block' : 'none';
+        document.getElementById('publicDetails').style.display = isEmployee ? 'none' : 'block';
+    }
+    
+    function toggleEmployeeType() {
+        const isPermanent = document.getElementById('empPermanent').checked;
+        document.getElementById('permanentFields').style.display = isPermanent ? 'block' : 'none';
+        document.getElementById('temporaryFields').style.display = isPermanent ? 'none' : 'block';
+    }
+    
+    function addRespondent() {
+        saveRespondentData();
+        respondents.push({
+            type: 'employee', employee_type: 'permanent',
+            perm_emp_name: '', perm_emp_pen: '', perm_emp_desig: '', perm_emp_inst: '',
+            temp_emp_name: '', temp_emp_desig: '', temp_emp_id_type: 'ആധാർ', temp_emp_id_no: '', temp_emp_address: '',
+            public_name: '', public_id_type: 'ആധാർ', public_id_no: '', public_address: '',
+            qa_pairs: [], qa_time: ''
+        });
+        currentRespondentIndex = respondents.length - 1;
+        
+        const select = document.getElementById('respondentSelect');
+        const option = document.createElement('option');
+        option.value = currentRespondentIndex;
+        option.textContent = `Respondent ${currentRespondentIndex + 1}`;
+        select.appendChild(option);
+        select.value = currentRespondentIndex;
+        
+        clearRespondentInfo();
+        qaPairs = [];
+        updateQAList();
+        document.getElementById('qaTime').value = '';
+    }
+    
+    function switchRespondent() {
+        saveRespondentData();
+        const newIndex = parseInt(document.getElementById('respondentSelect').value);
+        if (newIndex >= 0 && newIndex < respondents.length) {
+            currentRespondentIndex = newIndex;
+            loadRespondentData(newIndex);
+            qaPairs = respondents[newIndex].qa_pairs || [];
+            updateQAList();
+            document.getElementById('qaTime').value = respondents[newIndex].qa_time || '';
+        }
+    }
+    
+    function saveRespondentData() {
+        if (currentRespondentIndex < 0 || currentRespondentIndex >= respondents.length) return;
+        respondents[currentRespondentIndex] = {
+            type: document.getElementById('typeEmployee').checked ? 'employee' : 'public',
+            employee_type: document.getElementById('empPermanent').checked ? 'permanent' : 'temporary',
+            perm_emp_name: document.getElementById('permName').value,
+            perm_emp_pen: document.getElementById('permPen').value,
+            perm_emp_desig: document.getElementById('permDesig').value,
+            perm_emp_inst: document.getElementById('permInst').value,
+            temp_emp_name: document.getElementById('tempName').value,
+            temp_emp_desig: document.getElementById('tempDesig').value,
+            temp_emp_id_type: document.getElementById('tempIdType').value,
+            temp_emp_id_no: document.getElementById('tempIdNo').value,
+            temp_emp_address: document.getElementById('tempAddress').value,
+            public_name: document.getElementById('publicName').value,
+            public_id_type: document.getElementById('publicIdType').value,
+            public_id_no: document.getElementById('publicIdNo').value,
+            public_address: document.getElementById('publicAddress').value,
+            qa_pairs: qaPairs.slice(),
+            qa_time: document.getElementById('qaTime').value
+        };
+        updateRespondentSelectText(currentRespondentIndex);
+    }
+    
+    function loadRespondentData(index) {
+        const resp = respondents[index];
+        if (!resp) return;
+        
+        document.getElementById('typeEmployee').checked = resp.type === 'employee';
+        document.getElementById('typePublic').checked = resp.type === 'public';
+        toggleRespondentType();
+        
+        document.getElementById('empPermanent').checked = resp.employee_type === 'permanent';
+        document.getElementById('empTemporary').checked = resp.employee_type === 'temporary';
+        toggleEmployeeType();
+        
+        document.getElementById('permName').value = resp.perm_emp_name || '';
+        document.getElementById('permPen').value = resp.perm_emp_pen || '';
+        document.getElementById('permDesig').value = resp.perm_emp_desig || '';
+        document.getElementById('permInst').value = resp.perm_emp_inst || '';
+        document.getElementById('tempName').value = resp.temp_emp_name || '';
+        document.getElementById('tempDesig').value = resp.temp_emp_desig || '';
+        document.getElementById('tempIdType').value = resp.temp_emp_id_type || 'ആധാർ';
+        document.getElementById('tempIdNo').value = resp.temp_emp_id_no || '';
+        document.getElementById('tempAddress').value = resp.temp_emp_address || '';
+        document.getElementById('publicName').value = resp.public_name || '';
+        document.getElementById('publicIdType').value = resp.public_id_type || 'ആധാർ';
+        document.getElementById('publicIdNo').value = resp.public_id_no || '';
+        document.getElementById('publicAddress').value = resp.public_address || '';
+    }
+    
+    function updateRespondentSelectText(index) {
+        const resp = respondents[index];
+        let name = `Respondent ${index + 1}`;
+        if (resp.type === 'employee') {
+            name = (resp.employee_type === 'permanent' ? resp.perm_emp_name : resp.temp_emp_name) || name;
+        } else {
+            name = resp.public_name || name;
+        }
+        const select = document.getElementById('respondentSelect');
+        if (select.options[index]) select.options[index].textContent = name.substring(0, 30);
+    }
+    
+    function getRespondentName(resp) {
+        if (resp.type === 'employee') {
+            return resp.employee_type === 'permanent' ? (resp.perm_emp_name || 'New Permanent Employee') : (resp.temp_emp_name || 'New Temporary Employee');
+        }
+        return resp.public_name || 'New Public';
+    }
+    
+    function saveRespondentInfo() {
+        const isEmployee = document.getElementById('typeEmployee').checked;
+        const isPermanent = document.getElementById('empPermanent').checked;
+        
+        if (isEmployee) {
+            if (isPermanent && !document.getElementById('permName').value.trim()) {
+                alert('Please enter the permanent employee name.'); return;
+            }
+            if (isPermanent && !document.getElementById('permPen').value.trim()) {
+                alert('Please enter the PEN number.'); return;
+            }
+            if (!isPermanent && !document.getElementById('tempName').value.trim()) {
+                alert('Please enter the temporary employee name.'); return;
+            }
+        } else {
+            if (!document.getElementById('publicName').value.trim()) {
+                alert('Please enter the public respondent name.'); return;
+            }
+            if (!document.getElementById('publicAddress').value.trim()) {
+                alert('Please enter the address for public respondent.'); return;
+            }
+        }
+        saveRespondentData();
+        showToast('Respondent info saved!', 'success');
+    }
+    
+    function clearRespondentInfo() {
+        ['permName', 'permPen', 'permDesig', 'permInst', 'tempName', 'tempDesig', 'tempIdNo', 'tempAddress', 'publicName', 'publicIdNo', 'publicAddress'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('typeEmployee').checked = true;
+        document.getElementById('empPermanent').checked = true;
+        toggleRespondentType();
+        toggleEmployeeType();
+    }
+    
+    // =====================================================
+    // Q&A FUNCTIONS
+    // =====================================================
+    function addQA() {
+        const question = document.getElementById('question').value.trim();
+        const answer = document.getElementById('answer').value.trim();
+        
+        if (!question || !answer) { alert('Please enter both question and answer.'); return; }
+        
+        if (editingQAIndex >= 0) {
+            qaPairs[editingQAIndex] = { question, answer };
+            editingQAIndex = -1;
+            document.getElementById('addQaBtn').innerHTML = '<i class="bi bi-plus-circle"></i> Add Q&A';
+        } else {
+            qaPairs.push({ question, answer });
+            if (qaPairs.length === 1 && !document.getElementById('qaTime').value) {
+                const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                document.getElementById('qaTime').value = timeStr;
+                if (currentRespondentIndex >= 0) respondents[currentRespondentIndex].qa_time = timeStr;
+            }
+        }
+        
+        if (currentRespondentIndex >= 0) respondents[currentRespondentIndex].qa_pairs = qaPairs.slice();
+        updateQAList();
+        clearQAInput();
+        saveBasicInfo(true);
+    }
+    
+    function updateQAList() {
+        const container = document.getElementById('qaListContainer');
+        container.innerHTML = '';
+        qaPairs.forEach((qa, i) => {
+            const question = typeof qa === 'object' ? qa.question : (Array.isArray(qa) ? qa[0] : qa);
+            const item = document.createElement('div');
+            item.className = 'qa-list-item' + (i === selectedQAIndex ? ' selected' : '');
+            item.innerHTML = `<strong>Q${i + 1}:</strong> ${question.substring(0, 60)}${question.length > 60 ? '...' : ''}`;
+            item.onclick = () => selectQA(i);
+            item.ondblclick = () => editQA(i);
+            container.appendChild(item);
+        });
+    }
+    
+    function selectQA(index) {
+        selectedQAIndex = index;
+        document.querySelectorAll('.qa-list-item').forEach((item, i) => item.classList.toggle('selected', i === index));
+    }
+    
+    function editQA(index) {
+        const qa = qaPairs[index];
+        document.getElementById('question').value = typeof qa === 'object' ? qa.question : qa[0];
+        document.getElementById('answer').value = typeof qa === 'object' ? qa.answer : qa[1];
+        editingQAIndex = index;
+        document.getElementById('addQaBtn').innerHTML = '<i class="bi bi-pencil"></i> Update Q&A';
+        selectQA(index);
+    }
+    
+    function deleteSelectedQA() {
+        if (selectedQAIndex < 0) { alert('Please select a Q&A to delete.'); return; }
+        if (confirm('Are you sure you want to delete this Q&A?')) {
+            qaPairs.splice(selectedQAIndex, 1);
+            selectedQAIndex = -1; editingQAIndex = -1;
+            if (currentRespondentIndex >= 0) respondents[currentRespondentIndex].qa_pairs = qaPairs.slice();
+            updateQAList(); clearQAInput(); saveBasicInfo(true);
+        }
+    }
+    
+    function moveQAUp() {
+        if (selectedQAIndex > 0) {
+            [qaPairs[selectedQAIndex], qaPairs[selectedQAIndex - 1]] = [qaPairs[selectedQAIndex - 1], qaPairs[selectedQAIndex]];
+            selectedQAIndex--;
+            updateQAList(); selectQA(selectedQAIndex);
+        }
+    }
+    
+    function moveQADown() {
+        if (selectedQAIndex >= 0 && selectedQAIndex < qaPairs.length - 1) {
+            [qaPairs[selectedQAIndex], qaPairs[selectedQAIndex + 1]] = [qaPairs[selectedQAIndex + 1], qaPairs[selectedQAIndex]];
+            selectedQAIndex++;
+            updateQAList(); selectQA(selectedQAIndex);
+        }
+    }
+    
+    function clearQAInput() {
+        document.getElementById('question').value = '';
+        document.getElementById('answer').value = '';
+        editingQAIndex = -1;
+        document.getElementById('addQaBtn').innerHTML = '<i class="bi bi-plus-circle"></i> Add Q&A';
+    }
+    
+    function clearQASection() {
+        if (qaPairs.length === 0) return;
+        if (confirm('Are you sure you want to clear all Q&A?')) {
+            qaPairs = []; selectedQAIndex = -1; editingQAIndex = -1;
+            if (currentRespondentIndex >= 0) respondents[currentRespondentIndex].qa_pairs = [];
+            updateQAList(); clearQAInput();
+        }
+    }
+    
+    // =====================================================
+    // DATABASE FUNCTIONS
+    // =====================================================
+    function saveBasicInfo(silent = false) {
+        saveRespondentData();
+        const formData = new FormData();
+        formData.append('file_number', fileNumber);
+        formData.append('inquiry_type', inquiryType);
+        formData.append('basic_info', JSON.stringify({
+            subject: document.getElementById('subject').value,
+            date: document.getElementById('statementDate').value,
+            officer: document.getElementById('officer').value
+        }));
+        formData.append('respondents', JSON.stringify(respondents));
+        formData.append('qa_pairs', JSON.stringify(qaPairs));
+        
+        fetch('{{ url_for("files.save_statement") }}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.getElementById('csrfToken').value },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => { if (!silent && data.success) showToast('Statement information saved successfully!', 'success'); else if (!data.success) showToast(data.message, 'danger'); })
+        .catch(e => { if (!silent) showToast('Error saving statement.', 'danger'); });
+    }
+    
+    function loadBasicInfo() {
+        fetch(`/files/statement-generator/load/${encodeURIComponent(fileNumber)}/${inquiryType}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.data) {
+                if (data.data.basic_info) {
+                    document.getElementById('subject').value = data.data.basic_info.subject || '';
+                    document.getElementById('statementDate').value = data.data.basic_info.date || '';
+                    document.getElementById('officer').value = data.data.basic_info.officer || '';
+                }
+                if (data.data.respondents && data.data.respondents.length > 0) {
+                    respondents = data.data.respondents;
+                    const select = document.getElementById('respondentSelect');
+                    select.innerHTML = '';
+                    respondents.forEach((resp, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i; opt.textContent = getRespondentName(resp);
+                        select.appendChild(opt);
+                    });
+                    currentRespondentIndex = 0;
+                    select.value = 0;
+                    loadRespondentData(0);
+                    qaPairs = respondents[0].qa_pairs || [];
+                    updateQAList();
+                    document.getElementById('qaTime').value = respondents[0].qa_time || '';
+                }
+                showToast('File data loaded successfully!', 'success');
+            } else {
+                showToast('No data found for this file number.', 'warning');
+            }
+        })
+        .catch(e => showToast('Error loading data.', 'danger'));
+    }
+    
+    function testValues() {
+        alert(`Current Field Values:\n\nSubject: '${document.getElementById('subject').value}'\nDate: '${document.getElementById('statementDate').value}'\nOfficer: '${document.getElementById('officer').value}'\nFile Number: '${getFileNumber()}'`);
+    }
+    
+    function clearBasicInfo() {
+        document.getElementById('subject').value = '';
+        document.getElementById('statementDate').value = '';
+        document.getElementById('officer').value = '';
+    }
+    
+    function deleteDataFile() {
+        if (!confirm('Are you sure you want to delete the data file? This action cannot be undone.')) return;
+        fetch('{{ url_for("files.delete_statement") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrfToken').value },
+            body: JSON.stringify({ file_number: fileNumber, inquiry_type: inquiryType })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { showToast('Data file deleted successfully!', 'success'); clearBasicInfo(); clearRespondentInfo(); qaPairs = []; updateQAList(); }
+            else showToast(data.message, 'danger');
+        })
+        .catch(e => showToast('Error deleting data.', 'danger'));
+    }
+    
+    // =====================================================
+    // DOCUMENT GENERATION
+    // =====================================================
+    function generateDocument() {
+        if (currentRespondentIndex < 0) { alert('No respondent selected.'); return; }
+        if (qaPairs.length === 0) { alert('Please add at least one question and answer.'); return; }
+        saveRespondentData();
+        
+        fetch('{{ url_for("files.generate_statement_document") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrfToken').value },
+            body: JSON.stringify({
+                file_number: fileNumber, inquiry_type: inquiryType,
+                basic_info: { subject: document.getElementById('subject').value, date: document.getElementById('statementDate').value, officer: document.getElementById('officer').value, time: document.getElementById('qaTime').value },
+                respondent: respondents[currentRespondentIndex], qa_pairs: qaPairs
+            })
+        })
+        .then(response => response.ok ? response.blob() : response.json().then(d => { throw new Error(d.message); }))
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Statement_${fileNumber.replace(/[\/\\:*?"<>|]/g, '_')}.docx`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showToast('Document generated successfully!', 'success');
+        })
+        .catch(e => showToast(e.message || 'Error generating document.', 'danger'));
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 70px; right: 20px; z-index: 9999; min-width: 250px;';
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+{% endblock %}

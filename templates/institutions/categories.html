@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Institution Categories{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-gear"></i> Manage Institution Categories</h2>
+    <a href="{{ url_for('institutions.list_institutions') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Institutions
+    </a>
+</div>
+
+<div class="row">
+    <!-- Add New Category -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Category</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('institutions.add_category') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name</label>
+                        <input type="text" class="form-control" name="name" required 
+                               placeholder="Enter category name">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Add Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Categories List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Existing Categories ({{ categories|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Institutions</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr>
+                                <td>
+                                    <span id="cat-name-{{ cat.id or cat.name|replace(' ', '_') }}">{{ cat.name }}</span>
+                                    {% if cat.id %}
+                                    <form action="{{ url_for('institutions.edit_category', id=cat.id) }}" method="POST" 
+                                          id="edit-form-{{ cat.id }}" class="d-none">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control form-control-sm" name="name" 
+                                                   value="{{ cat.name }}" required>
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary" 
+                                                    onclick="cancelEdit('{{ cat.id }}')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ cat.count }}</span>
+                                </td>
+                                <td>
+                                    {% if cat.in_table %}
+                                    <span class="badge bg-success">In Table</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">In Use Only</span>
+                                    <form action="{{ url_for('institutions.add_category') }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="name" value="{{ cat.name }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Add to categories table">
+                                            <i class="bi bi-plus-circle"></i> Add
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cat.id %}
+                                    <button type="button" class="btn btn-sm btn-warning" 
+                                            onclick="startEdit('{{ cat.id }}')" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    {% if cat.count == 0 %}
+                                    <form action="{{ url_for('institutions.delete_category', id=cat.id) }}" 
+                                          method="POST" class="d-inline"
+                                          onsubmit="return confirm('Delete category {{ cat.name }}?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-danger" disabled 
+                                            title="Cannot delete - {{ cat.count }} institutions use this category">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No categories found. Add a new category to get started.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startEdit(id) {
+    document.getElementById('cat-name-' + id).classList.add('d-none');
+    document.getElementById('edit-form-' + id).classList.remove('d-none');
+}
+
+function cancelEdit(id) {
+    document.getElementById('cat-name-' + id).classList.remove('d-none');
+    document.getElementById('edit-form-' + id).classList.add('d-none');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Vigilance FMS{% endblock %}
+
+{% block content %}
+<!-- Main Tabs Navigation -->
+<div class="main-tabs-container mb-4">
+    <div class="row g-2">
+        <div class="col">
+            <a href="{{ url_for('main.dashboard') }}" class="tab-card active">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('files.file_management') }}" class="tab-card">
+                <i class="bi bi-folder"></i>
+                <span>File Management</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.index') }}" class="tab-card">
+                <i class="bi bi-arrows-move"></i>
+                <span>File Movements</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('disciplinary.index') }}" class="tab-card">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Disciplinary Action</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.follow_up_files') }}" class="tab-card">
+                <i class="bi bi-calendar-check"></i>
+                <span>Follow-up Files</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('employees.list_employees') }}" class="tab-card">
+                <i class="bi bi-people"></i>
+                <span>Employee Details</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('reports.index') }}" class="tab-card">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('rti.rti_index') }}" class="tab-card">
+                <i class="bi bi-info-circle"></i>
+                <span>RTI Info</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
+                <i class="bi bi-building"></i>
+                <span>Institutions</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content -->
+<div id="dashboard-content">
+        <!-- Welcome Message -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <p class="text-muted">Welcome, <strong>{{ current_user.username }}</strong>! Here's an overview of your system.</p>
+            </div>
+        </div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <!-- Total Files -->
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Total Files</h6>
+                        <h2 class="card-title mb-0">{{ stats.total_files }}</h2>
+                    </div>
+                    <i class="bi bi-folder fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('files.list_files') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Files -->
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Pending Files</h6>
+                        <h2 class="card-title mb-0">{{ stats.pending_files }}</h2>
+                    </div>
+                    <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('reports.pending_files') }}" class="text-dark text-decoration-none">
+                    View pending <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Disciplinary Actions -->
+    <div class="col-md-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Disciplinary Actions</h6>
+                        <h2 class="card-title mb-0">{{ stats.disciplinary_actions }}</h2>
+                    </div>
+                    <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('disciplinary.list_disciplinary_actions') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- RTI Applications -->
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">RTI Applications</h6>
+                        <h2 class="card-title mb-0">{{ stats.rti_applications }}</h2>
+                    </div>
+                    <i class="bi bi-info-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('rti.rti_index') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second Row -->
+<div class="row g-4 mb-4">
+    <!-- Employees -->
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Employees</h6>
+                        <h2 class="card-title mb-0">{{ stats.employees }}</h2>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('employees.list_employees') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Institutions -->
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Institutions</h6>
+                        <h2 class="card-title mb-0">{{ stats.institutions }}</h2>
+                    </div>
+                    <i class="bi bi-building fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('institutions.list_institutions') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Court Cases -->
+    <div class="col-md-3">
+        <div class="card bg-dark text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Court Cases</h6>
+                        <h2 class="card-title mb-0">{{ stats.court_cases }}</h2>
+                    </div>
+                    <i class="bi bi-bank fs-1 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('reports.court_cases') }}" class="text-white text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inquiries -->
+    <div class="col-md-3">
+        <div class="card border-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Inquiries</h6>
+                        <h2 class="card-title mb-0">{{ stats.inquiries }}</h2>
+                    </div>
+                    <i class="bi bi-search fs-1 text-primary opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('reports.inquiries') }}" class="text-primary text-decoration-none">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Files -->
+<div class="row g-4">
+    <!-- Recent Files -->
+    <div class="col-12">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recently Updated Files</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>File Number</th>
+                                <th>Subject</th>
+                                <th>Last Updated</th>
+                                <th>Follow-up Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in recent_files %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('files.view_file', file_number=file.file_number) }}">
+                                        {{ file.file_number }}
+                                    </a>
+                                </td>
+                                <td>{{ file.subject[:30] + '...' if file.subject and file.subject|length > 30 else file.subject or '-' }}</td>
+                                <td><small class="text-muted">{{ file.last_modified or '-' }}</small></td>
+                                <td>{{ file.follow_up_date or '-' }}</td>
+                                <td>
+                                    {% if file.is_closed == 1 %}
+                                    <span class="badge bg-success">Closed</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">{{ file.status or 'Pending' }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No recently updated files</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div><!-- End Dashboard Content -->
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Navy Blue Tab Cards */
+    .main-tabs-container {
+        padding: 15px 0;
+    }
+    .tab-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 10px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 10px;
+        color: #fff;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        min-height: 80px;
+        box-shadow: 0 3px 10px rgba(30, 60, 114, 0.3);
+    }
+    .tab-card:hover {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card.active {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card i {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+    .tab-card span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    /* Modern Stats Cards */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .card-header {
+        background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%) !important;
+        border: none;
+        border-radius: 12px 12px 0 0 !important;
+        color: #fff !important;
+    }
+    .card-header * {
+        color: #fff !important;
+    }
+    
+    /* Modern Buttons */
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .btn-outline-primary {
+        color: #0077b6;
+        border-color: #0077b6;
+    }
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
+        border-color: #0077b6;
+        color: #fff;
+    }
+    
+    /* Cyan themed stat cards */
+    .bg-primary {
+        background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%) !important;
+    }
+    .bg-success {
+        background: linear-gradient(135deg, #134e5e 0%, #71b280 100%) !important;
+    }
+    .bg-info {
+        background: linear-gradient(135deg, #48cae4 0%, #90e0ef 100%) !important;
+    }
+    .bg-warning {
+        background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important;
+    }
+    .bg-danger {
+        background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%) !important;
+    }
+    .bg-secondary {
+        background: linear-gradient(135deg, #023e8a 0%, #0096c7 100%) !important;
+    }
+    .bg-dark {
+        background: linear-gradient(135deg, #03045e 0%, #023e8a 100%) !important;
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .main-tabs-container .row {
+            flex-wrap: wrap;
+        }
+        .main-tabs-container .col {
+            flex: 0 0 33.33%;
+            max-width: 33.33%;
+            margin-bottom: 8px;
+        }
+        .tab-card {
+            min-height: 70px;
+            padding: 10px 5px;
+        }
+        .tab-card i {
+            font-size: 1.2rem;
+        }
+        .tab-card span {
+            font-size: 0.65rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .main-tabs-container .col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+</style>
+{% endblock %}

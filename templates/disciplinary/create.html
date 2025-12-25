@@ -1,0 +1,817 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplinary Action Details - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Disciplinary Action Details</h2>
+        {% if file_number %}
+        <div class="mt-2">
+            <span class="badge bg-primary fs-6 px-3 py-2">
+                <i class="bi bi-folder2-open"></i> Currently Loaded File: <strong>{{ file_number }}</strong>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('files.view_file', file_number=file_number) if file_number else url_for('disciplinary.list_disciplinary_actions') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+
+<!-- Existing DA Entries Table (at top like desktop) -->
+{% if file_number %}
+<div class="card border-info mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Existing Disciplinary Action Entries for this File</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="existingDATable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>PEN</th>
+                        <th>Designation</th>
+                        <th>MOC Issued</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="existingDABody">
+                    {% if existing_entries %}
+                        {% for entry in existing_entries %}
+                        <tr data-id="{{ entry.id }}">
+                            <td>{{ entry.employee_name or '-' }}</td>
+                            <td>{{ entry.pen or '-' }}</td>
+                            <td>{{ entry.designation or '-' }}</td>
+                            <td>{{ entry.moc_issued or '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('disciplinary.view_action', id=entry.id) }}" class="btn btn-sm btn-info" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-warning" onclick="loadEntry({{ entry.id }})" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEntry({{ entry.id }})" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No DA entries found for this file.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+            <button type="button" class="btn btn-success btn-sm" onclick="clearForm()">
+                <i class="bi bi-plus-circle"></i> Add New Employee
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Disciplinary Action Details Entry Form -->
+<div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Disciplinary Action Details Entry Form</h5>
+    </div>
+    <div class="card-body">
+        <form id="daForm" action="{{ url_for('disciplinary.create_disciplinary_action') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="file_number" class="form-label fw-bold">File Number <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control bg-light" id="file_number" name="file_number" value="{{ file_number }}" readonly>
+                </div>
+            </div>
+            
+            <!-- Three Column Layout like desktop -->
+            <div class="row">
+                <!-- Column 1 -->
+                <div class="col-md-4">
+                    <!-- Unauthorised/Others -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="unauthorised_others_check" onchange="toggleField('unauthorised_others')">
+                            Unauthorised/Others
+                        </label>
+                        <select class="form-select form-select-sm" id="unauthorised_others" name="unauthorised_others" disabled onchange="toggleUnauthorisedFields()">
+                            <option value="Others">Others</option>
+                            <option value="Unauthorised">Unauthorised</option>
+                        </select>
+                    </div>
+                    
+                    <!-- PEN -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="pen_check" onchange="toggleField('pen')">
+                            PEN
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="pen" name="pen" disabled onblur="autoPopulateEmployee()">
+                    </div>
+                    
+                    <!-- Name of Employee -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="employee_name_check" onchange="toggleField('employee_name')">
+                            Name of Employee
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="employee_name" name="employee_name" disabled>
+                    </div>
+                    
+                    <!-- Designation -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="designation_check" onchange="toggleField('designation')">
+                            Designation
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="designation" name="designation" disabled>
+                    </div>
+                    
+                    <!-- Institution -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="institution_check" onchange="toggleField('institution')">
+                            Institution
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="institution" name="institution" disabled>
+                    </div>
+                    
+                    <!-- Entry Cadre -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="entry_cadre_check" onchange="toggleField('entry_cadre')">
+                            Entry Cadre
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="entry_cadre" name="entry_cadre" disabled>
+                    </div>
+                    
+                    <!-- Joining Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="joining_date_check" onchange="toggleField('joining_date')">
+                            Joining Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="joining_date" name="joining_date" disabled>
+                    </div>
+                    
+                    <!-- Service Regularised -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="service_regularised_check" onchange="toggleField('service_regularised')">
+                            Service Regularised
+                        </label>
+                        <select class="form-select form-select-sm" id="service_regularised" name="service_regularised" disabled>
+                            <option value="NO">NO</option>
+                            <option value="YES">YES</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Date of Regularisation -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="date_regularisation_check" onchange="toggleField('date_regularisation')">
+                            Date of Regularisation
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="date_regularisation" name="date_regularisation" disabled>
+                    </div>
+                    
+                    <!-- Probation -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="probation_check" onchange="toggleField('probation')">
+                            Probation
+                        </label>
+                        <select class="form-select form-select-sm" id="probation" name="probation" disabled>
+                            <option value="Not Declared">Not Declared</option>
+                            <option value="Declared">Declared</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Date of Probation Declared -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="date_probation_declared_check" onchange="toggleField('date_probation_declared')">
+                            Date of Probation Declared
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="date_probation_declared" name="date_probation_declared" disabled>
+                    </div>
+                    
+                    <!-- Date of Superannuation -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="date_superannuation_check" onchange="toggleField('date_superannuation')">
+                            Date of Superannuation
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="date_superannuation" name="date_superannuation" disabled>
+                    </div>
+                </div>
+                
+                <!-- Column 2 -->
+                <div class="col-md-4">
+                    <!-- Probation Termination Notice -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="probation_termination_notice_check" onchange="toggleField('probation_termination_notice')">
+                            Probation Termination Notice
+                        </label>
+                        <select class="form-select form-select-sm" id="probation_termination_notice" name="probation_termination_notice" disabled>
+                            <option value="Not issued">Not issued</option>
+                            <option value="Issued">Issued</option>
+                        </select>
+                    </div>
+                    
+                    <!-- PTN Reply Received -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="ptn_reply_received_check" onchange="toggleField('ptn_reply_received')">
+                            PTN Reply Received
+                        </label>
+                        <select class="form-select form-select-sm" id="ptn_reply_received" name="ptn_reply_received" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    
+                    <!-- PTN Reply Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="ptn_reply_date_check" onchange="toggleField('ptn_reply_date')">
+                            PTN Reply Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="ptn_reply_date" name="ptn_reply_date" disabled>
+                    </div>
+                    
+                    <!-- Action Taking Office -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="action_taking_office_check" onchange="toggleField('action_taking_office')">
+                            Action Taking Office
+                        </label>
+                        <select class="form-select form-select-sm" id="action_taking_office" name="action_taking_office" disabled>
+                            <option value="DMO">DMO</option>
+                            <option value="DHS">DHS</option>
+                        </select>
+                    </div>
+                    
+                    <!-- MOC Issued -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_issued_check" onchange="toggleField('moc_issued')">
+                            MOC Issued
+                        </label>
+                        <select class="form-select form-select-sm" id="moc_issued" name="moc_issued" disabled>
+                            <option value="Not Issued">Not Issued</option>
+                            <option value="Issued">Issued</option>
+                        </select>
+                    </div>
+                    
+                    <!-- MOC issued by -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_issued_by_check" onchange="toggleField('moc_issued_by')">
+                            MOC issued by
+                        </label>
+                        <select class="form-select form-select-sm" id="moc_issued_by" name="moc_issued_by" disabled>
+                            <option value="DMO">DMO</option>
+                            <option value="DHS">DHS</option>
+                            <option value="Govt.">Govt.</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Major/Minor -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="major_minor_check" onchange="toggleField('major_minor')">
+                            Major/Minor
+                        </label>
+                        <select class="form-select form-select-sm" id="major_minor" name="major_minor" disabled>
+                            <option value="Minor">Minor</option>
+                            <option value="Major">Major</option>
+                        </select>
+                    </div>
+                    
+                    <!-- MOC Number -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_number_check" onchange="toggleField('moc_number')">
+                            MOC Number
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="moc_number" name="moc_number" value="{{ file_number or '' }}" disabled>
+                    </div>
+                    
+                    <!-- MOC Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_date_check" onchange="toggleField('moc_date')">
+                            MOC Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="moc_date" name="moc_date" disabled>
+                    </div>
+                    
+                    <!-- MOC Receipt Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_receipt_date_check" onchange="toggleField('moc_receipt_date')">
+                            MOC Receipt Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="moc_receipt_date" name="moc_receipt_date" disabled>
+                    </div>
+                    
+                    <!-- MOC Received at DMO Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_received_at_dmo_date_check" onchange="toggleField('moc_received_at_dmo_date')">
+                            MOC Received at DMO Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="moc_received_at_dmo_date" name="moc_received_at_dmo_date" disabled>
+                    </div>
+                    
+                    <!-- MOC Received Letter No. -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_received_letter_no_check" onchange="toggleField('moc_received_letter_no')">
+                            MOC Received Letter No.
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="moc_received_letter_no" name="moc_received_letter_no" disabled>
+                    </div>
+                    
+                    <!-- MOC Receipt Sent to DHS Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="moc_sent_to_dhs_date_check" onchange="toggleField('moc_sent_to_dhs_date')">
+                            MOC Receipt Sent to DHS Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="moc_sent_to_dhs_date" name="moc_sent_to_dhs_date" disabled>
+                    </div>
+                    
+                    <!-- WSD Received Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="wsd_received_date_check" onchange="toggleField('wsd_received_date')">
+                            WSD Received Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="wsd_received_date" name="wsd_received_date" disabled>
+                    </div>
+                </div>
+                
+                <!-- Column 3 -->
+                <div class="col-md-4">
+                    <!-- WSD Letter No. -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="wsd_letter_no_check" onchange="toggleField('wsd_letter_no')">
+                            WSD Letter No.
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="wsd_letter_no" name="wsd_letter_no" disabled>
+                    </div>
+                    
+                    <!-- WSD Sent to DHS Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="wsd_sent_to_dhs_date_check" onchange="toggleField('wsd_sent_to_dhs_date')">
+                            WSD Sent to DHS Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="wsd_sent_to_dhs_date" name="wsd_sent_to_dhs_date" disabled>
+                    </div>
+                    
+                    <!-- WSD Sent Letter No. -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="wsd_sent_letter_no_check" onchange="toggleField('wsd_sent_letter_no')">
+                            WSD Sent Letter No.
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="wsd_sent_letter_no" name="wsd_sent_letter_no" disabled>
+                    </div>
+                    
+                    <!-- SCN Issued Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_issued_date_check" onchange="toggleField('scn_issued_date')">
+                            SCN Issued Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_issued_date" name="scn_issued_date" disabled>
+                    </div>
+                    
+                    <!-- SCN issued by -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_issued_by_check" onchange="toggleField('scn_issued_by')">
+                            SCN issued by
+                        </label>
+                        <select class="form-select form-select-sm" id="scn_issued_by" name="scn_issued_by" disabled>
+                            <option value="DMO">DMO</option>
+                            <option value="DHS">DHS</option>
+                            <option value="Govt.">Govt.</option>
+                        </select>
+                    </div>
+                    
+                    <!-- SCN Receipt Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_receipt_date_check" onchange="toggleField('scn_receipt_date')">
+                            SCN Receipt Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_receipt_date" name="scn_receipt_date" disabled>
+                    </div>
+                    
+                    <!-- SCN Receipt Sent to DHS Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_receipt_sent_to_dhs_date_check" onchange="toggleField('scn_receipt_sent_to_dhs_date')">
+                            SCN Receipt Sent to DHS Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_receipt_sent_to_dhs_date" name="scn_receipt_sent_to_dhs_date" disabled>
+                    </div>
+                    
+                    <!-- SCN Received at DMO Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_received_at_dmo_date_check" onchange="toggleField('scn_received_at_dmo_date')">
+                            SCN Received at DMO Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_received_at_dmo_date" name="scn_received_at_dmo_date" disabled>
+                    </div>
+                    
+                    <!-- SCN Reply Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_reply_date_check" onchange="toggleField('scn_reply_date')">
+                            SCN Reply Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_reply_date" name="scn_reply_date" disabled>
+                    </div>
+                    
+                    <!-- SCN Reply sent to DHS Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="scn_reply_sent_to_dhs_date_check" onchange="toggleField('scn_reply_sent_to_dhs_date')">
+                            SCN Reply sent to DHS Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="scn_reply_sent_to_dhs_date" name="scn_reply_sent_to_dhs_date" disabled>
+                    </div>
+                    
+                    <!-- DHS File Number -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="dhs_file_number_check" onchange="toggleField('dhs_file_number')">
+                            DHS File Number
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="dhs_file_number" name="dhs_file_number" disabled>
+                    </div>
+                    
+                    <!-- Finalised Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="finalised_date_check" onchange="toggleField('finalised_date')">
+                            Finalised Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="finalised_date" name="finalised_date" disabled>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Unauthorised Absentees Details Section (shown only when Unauthorised is selected) -->
+            <div class="card border-primary mt-3" id="unauthorisedSection" style="display: none;">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-person-x"></i> Unauthorised Absentees Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- UA Column 1 -->
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="date_from_ua_check" onchange="toggleField('date_from_ua')">
+                                    Date from (UA)
+                                </label>
+                                <input type="date" class="form-control form-control-sm" id="date_from_ua" name="date_from_ua" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="willingness_check" onchange="toggleField('willingness')">
+                                    Willingness
+                                </label>
+                                <select class="form-select form-select-sm" id="willingness" name="willingness" disabled>
+                                    <option value="Not Given">Not Given</option>
+                                    <option value="Given">Given</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="bond_submitted_check" onchange="toggleField('bond_submitted')">
+                                    Whether bond submitted
+                                </label>
+                                <select class="form-select form-select-sm" id="bond_submitted" name="bond_submitted" disabled>
+                                    <option value="NO">NO</option>
+                                    <option value="YES">YES</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="communication_address_check" onchange="toggleField('communication_address')">
+                                    Communication Address
+                                </label>
+                                <textarea class="form-control form-control-sm" id="communication_address" name="communication_address" rows="2" disabled></textarea>
+                            </div>
+                        </div>
+                        <!-- UA Column 2 -->
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="date_reported_to_dmo_check" onchange="toggleField('date_reported_to_dmo')">
+                                    Date - reported to DMO
+                                </label>
+                                <input type="date" class="form-control form-control-sm" id="date_reported_to_dmo" name="date_reported_to_dmo" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="letter_no_reported_to_dmo_check" onchange="toggleField('letter_no_reported_to_dmo')">
+                                    Letter No. - reported to DMO
+                                </label>
+                                <input type="text" class="form-control form-control-sm" id="letter_no_reported_to_dmo" name="letter_no_reported_to_dmo" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="date_reported_to_dhs_check" onchange="toggleField('date_reported_to_dhs')">
+                                    Date - reported to DHS
+                                </label>
+                                <input type="date" class="form-control form-control-sm" id="date_reported_to_dhs" name="date_reported_to_dhs" disabled>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="letter_no_reported_to_dhs_check" onchange="toggleField('letter_no_reported_to_dhs')">
+                                    Letter No. - reported to DHS
+                                </label>
+                                <input type="text" class="form-control form-control-sm" id="letter_no_reported_to_dhs" name="letter_no_reported_to_dhs" value="{{ file_number or '' }}" disabled>
+                            </div>
+                        </div>
+                        <!-- UA Column 3 -->
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="weather_reported_to_dhs_check" onchange="toggleField('weather_reported_to_dhs')">
+                                    Weather Reported to DHS
+                                </label>
+                                <select class="form-select form-select-sm" id="weather_reported_to_dhs" name="weather_reported_to_dhs" disabled>
+                                    <option value="">Select</option>
+                                    <option value="YES">YES</option>
+                                    <option value="NO">NO</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="present_status_check" onchange="toggleField('present_status')">
+                                    Present Status
+                                </label>
+                                <select class="form-select form-select-sm" id="present_status" name="present_status" disabled>
+                                    <option value="Absent">Absent</option>
+                                    <option value="Rejoined">Rejoined</option>
+                                    <option value="Willingness given">Willingness given</option>
+                                    <option value="Removed and Finalised">Removed and Finalised</option>
+                                    <option value="Rejoined and Finalised">Rejoined and Finalised</option>
+                                    <option value="Retired">Retired</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    <input type="checkbox" class="form-check-input me-1" id="disc_action_status_check" onchange="toggleField('disc_action_status')">
+                                    Disc. Action Status
+                                </label>
+                                <textarea class="form-control form-control-sm" id="disc_action_status" name="disc_action_status" rows="2" disabled></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-success" onclick="clearForm()">
+                    <i class="bi bi-plus-circle"></i> Add New Employee
+                </button>
+                <button type="submit" class="btn btn-primary" id="saveBtn">
+                    <i class="bi bi-check-circle"></i> Save Employee Details
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this DA entry?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentEditingId = null;
+    
+    // Enable all fields before form submission so they get sent
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('daForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Enable all disabled fields temporarily for submission
+                document.querySelectorAll('#daForm input:disabled, #daForm select:disabled, #daForm textarea:disabled').forEach(field => {
+                    field.disabled = false;
+                });
+            });
+        }
+    });
+    
+    function toggleField(fieldName) {
+        const checkbox = document.getElementById(fieldName + '_check');
+        const field = document.getElementById(fieldName);
+        if (field) {
+            field.disabled = !checkbox.checked;
+        }
+    }
+    
+    function toggleUnauthorisedFields() {
+        const select = document.getElementById('unauthorised_others');
+        const section = document.getElementById('unauthorisedSection');
+        if (select && section) {
+            section.style.display = select.value === 'Unauthorised' ? 'block' : 'none';
+        }
+    }
+    
+    function clearForm() {
+        document.getElementById('daForm').reset();
+        currentEditingId = null;
+        document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Save Employee Details';
+        document.getElementById('daForm').action = "{{ url_for('disciplinary.create_disciplinary_action') }}";
+        
+        // Disable all fields
+        document.querySelectorAll('input[type="checkbox"][id$="_check"]').forEach(cb => {
+            cb.checked = false;
+            toggleField(cb.id.replace('_check', ''));
+        });
+        
+        // Hide unauthorised section
+        document.getElementById('unauthorisedSection').style.display = 'none';
+        
+        // Clear table highlighting
+        document.querySelectorAll('#existingDABody tr').forEach(row => {
+            row.classList.remove('table-primary');
+        });
+    }
+    
+    function loadEntry(id) {
+        console.log('loadEntry called with id:', id);
+        currentEditingId = id;
+        
+        // First clear the form
+        document.getElementById('daForm').reset();
+        
+        // Disable all fields first
+        document.querySelectorAll('input[type="checkbox"][id$="_check"]').forEach(cb => {
+            cb.checked = false;
+            const fieldName = cb.id.replace('_check', '');
+            const field = document.getElementById(fieldName);
+            if (field) {
+                field.disabled = true;
+                field.value = '';
+            }
+        });
+        
+        const url = "/disciplinary/" + id + "/json";
+        console.log('Fetching URL:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                if (data.success) {
+                    const entry = data.entry;
+                    
+                    // For each field, check if it has a value and enable it
+                    const fields = [
+                        'unauthorised_others', 'pen', 'employee_name', 'designation', 'institution',
+                        'entry_cadre', 'joining_date', 'service_regularised', 'date_regularisation',
+                        'probation', 'date_probation_declared', 'date_superannuation',
+                        'probation_termination_notice', 'ptn_reply_received', 'ptn_reply_date', 'action_taking_office',
+                        'moc_issued', 'moc_issued_by', 'major_minor', 'moc_number', 'moc_date',
+                        'moc_receipt_date', 'moc_received_at_dmo_date', 'moc_received_letter_no',
+                        'moc_sent_to_dhs_date', 'wsd_received_date', 'wsd_letter_no',
+                        'wsd_sent_to_dhs_date', 'wsd_sent_letter_no', 'scn_issued_date',
+                        'scn_issued_by', 'scn_receipt_date', 'scn_receipt_sent_to_dhs_date', 'scn_received_at_dmo_date',
+                        'scn_reply_date', 'scn_reply_sent_to_dhs_date', 'dhs_file_number', 'finalised_date',
+                        // UA fields
+                        'date_from_ua', 'willingness', 'bond_submitted', 'communication_address',
+                        'date_reported_to_dmo', 'letter_no_reported_to_dmo', 'date_reported_to_dhs',
+                        'letter_no_reported_to_dhs', 'weather_reported_to_dhs', 'present_status', 'disc_action_status'
+                    ];
+                    
+                    fields.forEach(field => {
+                        const checkbox = document.getElementById(field + '_check');
+                        const input = document.getElementById(field);
+                        if (checkbox && input) {
+                            if (entry[field]) {
+                                checkbox.checked = true;
+                                input.disabled = false;
+                                input.value = entry[field];
+                            }
+                        }
+                    });
+                    
+                    // Show unauthorised section if needed
+                    toggleUnauthorisedFields();
+                    
+                    // Update form action
+                    document.getElementById('daForm').action = "/disciplinary/" + id + "/edit-da";
+                    document.getElementById('saveBtn').innerHTML = '<i class="bi bi-check-circle"></i> Update Employee Details';
+                    
+                    // Highlight row
+                    document.querySelectorAll('#existingDABody tr').forEach(row => {
+                        row.classList.remove('table-primary');
+                        if (row.dataset.id == id) {
+                            row.classList.add('table-primary');
+                        }
+                    });
+                    
+                    // Scroll to form
+                    document.querySelector('.card.border-primary').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Error loading entry: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading entry data');
+            });
+    }
+    
+    function deleteEntry(id) {
+        console.log('deleteEntry called with id:', id);
+        document.getElementById('deleteForm').action = "/disciplinary/" + id + "/delete";
+        console.log('Delete form action set to:', document.getElementById('deleteForm').action);
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+    
+    function autoPopulateEmployee() {
+        const pen = document.getElementById('pen').value.trim();
+        if (pen) {
+            fetch(`/disciplinary/api/get-employee/${pen}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.employee) {
+                        // Enable and populate fields
+                        if (data.employee.name) {
+                            document.getElementById('employee_name_check').checked = true;
+                            document.getElementById('employee_name').disabled = false;
+                            document.getElementById('employee_name').value = data.employee.name;
+                        }
+                        if (data.employee.designation) {
+                            document.getElementById('designation_check').checked = true;
+                            document.getElementById('designation').disabled = false;
+                            document.getElementById('designation').value = data.employee.designation;
+                        }
+                        if (data.employee.institution) {
+                            document.getElementById('institution_check').checked = true;
+                            document.getElementById('institution').disabled = false;
+                            document.getElementById('institution').value = data.employee.institution;
+                        }
+                        if (data.employee.joining_date) {
+                            document.getElementById('joining_date_check').checked = true;
+                            document.getElementById('joining_date').disabled = false;
+                            document.getElementById('joining_date').value = data.employee.joining_date;
+                        }
+                    }
+                })
+                .catch(error => console.log('Employee lookup failed:', error));
+        }
+    }
+</script>
+{% endblock %}

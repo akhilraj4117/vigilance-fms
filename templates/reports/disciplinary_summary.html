@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplinary Summary - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-exclamation-triangle"></i> Disciplinary Actions Summary</h2>
+    <div>
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.disciplinary_summary') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select class="form-select" name="year">
+                    <option value="">All Years</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if year == y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{{ url_for('reports.disciplinary_summary') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.total }}</h3>
+                <p class="mb-0">Total Actions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.major }}</h3>
+                <p class="mb-0">Major Penalties</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.minor }}</h3>
+                <p class="mb-0">Minor Penalties</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.pending }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Type Summary -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Action Type Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Action Type</th>
+                        <th class="text-center">Penalty Category</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">Implemented</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in action_type_summary %}
+                    <tr>
+                        <td>{{ action.action_type }}</td>
+                        <td class="text-center">
+                            {% if action.is_major %}
+                            <span class="badge bg-danger">Major</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Minor</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ action.total }}</td>
+                        <td class="text-center">{{ action.pending }}</td>
+                        <td class="text-center">{{ action.implemented }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Status Distribution -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for status in status_summary %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ status.status }}
+                        <span class="badge bg-primary rounded-pill">{{ status.count }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No data available</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Institution-wise</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for inst in institution_summary[:10] %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ inst.institution[:40] }}{% if inst.institution|length > 40 %}...{% endif %}
+                        <span class="badge bg-secondary rounded-pill">{{ inst.count }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No data available</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Actions -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Actions</h5>
+        <a href="{{ url_for('disciplinary.list_actions') }}" class="btn btn-sm btn-outline-primary">
+            View All
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Action Type</th>
+                        <th>Penalty</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in recent_actions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('disciplinary.view_action', id=action.id) }}">
+                                {{ action.employee_name }}
+                            </a>
+                        </td>
+                        <td>{{ action.action_type }}</td>
+                        <td>
+                            {% if action.is_major == 'Yes' %}
+                            <span class="badge bg-danger">Major</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Minor</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ action.action_date or '-' }}</td>
+                        <td>
+                            {% if action.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">{{ action.status }}</span>
+                            {% elif action.status == 'Implemented' %}
+                            <span class="badge bg-success">{{ action.status }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ action.status or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No recent actions</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

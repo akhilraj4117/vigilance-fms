@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Migrated Files - File Movements{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-cloud-upload"></i> Migrated Files</h2>
+    
+    <!-- Sub-tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="fileMovementsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.search_files') }}">
+                <i class="bi bi-search"></i> Search Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pr_entries') }}">
+                <i class="bi bi-journal-text"></i> View PR Entries
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.physical_files') }}">
+                <i class="bi bi-archive"></i> Physical Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pending_files') }}">
+                <i class="bi bi-clock-history"></i> Pending Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" href="{{ url_for('file_movements.migrated_files') }}">
+                <i class="bi bi-cloud-upload"></i> Migrated Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.speak_files') }}">
+                <i class="bi bi-megaphone"></i> Speak
+            </a>
+        </li>
+    </ul>
+    
+    <!-- Actions -->
+    <div class="mb-3 d-flex gap-2">
+        <a href="{{ url_for('file_movements.migrated_files') }}" class="btn btn-primary" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </a>
+    </div>
+    
+    <!-- Migrated Files Table (matching desktop app) -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Migrated Files ({{ migrations|length }} files)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 150px;">Physical File Number</th>
+                            <th style="width: 200px;">E-Office File No.</th>
+                            <th>Subject</th>
+                            <th>Details</th>
+                            <th style="width: 120px;">Migrated Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for migration in migrations %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=migration.physical_file_number) }}" 
+                                   title="Original Physical File: {{ migration.physical_file_number }}&#10;Migrated on: {{ migration.migration_date or 'Unknown' }}">
+                                    {{ migration.physical_file_number or '-' }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=migration.eoffice_file_number) }}"
+                                   title="E-Office File: {{ migration.eoffice_file_number }}&#10;Migrated from: {{ migration.physical_file_number }}">
+                                    {{ migration.eoffice_file_number or '-' }}
+                                </a>
+                            </td>
+                            <td title="{{ migration.subject or '' }}">
+                                {{ (migration.subject or '-')[:50] }}{{ '...' if migration.subject and migration.subject|length > 50 else '' }}
+                            </td>
+                            <td title="{{ migration.details or '' }}">
+                                {{ (migration.details or '-')[:50] }}{{ '...' if migration.details and migration.details|length > 50 else '' }}
+                            </td>
+                            <td title="Migration Date: {{ migration.migration_date }}&#10;From: {{ migration.physical_file_number }}&#10;To: {{ migration.eoffice_file_number }}">
+                                {{ migration.migration_date or '-' }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No migrated files found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.migrated_files', page=pagination.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+                            <a class="page-link" href="{{ url_for('file_movements.migrated_files', page=p) }}">{{ p }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.migrated_files', page=pagination.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

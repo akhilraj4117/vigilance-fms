@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-search"></i> Search Results</h2>
+        <p class="text-muted">Showing results for: <strong>"{{ query }}"</strong></p>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('main.search') }}" method="GET" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search files, employees, disciplinary actions...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Files Results -->
+{% if results.files %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-folder"></i> Files ({{ results.files|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>File Number</th>
+                        <th>Category</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in results.files %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=file.file_number) }}">
+                                {{ file.file_number }}
+                            </a>
+                        </td>
+                        <td>{{ file.category or '-' }}</td>
+                        <td>{{ file.subject[:60] + '...' if file.subject and file.subject|length > 60 else file.subject or '-' }}</td>
+                        <td>
+                            {% if file.status == 'Closed' %}
+                            <span class="badge bg-success">Closed</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Employees Results -->
+{% if results.employees %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-people"></i> Employees ({{ results.employees|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>PEN</th>
+                        <th>Designation</th>
+                        <th>Institution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in results.employees %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('employees.view_employee', id=emp.id) }}">
+                                {{ emp.name }}
+                            </a>
+                        </td>
+                        <td>{{ emp.pen or '-' }}</td>
+                        <td>{{ emp.designation or '-' }}</td>
+                        <td>{{ emp.institution_name or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Disciplinary Actions Results -->
+{% if results.disciplinary_actions %}
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Disciplinary Actions ({{ results.disciplinary_actions|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>File Number</th>
+                        <th>Employee</th>
+                        <th>PEN</th>
+                        <th>Institution</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for da in results.disciplinary_actions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('disciplinary.view_action', id=da.id) }}">
+                                {{ da.file_number }}
+                            </a>
+                        </td>
+                        <td>{{ da.employee_name or '-' }}</td>
+                        <td>{{ da.pen or '-' }}</td>
+                        <td>{{ da.institution or '-' }}</td>
+                        <td>{{ da.major_minor or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- RTI Applications Results -->
+{% if results.rti_applications %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> RTI Applications ({{ results.rti_applications|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>File Number</th>
+                        <th>Applicant</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rti in results.rti_applications %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('rti.view_rti', id=rti.id) }}">
+                                {{ rti.file_number }}
+                            </a>
+                        </td>
+                        <td>{{ rti.applicant_name or '-' }}</td>
+                        <td>{{ rti.subject[:50] + '...' if rti.subject and rti.subject|length > 50 else rti.subject or '-' }}</td>
+                        <td>{{ rti.status or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- No Results -->
+{% if not results.files and not results.employees and not results.disciplinary_actions and not results.rti_applications %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No results found for "<strong>{{ query }}</strong>". Try a different search term.
+</div>
+{% endif %}
+{% endblock %}

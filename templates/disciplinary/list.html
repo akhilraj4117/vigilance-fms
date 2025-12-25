@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplinary Actions - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-exclamation-triangle"></i> Disciplinary Actions</h2>
+    <a href="{{ url_for('disciplinary.create_disciplinary_action') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> New Action
+    </a>
+</div>
+
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('disciplinary.list_disciplinary_actions') }}" method="GET" class="row g-3">
+            <div class="col-md-8">
+                <input type="text" class="form-control" name="q" value="{{ search_query }}" 
+                       placeholder="Search by file number, PEN, name, institution...">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <a href="{{ url_for('disciplinary.list_disciplinary_actions') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header">
+        Total: {{ pagination.total }} disciplinary actions
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl. No.</th>
+                        <th>Employee Name</th>
+                        <th>PEN</th>
+                        <th>Designation</th>
+                        <th>Institution</th>
+                        <th>MOC Issued</th>
+                        <th>Major/Minor</th>
+                        <th>File Number</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in actions %}
+                    <tr>
+                        <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+                        <td>{{ action.employee_name or '-' }}</td>
+                        <td>{{ action.pen or '-' }}</td>
+                        <td>{{ action.designation or '-' }}</td>
+                        <td>{{ action.institution or '-' }}</td>
+                        <td>
+                            {% if action.moc_issued == 'Issued' %}
+                            <span class="badge bg-success">{{ action.moc_issued }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ action.moc_issued or '-' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if action.major_minor == 'Major' %}
+                            <span class="badge bg-danger">{{ action.major_minor }}</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ action.major_minor or '-' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=action.file_number) }}">
+                                {{ action.file_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('disciplinary.view_action', id=action.id) }}" 
+                               class="btn btn-sm btn-info" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('disciplinary.create_disciplinary_action', file_number=action.file_number) }}" 
+                               class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">No disciplinary actions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('disciplinary.list_disciplinary_actions', page=pagination.prev_num, q=search_query) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('disciplinary.list_disciplinary_actions', page=page_num, q=search_query) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('disciplinary.list_disciplinary_actions', page=pagination.next_num, q=search_query) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

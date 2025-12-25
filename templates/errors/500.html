@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="mb-4">
+                <i class="bi bi-x-circle display-1 text-danger"></i>
+            </div>
+            <h1 class="display-4">500</h1>
+            <h2 class="mb-4">Internal Server Error</h2>
+            <p class="text-muted mb-4">
+                Something went wrong on our end. Please try again later or contact the administrator 
+                if the problem persists.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                    <i class="bi bi-house"></i> Go to Dashboard
+                </a>
+                <button onclick="location.reload()" class="btn btn-warning">
+                    <i class="bi bi-arrow-clockwise"></i> Retry
+                </button>
+            </div>
+            {% if error %}
+            <div class="mt-4">
+                <details class="text-start">
+                    <summary class="text-muted cursor-pointer">Technical Details</summary>
+                    <pre class="bg-light p-3 mt-2 text-danger small">{{ error }}</pre>
+                </details>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

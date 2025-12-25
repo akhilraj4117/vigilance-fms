@@ -1,0 +1,525 @@
+<!-- Remarks Table Partial - Matching Desktop App Remarks Tab -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">
+        Remarks Generator
+        <span class="badge bg-primary">{{ remarks_pagination.total if remarks_pagination else 0 }}</span>
+    </h5>
+</div>
+
+<!-- Remarks Entry Form -->
+<div class="card border-primary mb-4">
+    <div class="card-header bg-primary text-white">
+        <h6 class="mb-0"><i class="bi bi-pencil-square"></i> Generate Remarks</h6>
+    </div>
+    <div class="card-body">
+        <form id="remarksForm" action="{{ url_for('disciplinary.create_remarks_entry') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="remarks_entry_id" id="remarks_entry_id" value="">
+            
+            <div class="row">
+                <!-- Left Column -->
+                <div class="col-md-6">
+                    <div class="mb-2">
+                        <label for="remarks_section" class="form-label small">Section:</label>
+                        <input type="text" class="form-control form-control-sm" id="remarks_section" name="section" placeholder="Enter section">
+                    </div>
+                    <div class="mb-2">
+                        <label for="remarks_file_no" class="form-label small">File No:</label>
+                        <input type="text" class="form-control form-control-sm" id="remarks_file_no" name="remarks_file_no" placeholder="Enter file number">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">PEN:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="remarks_pen" name="pen" placeholder="Enter PEN">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadEmployeeForRemarks()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="checkbox" id="pen_available" onchange="togglePenAvailability()">
+                            <label class="form-check-label small" for="pen_available">PEN Available</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="col-md-6">
+                    <div class="mb-2">
+                        <label for="remarks_prefix" class="form-label small">Prefix:</label>
+                        <select class="form-select form-select-sm" id="remarks_prefix" name="prefix">
+                            <option value=""></option>
+                            <option value="Sri.">Sri.</option>
+                            <option value="Smt.">Smt.</option>
+                            <option value="Dr.">Dr.</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label for="remarks_name" class="form-label small">Name:</label>
+                        <input type="text" class="form-control form-control-sm" id="remarks_name" name="name" placeholder="Enter name">
+                    </div>
+                    <div class="mb-2">
+                        <label for="remarks_designation" class="form-label small">Designation:</label>
+                        <input type="text" class="form-control form-control-sm" id="remarks_designation" name="designation" placeholder="Enter designation">
+                    </div>
+                    <div class="mb-2">
+                        <label for="remarks_institution" class="form-label small">Institution:</label>
+                        <input type="text" class="form-control form-control-sm" id="remarks_institution" name="institution" placeholder="Type to search institutions..." list="institution_list" autocomplete="off">
+                        <datalist id="institution_list"></datalist>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Status:</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" id="status_clear" value="Clear" checked onchange="updateRemarksPreview()">
+                                <label class="form-check-label" for="status_clear">Clear</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" id="status_not_clear" value="Not Clear" onchange="updateRemarksPreview()">
+                                <label class="form-check-label" for="status_not_clear">Not Clear</label>
+                            </div>
+                            <button type="button" class="btn btn-success btn-sm" onclick="generateAndSaveRemarks()">
+                                <i class="bi bi-gear"></i> Generate
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearRemarksForm()">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Generated Message Preview -->
+            <div class="mt-3">
+                <label class="form-label small fw-bold">Generated Remarks:</label>
+                <textarea class="form-control" id="remarks_message" name="remarks_message" rows="5" readonly style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14px;"></textarea>
+                <div id="pen_status_label" class="mt-2"></div>
+            </div>
+            
+            <div class="d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-info btn-sm" onclick="copyRemarksToClipboard()">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+                <button type="button" class="btn btn-warning btn-sm" onclick="toggleEditRemarks()">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search -->
+<form action="{{ url_for('disciplinary.index', tab='remarks') }}" method="GET" class="mb-3">
+    <input type="hidden" name="tab" value="remarks">
+    <div class="row g-2">
+        <div class="col-md-8">
+            <input type="text" class="form-control" name="q" value="{{ search_query }}" 
+                   placeholder="Search by PEN or part of name...">
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="bi bi-search"></i> Search
+            </button>
+            <a href="{{ url_for('disciplinary.index', tab='remarks') }}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Clear
+            </a>
+        </div>
+    </div>
+</form>
+
+<!-- Remarks Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover" id="remarksTable">
+        <thead class="table-dark">
+            <tr>
+                <th>Sl. No.</th>
+                <th class="sortable" data-sort="section">Section <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="remarks_file_no">Remarks File No. <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="pen">PEN <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th>Prefix</th>
+                <th class="sortable" data-sort="name">Name <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th>Designation</th>
+                <th class="sortable" data-sort="institution">Institution <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="status">Status <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in results %}
+            <tr data-id="{{ entry.id }}">
+                <td>{{ loop.index + ((remarks_pagination.page - 1) * remarks_pagination.per_page) if remarks_pagination else loop.index }}</td>
+                <td>{{ entry.section or '-' }}</td>
+                <td>{{ entry.remarks_file_no or '-' }}</td>
+                <td>{{ entry.pen or '-' }}</td>
+                <td>{{ entry.prefix or '-' }}</td>
+                <td>{{ entry.name or '-' }}</td>
+                <td>{{ entry.designation or '-' }}</td>
+                <td>{{ entry.institution or '-' }}</td>
+                <td>
+                    {% if entry.status == 'Clear' %}
+                    <span class="badge bg-success">Clear</span>
+                    {% elif entry.status == 'Not Clear' %}
+                    <span class="badge bg-danger">Not Clear</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ entry.status or '-' }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="editRemarksEntry({{ entry.id }})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteRemarksEntry({{ entry.id }})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" class="text-center text-muted">No remarks entries found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Export Button -->
+<div class="d-flex justify-content-end mt-3">
+    <a href="{{ url_for('disciplinary.export_remarks') }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Remarks to Excel
+    </a>
+</div>
+
+<!-- Pagination -->
+{% if remarks_pagination and remarks_pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center mb-0">
+        {% if remarks_pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('disciplinary.index', tab='remarks', page=remarks_pagination.prev_num, q=search_query, sort=sort_by, order=sort_order) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in remarks_pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+            <li class="page-item {% if page_num == remarks_pagination.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('disciplinary.index', tab='remarks', page=page_num, q=search_query, sort=sort_by, order=sort_order) }}">{{ page_num }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if remarks_pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('disciplinary.index', tab='remarks', page=remarks_pagination.next_num, q=search_query, sort=sort_by, order=sort_order) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteRemarksModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this remarks entry?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteRemarksForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load employee details for remarks form
+function loadEmployeeForRemarks() {
+    const pen = document.getElementById('remarks_pen').value.trim();
+    if (!pen) {
+        alert('Please enter a PEN number');
+        return;
+    }
+    
+    fetch(`/disciplinary/api/get-employee/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.employee) {
+                document.getElementById('remarks_name').value = data.employee.name || '';
+                document.getElementById('remarks_designation').value = data.employee.designation || '';
+                document.getElementById('remarks_institution').value = data.employee.institution || '';
+                updateRemarksPreview();
+                checkPenStatus(pen);
+            } else {
+                // PEN not found in employees - show message and still check disciplinary status
+                alert('No employee found with the given PEN. You can enter details manually.');
+                clearEmployeeFields();
+                checkPenStatus(pen);
+            }
+        })
+        .catch(error => {
+            console.log('Employee lookup failed:', error);
+            alert('Error looking up employee. Please try again.');
+        });
+}
+
+// Clear employee fields
+function clearEmployeeFields() {
+    document.getElementById('remarks_name').value = '';
+    document.getElementById('remarks_designation').value = '';
+    document.getElementById('remarks_institution').value = '';
+}
+
+// Check if PEN exists in disciplinary proceedings
+function checkPenStatus(pen) {
+    if (!pen) {
+        document.getElementById('pen_status_label').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/disciplinary/api/check-pen-status/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            const statusLabel = document.getElementById('pen_status_label');
+            if (data.exists) {
+                statusLabel.innerHTML = '<span class="text-danger fw-bold fs-5">NOT CLEAR</span>';
+                document.getElementById('status_not_clear').checked = true;
+            } else {
+                statusLabel.innerHTML = '<span class="text-success fw-bold fs-5">CLEAR</span>';
+                document.getElementById('status_clear').checked = true;
+            }
+            updateRemarksPreview();
+        })
+        .catch(error => console.log('PEN status check failed:', error));
+}
+
+// Toggle PEN availability - when checked, auto-populate employee details
+function togglePenAvailability() {
+    const checkbox = document.getElementById('pen_available');
+    const penInput = document.getElementById('remarks_pen');
+    const pen = penInput.value.trim();
+    
+    if (checkbox.checked) {
+        // PEN Available is checked - try to auto-populate employee details
+        if (pen) {
+            loadEmployeeForRemarks();
+        } else {
+            alert('Please enter a PEN number first');
+            checkbox.checked = false;
+        }
+    } else {
+        // PEN Available is unchecked - clear employee fields but keep PEN
+        clearEmployeeFields();
+        document.getElementById('pen_status_label').innerHTML = '';
+        updateRemarksPreview();
+    }
+}
+
+// Update remarks preview text
+function updateRemarksPreview() {
+    const prefix = document.getElementById('remarks_prefix').value;
+    const name = document.getElementById('remarks_name').value.trim();
+    const pen = document.getElementById('remarks_pen').value.trim();
+    const designation = document.getElementById('remarks_designation').value.trim();
+    const institution = document.getElementById('remarks_institution').value.trim();
+    const status = document.querySelector('input[name="status"]:checked').value;
+    
+    // Format prefix with space if present
+    const prefixSpace = prefix ? (prefix + ' ') : '';
+    // Format PEN text
+    const penText = pen ? `(PEN – ${pen})` : '';
+    // Section is always A6
+    const section = 'A6';
+    
+    let heading = `${section} സെക്ഷൻ`;
+    let bodyText = '';
+    
+    if (status === 'Clear') {
+        // Malayalam template for Clear - matching desktop app
+        bodyText = `നിലവിലുള്ള രേഖകൾ പരിശോധിച്ചതിൽ നിന്നും ${prefixSpace}${name || '___________'}, ${penText}, ${designation || '___________'}, ${institution || '___________'} – നു എതിരെ A6 സെക്ഷനുമായി ബന്ധപ്പെട്ടു യാതൊരുവിധ അച്ചടക്ക നടപടികളും നിലവിലില്ല എന്നു അറിയിക്കുന്നു.`;
+    } else {
+        // Malayalam template for Not Clear - matching desktop app
+        bodyText = `നിലവിലുള്ള രേഖകൾ പരിശോധിച്ചതിൽ നിന്നും ${prefixSpace}${name || '___________'}, ${penText}, ${designation || '___________'}, ${institution || '___________'} – നു എതിരെ A6 സെക്ഷനുമായി ബന്ധപ്പെട്ടു ഈ കാര്യാലയത്തിൽ അച്ചടക്ക നടപടികൾ തുടർന്നുവരികയാണെന്ന വിവരം അറിയിക്കുന്നു.`;
+    }
+    
+    // Combine heading and body with line break
+    const message = `${heading}\n\n${bodyText}`;
+    
+    document.getElementById('remarks_message').value = message;
+}
+
+// Copy remarks to clipboard
+function copyRemarksToClipboard() {
+    const textarea = document.getElementById('remarks_message');
+    textarea.select();
+    textarea.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    
+    // Show feedback
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+    btn.classList.remove('btn-info');
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-info');
+    }, 2000);
+}
+
+// Toggle edit mode for remarks
+function toggleEditRemarks() {
+    const textarea = document.getElementById('remarks_message');
+    textarea.readOnly = !textarea.readOnly;
+    if (!textarea.readOnly) {
+        textarea.focus();
+    }
+}
+
+// Clear the remarks form
+function clearRemarksForm() {
+    document.getElementById('remarks_entry_id').value = '';
+    document.getElementById('remarks_section').value = '';
+    document.getElementById('remarks_file_no').value = '';
+    document.getElementById('remarks_pen').value = '';
+    document.getElementById('remarks_prefix').value = '';
+    document.getElementById('remarks_name').value = '';
+    document.getElementById('remarks_designation').value = '';
+    document.getElementById('remarks_institution').value = '';
+    document.getElementById('status_clear').checked = true;
+    document.getElementById('remarks_message').value = '';
+    document.getElementById('pen_status_label').innerHTML = '';
+    
+    // Reset PEN availability to unchecked
+    document.getElementById('pen_available').checked = false;
+    
+    // Update preview
+    updateRemarksPreview();
+}
+
+// Generate and save remarks
+function generateAndSaveRemarks() {
+    updateRemarksPreview();
+    
+    // Submit the form
+    const form = document.getElementById('remarksForm');
+    const entryId = document.getElementById('remarks_entry_id').value;
+    
+    if (entryId) {
+        form.action = `/disciplinary/remarks/${entryId}/edit`;
+    } else {
+        form.action = '/disciplinary/remarks/create';
+    }
+    
+    form.submit();
+}
+
+// Edit remarks entry
+function editRemarksEntry(id) {
+    fetch(`/disciplinary/remarks/${id}/json`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const entry = data.entry;
+                document.getElementById('remarks_entry_id').value = entry.id;
+                document.getElementById('remarks_section').value = entry.section || '';
+                document.getElementById('remarks_file_no').value = entry.remarks_file_no || '';
+                document.getElementById('remarks_pen').value = entry.pen || '';
+                document.getElementById('remarks_prefix').value = entry.prefix || '';
+                document.getElementById('remarks_name').value = entry.name || '';
+                document.getElementById('remarks_designation').value = entry.designation || '';
+                document.getElementById('remarks_institution').value = entry.institution || '';
+                
+                if (entry.status === 'Not Clear') {
+                    document.getElementById('status_not_clear').checked = true;
+                } else {
+                    document.getElementById('status_clear').checked = true;
+                }
+                
+                updateRemarksPreview();
+                
+                // Scroll to form
+                document.querySelector('.card.border-primary').scrollIntoView({ behavior: 'smooth' });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading entry data');
+        });
+}
+
+// Delete remarks entry
+function deleteRemarksEntry(id) {
+    document.getElementById('deleteRemarksForm').action = `/disciplinary/remarks/${id}/delete`;
+    const modal = new bootstrap.Modal(document.getElementById('deleteRemarksModal'));
+    modal.show();
+}
+
+// Add event listeners for live preview
+document.addEventListener('DOMContentLoaded', function() {
+    const fields = ['remarks_prefix', 'remarks_name', 'remarks_pen', 'remarks_designation', 'remarks_institution'];
+    fields.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', updateRemarksPreview);
+            field.addEventListener('change', updateRemarksPreview);
+        }
+    });
+    
+    // Load institutions for autocomplete
+    loadInstitutions();
+});
+
+// Store all institutions for filtering
+let allInstitutions = [];
+
+// Load institutions from API
+function loadInstitutions() {
+    fetch('/disciplinary/api/get-institutions')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.institutions) {
+                allInstitutions = data.institutions;
+                updateInstitutionDatalist('');
+            }
+        })
+        .catch(error => console.log('Failed to load institutions:', error));
+}
+
+// Update the datalist based on user input (contains search)
+function updateInstitutionDatalist(searchText) {
+    const datalist = document.getElementById('institution_list');
+    datalist.innerHTML = '';
+    
+    const search = searchText.toLowerCase();
+    const filtered = allInstitutions.filter(inst => 
+        inst.toLowerCase().includes(search)
+    );
+    
+    // Limit to first 50 matches for performance
+    filtered.slice(0, 50).forEach(inst => {
+        const option = document.createElement('option');
+        option.value = inst;
+        datalist.appendChild(option);
+    });
+}
+
+// Add input event listener for institution field to filter suggestions
+document.addEventListener('DOMContentLoaded', function() {
+    const instField = document.getElementById('remarks_institution');
+    if (instField) {
+        instField.addEventListener('input', function() {
+            updateInstitutionDatalist(this.value);
+        });
+    }
+});
+</script>

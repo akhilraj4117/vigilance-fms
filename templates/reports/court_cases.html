@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Court Cases Report - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-hammer"></i> Court Cases Report</h2>
+    <div>
+        <button class="btn btn-success me-2" onclick="exportToCSV()">
+            <i class="bi bi-download"></i> Export
+        </button>
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.court_cases') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Court Type</label>
+                <select class="form-select" name="court_type">
+                    <option value="">All Courts</option>
+                    <option value="High Court" {% if court_type == 'High Court' %}selected{% endif %}>High Court</option>
+                    <option value="CAT" {% if court_type == 'CAT' %}selected{% endif %}>CAT</option>
+                    <option value="District Court" {% if court_type == 'District Court' %}selected{% endif %}>District Court</option>
+                    <option value="Tribunal" {% if court_type == 'Tribunal' %}selected{% endif %}>Tribunal</option>
+                    <option value="Other" {% if court_type == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Disposed" {% if status == 'Disposed' %}selected{% endif %}>Disposed</option>
+                    <option value="Stayed" {% if status == 'Stayed' %}selected{% endif %}>Stayed</option>
+                    <option value="Listed" {% if status == 'Listed' %}selected{% endif %}>Listed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select class="form-select" name="year">
+                    <option value="">All Years</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if year == y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{{ url_for('reports.court_cases') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.total }}</h3>
+                <p class="mb-0">Total Cases</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.pending }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.disposed }}</h3>
+                <p class="mb-0">Disposed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.stayed }}</h3>
+                <p class="mb-0">Stayed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upcoming Hearings -->
+{% if upcoming_hearings %}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Hearings (Next 30 Days)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Case No</th>
+                        <th>Court</th>
+                        <th>Petitioner</th>
+                        <th>Hearing Date</th>
+                        <th>Days Left</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in upcoming_hearings %}
+                    <tr>
+                        <td>{{ case.case_no }}</td>
+                        <td>{{ case.court_name }}</td>
+                        <td>{{ case.petitioner_name[:30] }}{% if case.petitioner_name|length > 30 %}...{% endif %}</td>
+                        <td>{{ case.next_hearing_date }}</td>
+                        <td>
+                            <span class="badge {% if case.days_left <= 7 %}bg-danger{% elif case.days_left <= 14 %}bg-warning text-dark{% else %}bg-info{% endif %}">
+                                {{ case.days_left }} days
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-header">
+        Total: {{ pagination.total }} cases
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="casesTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl.No.</th>
+                        <th>File No</th>
+                        <th>Month/Year</th>
+                        <th>Case No</th>
+                        <th>Name of Forum</th>
+                        <th>Present Status</th>
+                        <th>Remarks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=case.file_number) }}">
+                                {{ case.file_number }}
+                            </a>
+                        </td>
+                        <td>{{ case.month }}/{{ case.year }}</td>
+                        <td>{{ case.case_no }}</td>
+                        <td>{{ case.name_of_forum or '-' }}</td>
+                        <td>
+                            {% if case.present_status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">{{ case.present_status }}</span>
+                            {% elif case.present_status == 'Disposed' %}
+                            <span class="badge bg-success">{{ case.present_status }}</span>
+                            {% elif case.present_status == 'Stayed' %}
+                            <span class="badge bg-info">{{ case.present_status }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ case.present_status or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ case.remarks[:25] if case.remarks else '-' }}{% if case.remarks and case.remarks|length > 25 %}...{% endif %}</td>
+                        <td>
+                            <a href="{{ url_for('reports.view_court_case', id=case.id) }}" 
+                               class="btn btn-sm btn-info" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No court cases found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.court_cases', page=pagination.prev_num, court_type=court_type, status=status, year=year) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.court_cases', page=page_num, court_type=court_type, status=status, year=year) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.court_cases', page=pagination.next_num, court_type=court_type, status=status, year=year) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Court-wise Summary -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Court-wise Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for court in court_summary %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>{{ court.court_type }}</h6>
+                        <div class="d-flex justify-content-between">
+                            <span>Total: {{ court.total }}</span>
+                            <span class="text-warning">Pending: {{ court.pending }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportToCSV() {
+    const table = document.getElementById('casesTable');
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+    
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach((col, index) => {
+            if (index < cols.length - 1) {
+                let text = col.innerText.replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            }
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'court_cases_report.csv';
+    link.click();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Unauthorised Absentees Report - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-x"></i> Unauthorised Absentees Report</h2>
+    <div>
+        <button class="btn btn-success me-2" onclick="exportToCSV()">
+            <i class="bi bi-download"></i> Export
+        </button>
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="{{ url_for('reports.ua_report') }}" method="GET" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Institution</label>
+                <select class="form-select" name="institution">
+                    <option value="">All Institutions</option>
+                    {% for inst in institutions %}
+                    <option value="{{ inst }}" {% if institution == inst %}selected{% endif %}>{{ inst[:40] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Resolved" {% if status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="SCN Issued" {% if status == 'SCN Issued' %}selected{% endif %}>SCN Issued</option>
+                    <option value="Action Taken" {% if status == 'Action Taken' %}selected{% endif %}>Action Taken</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{{ url_for('reports.ua_report') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.total }}</h3>
+                <p class="mb-0">Total Cases</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.pending }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.scn_issued }}</h3>
+                <p class="mb-0">SCN Issued</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <h3>{{ summary.resolved }}</h3>
+                <p class="mb-0">Resolved</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-header">
+        Total: {{ pagination.total }} records
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="uaTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>PEN</th>
+                        <th>Designation</th>
+                        <th>Institution</th>
+                        <th>Absence From</th>
+                        <th>Absence To</th>
+                        <th>Days</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ua in records %}
+                    <tr>
+                        <td>{{ ua.employee_name }}</td>
+                        <td>{{ ua.pen or '-' }}</td>
+                        <td>{{ ua.designation or '-' }}</td>
+                        <td>{{ ua.institution[:25] if ua.institution else '-' }}{% if ua.institution and ua.institution|length > 25 %}...{% endif %}</td>
+                        <td>{{ ua.absence_from or '-' }}</td>
+                        <td>{{ ua.absence_to or '-' }}</td>
+                        <td class="text-center">
+                            {% if ua.total_days %}
+                            <span class="badge {% if ua.total_days > 30 %}bg-danger{% elif ua.total_days > 10 %}bg-warning text-dark{% else %}bg-info{% endif %}">
+                                {{ ua.total_days }}
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ua.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">{{ ua.status }}</span>
+                            {% elif ua.status == 'Resolved' %}
+                            <span class="badge bg-success">{{ ua.status }}</span>
+                            {% elif ua.status == 'SCN Issued' %}
+                            <span class="badge bg-info">{{ ua.status }}</span>
+                            {% elif ua.status == 'Action Taken' %}
+                            <span class="badge bg-primary">{{ ua.status }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ ua.status or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('disciplinary.view_ua', id=ua.id) }}" 
+                               class="btn btn-sm btn-info" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('disciplinary.edit_ua', id=ua.id) }}" 
+                               class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">No records found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.ua_report', page=pagination.prev_num, date_from=date_from, date_to=date_to, institution=institution, status=status) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.ua_report', page=page_num, date_from=date_from, date_to=date_to, institution=institution, status=status) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('reports.ua_report', page=pagination.next_num, date_from=date_from, date_to=date_to, institution=institution, status=status) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Institution-wise Summary -->
+{% if institution_summary %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-building"></i> Institution-wise Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Institution</th>
+                        <th class="text-center">Total Cases</th>
+                        <th class="text-center">Pending</th>
+                        <th class="text-center">Resolved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in institution_summary[:10] %}
+                    <tr>
+                        <td>{{ inst.institution[:50] }}{% if inst.institution|length > 50 %}...{% endif %}</td>
+                        <td class="text-center">{{ inst.total }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-warning text-dark">{{ inst.pending }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-success">{{ inst.resolved }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportToCSV() {
+    const table = document.getElementById('uaTable');
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+    
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach((col, index) => {
+            if (index < cols.length - 1) { // Skip Actions column
+                let text = col.innerText.replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            }
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'ua_report.csv';
+    link.click();
+}
+</script>
+{% endblock %}

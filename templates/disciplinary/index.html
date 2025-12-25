@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplinary Action - Vigilance FMS{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styling for disciplinary sub-tabs */
+    #disciplinaryTabs .nav-link {
+        color: #333 !important;
+        background: linear-gradient(to bottom, #e0e0e0, #c0c0c0) !important;
+        border: 1px solid #999 !important;
+        margin-right: 2px;
+        font-weight: 500;
+    }
+    #disciplinaryTabs .nav-link:hover {
+        background: linear-gradient(to bottom, #f0f0f0, #d0d0d0) !important;
+    }
+    #disciplinaryTabs .nav-link.active {
+        background: linear-gradient(to bottom, #0d6efd, #0b5ed7) !important;
+        color: white !important;
+        border-color: #0a58ca !important;
+    }
+    
+    /* Inner tabs styling */
+    .inner-tabs .nav-link {
+        color: #333 !important;
+        background: linear-gradient(to bottom, #f5f5f5, #e5e5e5) !important;
+        border: 1px solid #ccc !important;
+        margin-right: 2px;
+        font-size: 0.9rem;
+    }
+    .inner-tabs .nav-link:hover {
+        background: linear-gradient(to bottom, #fff, #eee) !important;
+    }
+    .inner-tabs .nav-link.active {
+        background: linear-gradient(to bottom, #198754, #157347) !important;
+        color: white !important;
+        border-color: #146c43 !important;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-exclamation-triangle"></i> Disciplinary Action</h2>
+</div>
+
+<!-- Main Sub-Tabs -->
+<ul class="nav nav-tabs mb-3" id="disciplinaryTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'ua_details' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='ua') }}">
+            <i class="bi bi-person-x"></i> UA Details
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'disciplinary' or tab == 'superannuation' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='disciplinary', inner_tab='proceedings') }}">
+            <i class="bi bi-file-earmark-text"></i> Disciplinary Action
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'inquiry' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='inquiry') }}">
+            <i class="bi bi-search"></i> Inquiry Details
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'court_case' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='court_case') }}">
+            <i class="bi bi-building"></i> Court Case
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'ssp' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='ssp') }}">
+            <i class="bi bi-cash-coin"></i> Social Security Pension
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'remarks' %}active{% endif %}" 
+           href="{{ url_for('disciplinary.index', tab='remarks') }}">
+            <i class="bi bi-chat-left-text"></i> Remarks
+        </a>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+    {% if tab == 'ua_details' %}
+    <!-- UA Details Tab with Inner Tabs -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs inner-tabs" id="uaInnerTabs">
+                <li class="nav-item">
+                    <a class="nav-link {% if inner_tab == 'ua' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='ua') }}">
+                        Unauthorised Absentees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if inner_tab == 'rejoined' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='rejoined') }}">
+                        Rejoined UA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if inner_tab == 'finalised_ua' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='finalised_ua') }}">
+                        Finalised UA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if inner_tab == 'retired' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='retired') }}">
+                        Retired UA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if inner_tab == 'ua_all' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='ua_details', inner_tab='ua_all') }}">
+                        UA All
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            {% include 'disciplinary/partials/ua_table.html' %}
+        </div>
+    </div>
+    
+    {% elif tab == 'disciplinary' or tab == 'superannuation' or tab == 'pending_notices' %}
+    <!-- Disciplinary Action Tab with Inner Tabs -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs inner-tabs" id="daInnerTabs">
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'disciplinary' and inner_tab == 'proceedings' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='disciplinary', inner_tab='proceedings') }}">
+                        Disc. Proceedings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'disciplinary' and inner_tab == 'finalised_da' %}active{% endif %}" 
+                       href="{{ url_for('disciplinary.index', tab='disciplinary', inner_tab='finalised_da') }}">
+                        Finalised DA
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if tab == 'superannuation' %}active{% endif %}" 
+                       data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                        Superannuation <span class="badge bg-info">{{ superannuation_counts.total if superannuation_counts else 0 }}</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item {% if tab == 'superannuation' and inner_tab == 'within_1_year' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='superannuation', inner_tab='within_1_year') }}">
+                                Within 1 Year <span class="badge bg-danger">{{ superannuation_counts.within_1_year if superannuation_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'superannuation' and inner_tab == 'within_2_years' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='superannuation', inner_tab='within_2_years') }}">
+                                Within 2 Years <span class="badge bg-warning text-dark">{{ superannuation_counts.within_2_years if superannuation_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'superannuation' and inner_tab == 'retired' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='superannuation', inner_tab='retired') }}">
+                                Retired <span class="badge bg-secondary">{{ superannuation_counts.retired if superannuation_counts else 0 }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if tab == 'pending_notices' %}active{% endif %}" 
+                       data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                        Pending Notices <span class="badge bg-warning text-dark">{{ pending_counts.total if pending_counts else 0 }}</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="dropdown-header">MOC Receipts</li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'moc_dmo' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='moc_dmo') }}">
+                                MOC - From DMO <span class="badge bg-danger">{{ pending_counts.moc_dmo if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'moc_dhs' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='moc_dhs') }}">
+                                MOC - From DHS <span class="badge bg-danger">{{ pending_counts.moc_dhs if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">PTN Receipts</li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'ptn_dmo' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='ptn_dmo') }}">
+                                PTN - From DMO <span class="badge bg-info">{{ pending_counts.ptn_dmo if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'ptn_dhs' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='ptn_dhs') }}">
+                                PTN - From DHS <span class="badge bg-info">{{ pending_counts.ptn_dhs if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">SCN Receipts</li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'scn_dmo' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='scn_dmo') }}">
+                                SCN - From DMO <span class="badge bg-secondary">{{ pending_counts.scn_dmo if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'scn_dhs' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='scn_dhs') }}">
+                                SCN - From DHS <span class="badge bg-secondary">{{ pending_counts.scn_dhs if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header">Reply Pending</li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'wsd_pending' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='wsd_pending') }}">
+                                WSD Pending <span class="badge bg-primary">{{ pending_counts.wsd_pending if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if tab == 'pending_notices' and inner_tab == 'scn_reply' %}active{% endif %}" 
+                               href="{{ url_for('disciplinary.index', tab='pending_notices', inner_tab='scn_reply') }}">
+                                SCN Reply Pending <span class="badge bg-primary">{{ pending_counts.scn_reply if pending_counts else 0 }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            {% if tab == 'superannuation' %}
+                {% include 'disciplinary/partials/superannuation_table.html' %}
+            {% elif tab == 'pending_notices' %}
+                {% include 'disciplinary/partials/pending_notices_table.html' %}
+            {% else %}
+                {% include 'disciplinary/partials/da_table.html' %}
+            {% endif %}
+        </div>
+    </div>
+    
+    {% elif tab == 'inquiry' %}
+    <!-- Inquiry Details Tab -->
+    <div class="card">
+        <div class="card-body">
+            {% include 'disciplinary/partials/inquiry_table.html' %}
+        </div>
+    </div>
+    
+    {% elif tab == 'court_case' %}
+    <!-- Court Case Tab -->
+    <div class="card">
+        <div class="card-body">
+            {% include 'disciplinary/partials/court_case_table.html' %}
+        </div>
+    </div>
+    
+    {% elif tab == 'ssp' %}
+    <!-- Social Security Pension Tab -->
+    <div class="card">
+        <div class="card-body">
+            {% include 'disciplinary/partials/ssp_table.html' %}
+        </div>
+    </div>
+    
+    {% elif tab == 'remarks' %}
+    <!-- Remarks Tab -->
+    <div class="card">
+        <div class="card-body">
+            {% include 'disciplinary/partials/remarks_table.html' %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Report Asked - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('files.file_management', file=record.file_number) }}">File Management</a></li>
+                    <li class="breadcrumb-item active">Edit Report Asked</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Edit Report Asked</h5>
+                    <small>File: {{ record.file_number }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('files.edit_report_asked', id=record.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="whether_report_asked" class="form-label">Whether Report Asked</label>
+                                <select class="form-select" id="whether_report_asked" name="whether_report_asked" onchange="toggleAskedDate()">
+                                    <option value="No" {% if record.whether_report_asked != 'Yes' %}selected{% endif %}>No</option>
+                                    <option value="Yes" {% if record.whether_report_asked == 'Yes' %}selected{% endif %}>Yes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="askedDateDiv" {% if record.whether_report_asked != 'Yes' %}style="display: none;"{% endif %}>
+                                <label for="asked_date" class="form-label">Asked Date</label>
+                                <input type="date" class="form-control" id="asked_date" name="asked_date"
+                                       value="{{ record.asked_date or '' }}">
+                            </div>
+                            <div class="col-md-12">
+                                <label for="institution_name" class="form-label">Institution Name</label>
+                                <input type="text" class="form-control" id="institution_name" name="institution_name"
+                                       value="{{ record.institution_name or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="report_submitted" class="form-label">Report Submitted</label>
+                                <select class="form-select" id="report_submitted" name="report_submitted" onchange="toggleReceivedDate()">
+                                    <option value="No" {% if record.report_submitted != 'Yes' %}selected{% endif %}>No</option>
+                                    <option value="Yes" {% if record.report_submitted == 'Yes' %}selected{% endif %}>Yes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="receivedDateDiv" {% if record.report_submitted != 'Yes' %}style="display: none;"{% endif %}>
+                                <label for="received_date" class="form-label">Received Date</label>
+                                <input type="date" class="form-control" id="received_date" name="received_date"
+                                       value="{{ record.received_date or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Update</button>
+                            <a href="{{ url_for('files.file_management', file=record.file_number) }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleAskedDate() {
+        const select = document.getElementById('whether_report_asked');
+        const dateDiv = document.getElementById('askedDateDiv');
+        if (select.value === 'Yes') {
+            dateDiv.style.display = 'block';
+        } else {
+            dateDiv.style.display = 'none';
+        }
+    }
+    
+    function toggleReceivedDate() {
+        const select = document.getElementById('report_submitted');
+        const dateDiv = document.getElementById('receivedDateDiv');
+        if (select.value === 'Yes') {
+            dateDiv.style.display = 'block';
+        } else {
+            dateDiv.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

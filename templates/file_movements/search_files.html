@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Search Files - File Movements{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #4a6fa5 0%, #5a7fb5 100%);
+        border: none;
+        margin-right: 8px;
+        padding: 12px 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: linear-gradient(135deg, #3a5f95 0%, #4a6fa5 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 -3px 8px rgba(30, 60, 114, 0.3);
+    }
+    .nav-tabs {
+        border-bottom: 3px solid #1e3c72;
+        padding-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4"><i class="bi bi-search"></i> Search Files</h2>
+    
+    <!-- Sub-tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="fileMovementsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" href="{{ url_for('file_movements.search_files') }}">
+                <i class="bi bi-search"></i> Search Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pr_entries') }}">
+                <i class="bi bi-journal-text"></i> View PR Entries
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.physical_files') }}">
+                <i class="bi bi-archive"></i> Physical Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.pending_files') }}">
+                <i class="bi bi-clock-history"></i> Pending Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.migrated_files') }}">
+                <i class="bi bi-cloud-upload"></i> Migrated Files
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{{ url_for('file_movements.speak_files') }}">
+                <i class="bi bi-megaphone"></i> Speak
+            </a>
+        </li>
+    </ul>
+    
+    <!-- Search Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Search Criteria</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('file_movements.search_files') }}">
+                <div class="row g-3">
+                    <!-- General Search -->
+                    <div class="col-md-12">
+                        <label class="form-label">Search All Fields:</label>
+                        <input type="text" class="form-control" name="q" value="{{ general_search }}"
+                               placeholder="File No., Subject, Details, Institution...">
+                    </div>
+                    
+                    <!-- Type of File and Status -->
+                    <div class="col-md-3">
+                        <label class="form-label">Type of File:</label>
+                        <select class="form-select" name="file_type">
+                            <option value="">All</option>
+                            {% for ft in file_types %}
+                            <option value="{{ ft }}" {{ 'selected' if file_type == ft else '' }}>{{ ft }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status:</label>
+                        <select class="form-select" name="status">
+                            <option value="">All</option>
+                            {% for s in statuses %}
+                            <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- File Status (Active/Closed/All) -->
+                    <div class="col-md-3">
+                        <label class="form-label">File Status:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="file_status" value="active" 
+                                   id="statusActive" {{ 'checked' if file_status == 'active' else '' }}>
+                            <label class="btn btn-outline-success" for="statusActive">Active</label>
+                            
+                            <input type="radio" class="btn-check" name="file_status" value="closed" 
+                                   id="statusClosed" {{ 'checked' if file_status == 'closed' else '' }}>
+                            <label class="btn btn-outline-danger" for="statusClosed">Closed</label>
+                            
+                            <input type="radio" class="btn-check" name="file_status" value="all" 
+                                   id="statusAll" {{ 'checked' if file_status == 'all' or not file_status else '' }}>
+                            <label class="btn btn-outline-primary" for="statusAll">All</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Institution -->
+                    <div class="col-md-3">
+                        <label class="form-label">Institution:</label>
+                        <input type="text" class="form-control" name="institution" value="{{ institution }}"
+                               placeholder="Type to search..." list="institutionList">
+                        <datalist id="institutionList">
+                            {% for inst in institutions %}
+                            <option value="{{ inst.name }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    
+                    <!-- Year Range -->
+                    <div class="col-md-3">
+                        <label class="form-label">From Year:</label>
+                        <input type="text" class="form-control" name="from_year" value="{{ from_year }}"
+                               placeholder="YYYY" pattern="[0-9]{4}" maxlength="4">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To Year:</label>
+                        <input type="text" class="form-control" name="to_year" value="{{ to_year }}"
+                               placeholder="YYYY" pattern="[0-9]{4}" maxlength="4">
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="col-md-6 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary" title="Search Files">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('file_movements.search_files') }}" class="btn btn-secondary" title="Clear Filters">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                        <a href="{{ url_for('file_movements.export_search_results', q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution) }}" 
+                           class="btn btn-success" title="Export to CSV">
+                            <i class="bi bi-download"></i> Export CSV
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Results Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Total: {{ pagination.total }} files found</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Sl. No.</th>
+                            <th>File Number</th>
+                            <th>Subject</th>
+                            <th>Details</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Type</th>
+                            <th>Institution</th>
+                            <th>Closed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in files %}
+                        <tr>
+                            <td>{{ loop.index + (pagination.page - 1) * pagination.per_page }}</td>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=file.file_number) }}" 
+                                   title="View {{ file.file_number }}">
+                                    {{ file.file_number }}
+                                </a>
+                            </td>
+                            <td title="{{ file.subject or '' }}">{{ (file.subject or '')[:50] }}{{ '...' if file.subject and file.subject|length > 50 else '' }}</td>
+                            <td title="{{ file.details_of_file or '' }}">{{ (file.details_of_file or '')[:40] }}{{ '...' if file.details_of_file and file.details_of_file|length > 40 else '' }}</td>
+                            <td>{{ file.category or '-' }}</td>
+                            <td>
+                                {% if file.status %}
+                                <span class="badge bg-{{ 'success' if file.status == 'Closed' else 'warning' if file.status == 'Speak' else 'info' }}">
+                                    {{ file.status }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ file.type_of_file or '-' }}</td>
+                            <td title="{{ file.institution_name or '' }}">{{ (file.institution_name or '-')[:20] }}{{ '...' if file.institution_name and file.institution_name|length > 20 else '' }}</td>
+                            <td>
+                                {% if file.is_closed %}
+                                <span class="badge bg-danger">Yes</span>
+                                {% else %}
+                                <span class="badge bg-success">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('files.view_file', file_number=file.file_number) }}" 
+                                   class="btn btn-sm btn-info" title="View File">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('files.edit_file', file_number=file.file_number) }}" 
+                                   class="btn btn-sm btn-warning" title="Edit File">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No files found matching your criteria.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.prev_num, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                        <li class="page-item {{ 'active' if p == pagination.page else '' }}">
+                            <a class="page-link" href="{{ url_for('file_movements.search_files', page=p, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">{{ p }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.next_num, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

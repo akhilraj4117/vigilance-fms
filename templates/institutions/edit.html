@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ institution.name }} - Vigilance FMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-pencil"></i> Edit Institution</h2>
+    <a href="{{ url_for('institutions.view_institution', id=institution.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Details
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('institutions.edit_institution', id=institution.id) }}" method="POST" id="institutionForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Basic Information -->
+            <h5 class="mb-3"><i class="bi bi-building"></i> Basic Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-8 mb-3">
+                    <label for="name" class="form-label">Institution Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="{{ institution.name }}" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">-- Select Category --</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if institution.category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                        {% if institution.category and institution.category not in categories %}
+                        <option value="{{ institution.category }}" selected>{{ institution.category }}</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="head_of_institution" class="form-label">Head of Institution (Designation)</label>
+                    <input type="text" class="form-control" id="head_of_institution" name="head_of_institution" 
+                           value="{{ institution.head_of_institution or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="head_name" class="form-label">Head Name</label>
+                    <input type="text" class="form-control" id="head_name" name="head_name" 
+                           value="{{ institution.head_name or '' }}">
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <h5 class="mb-3"><i class="bi bi-telephone"></i> Contact Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label for="contact_number" class="form-label">Contact Number</label>
+                    <input type="tel" class="form-control" id="contact_number" name="contact_number" 
+                           value="{{ institution.contact_number or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="head_contact" class="form-label">Head Contact</label>
+                    <input type="tel" class="form-control" id="head_contact" name="head_contact" 
+                           value="{{ institution.head_contact or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="email" class="form-label">E-mail id</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           value="{{ institution.email or '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="2">{{ institution.address or '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Staff Members Section -->
+            <h5 class="mb-3"><i class="bi bi-people"></i> Staff Members</h5>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="staffTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 35%;">Name</th>
+                                    <th style="width: 35%;">Designation</th>
+                                    <th style="width: 25%;">Contact</th>
+                                    <th style="width: 5%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffTableBody">
+                                <!-- Staff rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addStaffRow()">
+                            <i class="bi bi-plus-circle"></i> Add Staff
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeSelectedStaff()">
+                            <i class="bi bi-trash"></i> Remove Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hidden field to store staff details as JSON -->
+            <input type="hidden" name="staff_details" id="staff_details_json">
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('institutions.view_institution', id=institution.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Save/Update
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Parse existing staff data
+    let staffData = [];
+    try {
+        const rawData = {{ institution.staff_details | tojson | safe if institution.staff_details else '"[]"' }};
+        staffData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+        if (!Array.isArray(staffData)) staffData = [];
+    } catch(e) {
+        console.error('Error parsing staff data:', e);
+        staffData = [];
+    }
+    
+    // Populate table on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Staff data loaded:', staffData);
+        staffData.forEach(function(staff) {
+            addStaffRow(staff.name || '', staff.designation || '', staff.contact || '');
+        });
+    });
+    
+    function addStaffRow(name, designation, contact) {
+        name = name || '';
+        designation = designation || '';
+        contact = contact || '';
+        
+        const tbody = document.getElementById('staffTableBody');
+        const row = document.createElement('tr');
+        
+        // Create cells manually to avoid template literal issues
+        const nameCell = document.createElement('td');
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control form-control-sm staff-name';
+        nameInput.value = name;
+        nameInput.placeholder = 'Enter name';
+        nameCell.appendChild(nameInput);
+        
+        const desigCell = document.createElement('td');
+        const desigInput = document.createElement('input');
+        desigInput.type = 'text';
+        desigInput.className = 'form-control form-control-sm staff-designation';
+        desigInput.value = designation;
+        desigInput.placeholder = 'Enter designation';
+        desigCell.appendChild(desigInput);
+        
+        const contactCell = document.createElement('td');
+        const contactInput = document.createElement('input');
+        contactInput.type = 'text';
+        contactInput.className = 'form-control form-control-sm staff-contact';
+        contactInput.value = contact;
+        contactInput.placeholder = 'Enter contact';
+        contactCell.appendChild(contactInput);
+        
+        const checkCell = document.createElement('td');
+        checkCell.className = 'text-center';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'form-check-input staff-select';
+        checkCell.appendChild(checkbox);
+        
+        row.appendChild(nameCell);
+        row.appendChild(desigCell);
+        row.appendChild(contactCell);
+        row.appendChild(checkCell);
+        
+        tbody.appendChild(row);
+        console.log('Added staff row');
+    }
+    
+    function removeSelectedStaff() {
+        const checkboxes = document.querySelectorAll('.staff-select:checked');
+        checkboxes.forEach(function(cb) {
+            cb.closest('tr').remove();
+        });
+    }
+    
+    function collectStaffData() {
+        const rows = document.querySelectorAll('#staffTableBody tr');
+        const staff = [];
+        rows.forEach(function(row) {
+            const name = row.querySelector('.staff-name').value.trim();
+            const designation = row.querySelector('.staff-designation').value.trim();
+            const contact = row.querySelector('.staff-contact').value.trim();
+            if (name || designation || contact) {
+                staff.push({ name: name, designation: designation, contact: contact });
+            }
+        });
+        return staff;
+    }
+    
+    // Before form submission, collect staff data into hidden field
+    document.getElementById('institutionForm').addEventListener('submit', function(e) {
+        const staffJson = JSON.stringify(collectStaffData());
+        document.getElementById('staff_details_json').value = staffJson;
+    });
+</script>
+{% endblock %}
