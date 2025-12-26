@@ -906,21 +906,21 @@ def save_inquiry_details():
         inquiry = InquiryDetails(file_number=file_number)
         db.session.add(inquiry)
     
-    # Update preliminary inquiry fields
-    inquiry.prelim_conducted = 'prelim_conducted' in request.form
+    # Update preliminary inquiry fields (use 1/0 for PostgreSQL integer columns)
+    inquiry.prelim_conducted = 1 if 'prelim_conducted' in request.form else 0
     inquiry.prelim_io_name = request.form.get('prelim_io_name', '').strip()
     inquiry.prelim_inquiry_date = request.form.get('prelim_inquiry_date', '')
     inquiry.prelim_venue = request.form.get('prelim_venue', '').strip()
-    inquiry.prelim_report_submitted = 'prelim_report_submitted' in request.form
+    inquiry.prelim_report_submitted = 1 if 'prelim_report_submitted' in request.form else 0
     inquiry.prelim_report_to = request.form.get('prelim_report_to', '').strip()
     inquiry.prelim_report_date = request.form.get('prelim_report_date', '')
     
-    # Update Rule 15(ii) inquiry fields
-    inquiry.rule15_conducted = 'rule15_conducted' in request.form
+    # Update Rule 15(ii) inquiry fields (use 1/0 for PostgreSQL integer columns)
+    inquiry.rule15_conducted = 1 if 'rule15_conducted' in request.form else 0
     inquiry.rule15_io_name = request.form.get('rule15_io_name', '').strip()
     inquiry.rule15_inquiry_date = request.form.get('rule15_inquiry_date', '')
     inquiry.rule15_venue = request.form.get('rule15_venue', '').strip()
-    inquiry.rule15_report_submitted = 'rule15_report_submitted' in request.form
+    inquiry.rule15_report_submitted = 1 if 'rule15_report_submitted' in request.form else 0
     inquiry.rule15_report_to = request.form.get('rule15_report_to', '').strip()
     inquiry.rule15_report_date = request.form.get('rule15_report_date', '')
     
