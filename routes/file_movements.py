@@ -10,7 +10,7 @@ from models import (File, PREntry, TraceDetails, ReportSoughtDetails, ReportAske
                     CMOPortalDetails, RTIApplication, FileMigration, Communication,
                     InquiryDetails, DisciplinaryAction, Institution, PreliminaryStatement,
                     Rule15Statement)
-from extensions import db
+from extensions import db, csrf
 from sqlalchemy import or_, and_, func
 import csv
 from io import StringIO
@@ -768,6 +768,7 @@ def get_communication_content(id):
 
 
 @file_movements_bp.route('/communications/add', methods=['POST'])
+@csrf.exempt
 @login_required
 def add_communication():
     """Add a new communication."""
@@ -817,6 +818,7 @@ def add_communication():
 
 
 @file_movements_bp.route('/communications/update-name', methods=['POST'])
+@csrf.exempt
 @login_required
 def update_communication_name():
     """Update communication name."""
@@ -849,6 +851,7 @@ def update_communication_name():
 
 
 @file_movements_bp.route('/communications/delete', methods=['POST'])
+@csrf.exempt
 @login_required
 def delete_communication():
     """Delete a communication."""
@@ -870,6 +873,7 @@ def delete_communication():
 
 
 @file_movements_bp.route('/communications/save', methods=['POST'])
+@csrf.exempt
 @login_required
 def save_communication_content():
     """Save communication content."""
