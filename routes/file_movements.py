@@ -771,48 +771,48 @@ def get_communication_content(id):
 @login_required
 def add_communication():
     """Add a new communication."""
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'No data received.'})
-    
-    file_number = data.get('file_number', '').strip()
-    name = data.get('name', '').strip()
-    
-    if not file_number or not name:
-        return jsonify({'success': False, 'message': 'File number and name are required.'})
-    
-    # Check if file exists (due to foreign key constraint)
-    from models import File
-    file_exists = File.query.filter_by(file_number=file_number).first()
-    if not file_exists:
-        return jsonify({'success': False, 'message': f'File "{file_number}" does not exist in the database.'})
-    
-    # Check for duplicate
-    existing = Communication.query.filter_by(file_number=file_number, communication_name=name).first()
-    if existing:
-        return jsonify({'success': False, 'message': 'A communication with this name already exists for this file.'})
-    
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    comm = Communication(
-        file_number=file_number,
-        communication_name=name,
-        document_type='Letter',
-        document_title=name,
-        malayalam_content='',
-        content='',
-        created_date=now,
-        modified_date=now,
-        created_by=current_user.username if current_user.is_authenticated else 'User'
-    )
-    
     try:
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received or invalid JSON.'}), 200
+        
+        file_number = data.get('file_number', '').strip()
+        name = data.get('name', '').strip()
+        
+        if not file_number or not name:
+            return jsonify({'success': False, 'message': 'File number and name are required.'}), 200
+        
+        # Check if file exists (due to foreign key constraint)
+        from models import File
+        file_exists = File.query.filter_by(file_number=file_number).first()
+        if not file_exists:
+            return jsonify({'success': False, 'message': f'File "{file_number}" does not exist in the database.'}), 200
+        
+        # Check for duplicate
+        existing = Communication.query.filter_by(file_number=file_number, communication_name=name).first()
+        if existing:
+            return jsonify({'success': False, 'message': 'A communication with this name already exists for this file.'}), 200
+        
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        comm = Communication(
+            file_number=file_number,
+            communication_name=name,
+            document_type='Letter',
+            document_title=name,
+            malayalam_content='',
+            content='',
+            created_date=now,
+            modified_date=now,
+            created_by=current_user.username if current_user.is_authenticated else 'User'
+        )
+        
         db.session.add(comm)
         db.session.commit()
-        return jsonify({'success': True, 'id': comm.id})
+        return jsonify({'success': True, 'id': comm.id}), 200
     except Exception as e:
         db.session.rollback()
         import traceback
-        return jsonify({'success': False, 'message': f'Database error: {str(e)}'})
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 200
 
 
 
