@@ -772,11 +772,20 @@ def get_communication_content(id):
 def add_communication():
     """Add a new communication."""
     data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'No data received.'})
+    
     file_number = data.get('file_number', '').strip()
     name = data.get('name', '').strip()
     
     if not file_number or not name:
         return jsonify({'success': False, 'message': 'File number and name are required.'})
+    
+    # Check if file exists (due to foreign key constraint)
+    from models import File
+    file_exists = File.query.filter_by(file_number=file_number).first()
+    if not file_exists:
+        return jsonify({'success': False, 'message': f'File "{file_number}" does not exist in the database.'})
     
     # Check for duplicate
     existing = Communication.query.filter_by(file_number=file_number, communication_name=name).first()
@@ -802,7 +811,9 @@ def add_communication():
         return jsonify({'success': True, 'id': comm.id})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        import traceback
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'})
+
 
 
 @file_movements_bp.route('/communications/update-name', methods=['POST'])

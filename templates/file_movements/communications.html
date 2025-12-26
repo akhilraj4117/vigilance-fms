@@ -465,18 +465,34 @@
             return;
         }
         
+        if (!currentFileNumber) {
+            alert('Please select a file first.');
+            return;
+        }
+        
+        console.log('Adding communication:', currentFileNumber, name);
+        
         fetch('{{ url_for("file_movements.add_communication") }}', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({file_number: currentFileNumber, name: name})
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('addCommModal')).hide();
                 location.reload();
             } else {
                 alert(data.message || 'Failed to add communication.');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error: ' + error.message);
         });
     }
     
