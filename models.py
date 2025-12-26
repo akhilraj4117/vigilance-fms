@@ -351,21 +351,21 @@ class InquiryDetails(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     file_number = db.Column(db.String(100), db.ForeignKey('files.file_number'), unique=True, nullable=False)
     
-    # Preliminary inquiry
-    prelim_conducted = db.Column(db.Boolean, default=False)
+    # Preliminary inquiry (Integer for PostgreSQL compatibility - 0/1)
+    prelim_conducted = db.Column(db.Integer, default=0)
     prelim_io_name = db.Column(db.String(200))
     prelim_inquiry_date = db.Column(db.String(20))
     prelim_venue = db.Column(db.String(200))
-    prelim_report_submitted = db.Column(db.Boolean, default=False)
+    prelim_report_submitted = db.Column(db.Integer, default=0)
     prelim_report_to = db.Column(db.String(200))
     prelim_report_date = db.Column(db.String(20))
     
-    # Rule 15(ii) inquiry
-    rule15_conducted = db.Column(db.Boolean, default=False)
+    # Rule 15(ii) inquiry (Integer for PostgreSQL compatibility - 0/1)
+    rule15_conducted = db.Column(db.Integer, default=0)
     rule15_io_name = db.Column(db.String(200))
     rule15_inquiry_date = db.Column(db.String(20))
     rule15_venue = db.Column(db.String(200))
-    rule15_report_submitted = db.Column(db.Boolean, default=False)
+    rule15_report_submitted = db.Column(db.Integer, default=0)
     rule15_report_to = db.Column(db.String(200))
     rule15_report_date = db.Column(db.String(20))
     
