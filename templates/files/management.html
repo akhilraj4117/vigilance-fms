@@ -3546,6 +3546,221 @@
     // =====================================================
     // RVU MODAL FUNCTIONS
     // =====================================================
+    // Load RVU data when modal opens
+    document.getElementById('rvuModal').addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch(`/files/rvu/get/${encodeURIComponent(currentFileNumber)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('rvuDhsFileNumber').value = data.data.dhs_file_number || '';
+                    document.getElementById('rvuReceiptDate').value = data.data.receipt_date || '';
+                    if (data.data.inquiry_status === 'Conducted') {
+                        document.getElementById('rvuInquiryConducted').checked = true;
+                        document.getElementById('rvuInquiryDate').value = data.data.inquiry_date || '';
+                        document.getElementById('rvuInquiryDate').disabled = false;
+                    }
+                    if (data.data.report_status === 'Sent') {
+                        document.getElementById('rvuReportSent').checked = true;
+                        document.getElementById('rvuSentDate').value = data.data.sent_date || '';
+                    } else if (data.data.report_status === 'Interim') {
+                        document.getElementById('rvuReportInterim').checked = true;
+                        document.getElementById('rvuInterimReportDate').value = data.data.interim_report_date || '';
+                    }
+                }
+            }).catch(err => console.error('Error loading RVU:', err));
+    });
+    
+    document.getElementById('rvuSaveBtn').addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        const data = {
+            file_number: currentFileNumber,
+            dhs_file_number: document.getElementById('rvuDhsFileNumber').value,
+            receipt_date: document.getElementById('rvuReceiptDate').value,
+            inquiry_status: document.getElementById('rvuInquiryConducted').checked ? 'Conducted' : 'Not Conducted',
+            inquiry_date: document.getElementById('rvuInquiryDate').value,
+            report_status: document.getElementById('rvuReportSent').checked ? 'Sent' : (document.getElementById('rvuReportInterim').checked ? 'Interim' : ''),
+            interim_report_date: document.getElementById('rvuInterimReportDate').value,
+            sent_date: document.getElementById('rvuSentDate').value
+        };
+        fetch('/files/rvu/save', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) { alert('RVU details saved!'); bootstrap.Modal.getInstance(document.getElementById('rvuModal')).hide(); }
+                else { alert(result.message || 'Failed to save.'); }
+            }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('rvuDeleteBtn').addEventListener('click', function() {
+        if (!currentFileNumber) return;
+        if (!confirm('Delete RVU details?')) return;
+        fetch('/files/rvu/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) { alert('Deleted.'); bootstrap.Modal.getInstance(document.getElementById('rvuModal')).hide(); } });
+    });
+    
+    // =====================================================
+    // KESCPCR, KHRC, SCST, KWC MODAL FUNCTIONS (Generic)
+    // =====================================================
+    function setupCategoryModal(modalId, category, caseNoId, receiptDateId, reportStatusName, interimDateId, sentDateId, finalisedId, finalisedDateId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        modal.addEventListener('show.bs.modal', function() {
+            if (!currentFileNumber) return;
+            fetch(`/files/category-details/get/${category}/${encodeURIComponent(currentFileNumber)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        document.getElementById(caseNoId).value = data.data.case_no || '';
+                        document.getElementById(receiptDateId).value = data.data.receipt_date || '';
+                        const radios = document.querySelectorAll(`input[name="${reportStatusName}"]`);
+                        radios.forEach(r => {
+                            if (r.value === data.data.report_status) r.checked = true;
+                        });
+                        if (interimDateId) document.getElementById(interimDateId).value = data.data.interim_report_date || '';
+                        if (sentDateId) document.getElementById(sentDateId).value = data.data.sent_date || '';
+                        if (finalisedId) document.getElementById(finalisedId).checked = data.data.finalised;
+                        if (finalisedDateId) document.getElementById(finalisedDateId).value = data.data.finalised_date || '';
+                    }
+                }).catch(err => console.error('Error:', err));
+        });
+    }
+    
+    function saveCategoryDetails(category, caseNoId, receiptDateId, reportStatusName, interimDateId, sentDateId, finalisedId, finalisedDateId, modalId) {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        const reportRadio = document.querySelector(`input[name="${reportStatusName}"]:checked`);
+        const data = {
+            file_number: currentFileNumber,
+            category: category,
+            case_no: document.getElementById(caseNoId).value,
+            receipt_date: document.getElementById(receiptDateId).value,
+            report_status: reportRadio ? reportRadio.value : '',
+            interim_report_date: interimDateId ? document.getElementById(interimDateId).value : '',
+            sent_date: sentDateId ? document.getElementById(sentDateId).value : '',
+            finalised: finalisedId ? document.getElementById(finalisedId).checked : false,
+            finalised_date: finalisedDateId ? document.getElementById(finalisedDateId).value : ''
+        };
+        fetch('/files/category-details/save', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) { alert(result.message); bootstrap.Modal.getInstance(document.getElementById(modalId)).hide(); }
+                else { alert(result.message || 'Failed to save.'); }
+            }).catch(err => alert('Error: ' + err.message));
+    }
+    
+    function deleteCategoryDetails(category, modalId) {
+        if (!currentFileNumber) return;
+        if (!confirm('Delete this record?')) return;
+        fetch('/files/category-details/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber, category: category})})
+            .then(r => r.json()).then(result => { if (result.success) { alert('Deleted.'); bootstrap.Modal.getInstance(document.getElementById(modalId)).hide(); } });
+    }
+    
+    // Setup KESCPCR
+    setupCategoryModal('kescpcrModal', 'kescpcr', 'kescpcrCaseNo', 'kescpcrReceiptDate', 'kescpcrReportStatus', 'kescpcrInterimReportDate', 'kescpcrSentDate', 'kescpcrFinalised', 'kescpcrFinalisedDate');
+    document.getElementById('kescpcrSaveBtn').addEventListener('click', () => saveCategoryDetails('kescpcr', 'kescpcrCaseNo', 'kescpcrReceiptDate', 'kescpcrReportStatus', 'kescpcrInterimReportDate', 'kescpcrSentDate', 'kescpcrFinalised', 'kescpcrFinalisedDate', 'kescpcrModal'));
+    document.getElementById('kescpcrDeleteBtn').addEventListener('click', () => deleteCategoryDetails('kescpcr', 'kescpcrModal'));
+    
+    // Setup KHRC
+    setupCategoryModal('khrcModal', 'khrc', 'khrcCaseNo', 'khrcReceiptDate', 'khrcReportStatus', 'khrcInterimReportDate', 'khrcSentDate', 'khrcFinalised', 'khrcFinalisedDate');
+    document.getElementById('khrcSaveBtn').addEventListener('click', () => saveCategoryDetails('khrc', 'khrcCaseNo', 'khrcReceiptDate', 'khrcReportStatus', 'khrcInterimReportDate', 'khrcSentDate', 'khrcFinalised', 'khrcFinalisedDate', 'khrcModal'));
+    document.getElementById('khrcDeleteBtn').addEventListener('click', () => deleteCategoryDetails('khrc', 'khrcModal'));
+    
+    // Setup SCST
+    setupCategoryModal('scstModal', 'scst', 'scstCaseNo', 'scstReceiptDate', 'scstReportStatus', 'scstInterimReportDate', 'scstSentDate', 'scstFinalised', 'scstFinalisedDate');
+    document.getElementById('scstSaveBtn').addEventListener('click', () => saveCategoryDetails('scst', 'scstCaseNo', 'scstReceiptDate', 'scstReportStatus', 'scstInterimReportDate', 'scstSentDate', 'scstFinalised', 'scstFinalisedDate', 'scstModal'));
+    document.getElementById('scstDeleteBtn').addEventListener('click', () => deleteCategoryDetails('scst', 'scstModal'));
+    
+    // Setup KWC
+    setupCategoryModal('kwcModal', 'kwc', 'kwcCaseNo', 'kwcReceiptDate', 'kwcReportStatus', 'kwcInterimReportDate', 'kwcSentDate', 'kwcFinalised', 'kwcFinalisedDate');
+    document.getElementById('kwcSaveBtn').addEventListener('click', () => saveCategoryDetails('kwc', 'kwcCaseNo', 'kwcReceiptDate', 'kwcReportStatus', 'kwcInterimReportDate', 'kwcSentDate', 'kwcFinalised', 'kwcFinalisedDate', 'kwcModal'));
+    document.getElementById('kwcDeleteBtn').addEventListener('click', () => deleteCategoryDetails('kwc', 'kwcModal'));
+    
+    // =====================================================
+    // VIGILANCE AC MODAL FUNCTIONS
+    // =====================================================
+    document.getElementById('vigilanceModal').addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch(`/files/vigilance/get/${encodeURIComponent(currentFileNumber)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('vigilanceCaseNo').value = data.data.case_no || '';
+                    document.getElementById('vigilanceReceiptDate').value = data.data.receipt_date || '';
+                    document.getElementById('vigilanceFinalised').checked = data.data.finalised;
+                    document.getElementById('vigilanceFinalisedDate').value = data.data.finalised_date || '';
+                }
+            }).catch(err => console.error('Error:', err));
+    });
+    
+    document.getElementById('vigilanceSaveBtn').addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/vigilance/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                case_no: document.getElementById('vigilanceCaseNo').value,
+                receipt_date: document.getElementById('vigilanceReceiptDate').value,
+                finalised: document.getElementById('vigilanceFinalised').checked,
+                finalised_date: document.getElementById('vigilanceFinalisedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('vigilanceModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('vigilanceDeleteBtn').addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete?')) return;
+        fetch('/files/vigilance/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('vigilanceModal')).hide(); });
+    });
+    
+    // =====================================================
+    // SABHA MODAL FUNCTIONS
+    // =====================================================
+    document.getElementById('rajyaLokModal').addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch(`/files/sabha/get/${encodeURIComponent(currentFileNumber)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('sabhaSabhaType').value = data.data.sabha_type || '';
+                    document.getElementById('sabhaReceiptDate').value = data.data.receipt_date || '';
+                    const radios = document.querySelectorAll('input[name="sabhaReportStatus"]');
+                    radios.forEach(r => { if (r.value === data.data.report_status) r.checked = true; });
+                    document.getElementById('sabhaSentDate').value = data.data.sent_date || '';
+                    document.getElementById('sabhaFinalised').checked = data.data.finalised;
+                    document.getElementById('sabhaFinalisedDate').value = data.data.finalised_date || '';
+                }
+            }).catch(err => console.error('Error:', err));
+    });
+    
+    document.getElementById('sabhaSaveBtn').addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        const reportRadio = document.querySelector('input[name="sabhaReportStatus"]:checked');
+        fetch('/files/sabha/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                sabha_type: document.getElementById('sabhaSabhaType').value,
+                receipt_date: document.getElementById('sabhaReceiptDate').value,
+                report_status: reportRadio ? reportRadio.value : '',
+                sent_date: document.getElementById('sabhaSentDate').value,
+                finalised: document.getElementById('sabhaFinalised').checked,
+                finalised_date: document.getElementById('sabhaFinalisedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('rajyaLokModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('sabhaDeleteBtn').addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete?')) return;
+        fetch('/files/sabha/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('rajyaLokModal')).hide(); });
+    });
+    
     function toggleRvuInquiryDate() {
         const conducted = document.getElementById('rvuInquiryConducted');
         const dateInput = document.getElementById('rvuInquiryDate');

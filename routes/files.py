@@ -8,7 +8,8 @@ from flask_login import login_required, current_user
 from models import (File, PREntry, InquiryDetails, TraceDetails, DisciplinaryAction, Institution, 
                     ReportSoughtDetails, ReportAskedDetails, PreliminaryStatement, Rule15Statement,
                     RTIApplication, CourtCase, WomenHarassmentCase, ComplaintDetails, CMOPortalDetails,
-                    RVUDetails, SocialSecurityPension, KESCPCRDetails, KHRCDetails)
+                    RVUDetails, SocialSecurityPension, KESCPCRDetails, KHRCDetails, SCSTDetails,
+                    KWCDetails, VigilanceACDetails, RajyaLokNiyamasabhaDetails)
 from extensions import db, csrf
 from sqlalchemy import or_
 
@@ -1712,4 +1713,295 @@ def get_cmo_portal(file_number):
                 'finalised_date': cmo_details.finalised_date or ''
             }
         })
+    return jsonify({'success': True, 'data': None})
+
+
+# ============================================================================
+# RVU Details Routes
+# ============================================================================
+@files_bp.route('/rvu/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_rvu():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        
+        details = RVUDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            details.dhs_file_number = data.get('dhs_file_number', '')
+            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date_inquiry_status = data.get('inquiry_status', '')
+            details.receipt_date_inquiry_date = data.get('inquiry_date', '')
+            details.report_status = data.get('report_status', '')
+            details.interim_report_date = data.get('interim_report_date', '')
+            details.sent_date = data.get('sent_date', '')
+        else:
+            details = RVUDetails(
+                file_number=file_number,
+                dhs_file_number=data.get('dhs_file_number', ''),
+                receipt_date=data.get('receipt_date', ''),
+                receipt_date_inquiry_status=data.get('inquiry_status', ''),
+                receipt_date_inquiry_date=data.get('inquiry_date', ''),
+                report_status=data.get('report_status', ''),
+                interim_report_date=data.get('interim_report_date', ''),
+                sent_date=data.get('sent_date', '')
+            )
+            db.session.add(details)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'RVU details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/rvu/get/<path:file_number>')
+@login_required
+def get_rvu(file_number):
+    details = RVUDetails.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'dhs_file_number': details.dhs_file_number or '',
+            'receipt_date': details.receipt_date or '',
+            'inquiry_status': details.receipt_date_inquiry_status or '',
+            'inquiry_date': details.receipt_date_inquiry_date or '',
+            'report_status': details.report_status or '',
+            'interim_report_date': details.interim_report_date or '',
+            'sent_date': details.sent_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/rvu/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_rvu():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = RVUDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Generic Category Details Routes (KESCPCR, KHRC, SCST, KWC)
+# ============================================================================
+@files_bp.route('/category-details/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_category_details():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        category = data.get('category', '').strip()
+        if not file_number or not category:
+            return jsonify({'success': False, 'message': 'File number and category required.'})
+        
+        model_map = {
+            'kescpcr': (KESCPCRDetails, 'kescpcr_case_no'),
+            'khrc': (KHRCDetails, 'khrc_case_no'),
+            'scst': (SCSTDetails, 'scst_case_no'),
+            'kwc': (KWCDetails, 'kwc_case_no')
+        }
+        if category not in model_map:
+            return jsonify({'success': False, 'message': 'Invalid category.'})
+        
+        Model, case_no_field = model_map[category]
+        details = Model.query.filter_by(file_number=file_number).first()
+        
+        if details:
+            setattr(details, case_no_field, data.get('case_no', ''))
+            details.receipt_date = data.get('receipt_date', '')
+            details.report_status = data.get('report_status', '')
+            details.interim_report_date = data.get('interim_report_date', '')
+            details.sent_date = data.get('sent_date', '')
+            details.finalised = 'Yes' if data.get('finalised') else 'No'
+            details.finalised_date = data.get('finalised_date', '')
+        else:
+            details = Model(file_number=file_number)
+            setattr(details, case_no_field, data.get('case_no', ''))
+            details.receipt_date = data.get('receipt_date', '')
+            details.report_status = data.get('report_status', '')
+            details.interim_report_date = data.get('interim_report_date', '')
+            details.sent_date = data.get('sent_date', '')
+            details.finalised = 'Yes' if data.get('finalised') else 'No'
+            details.finalised_date = data.get('finalised_date', '')
+            db.session.add(details)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'{category.upper()} details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/category-details/get/<category>/<path:file_number>')
+@login_required
+def get_category_details(category, file_number):
+    model_map = {
+        'kescpcr': (KESCPCRDetails, 'kescpcr_case_no'),
+        'khrc': (KHRCDetails, 'khrc_case_no'),
+        'scst': (SCSTDetails, 'scst_case_no'),
+        'kwc': (KWCDetails, 'kwc_case_no')
+    }
+    if category not in model_map:
+        return jsonify({'success': False, 'message': 'Invalid category.'})
+    
+    Model, case_no_field = model_map[category]
+    details = Model.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'case_no': getattr(details, case_no_field, '') or '',
+            'receipt_date': details.receipt_date or '',
+            'report_status': details.report_status or '',
+            'interim_report_date': details.interim_report_date or '',
+            'sent_date': details.sent_date or '',
+            'finalised': details.finalised == 'Yes',
+            'finalised_date': details.finalised_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/category-details/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_category_details():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        category = data.get('category', '').strip()
+        model_map = {'kescpcr': KESCPCRDetails, 'khrc': KHRCDetails, 'scst': SCSTDetails, 'kwc': KWCDetails}
+        if category not in model_map:
+            return jsonify({'success': False, 'message': 'Invalid category.'})
+        Model = model_map[category]
+        details = Model.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Vigilance AC Details Routes
+# ============================================================================
+@files_bp.route('/vigilance/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_vigilance():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = VigilanceACDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            details.vigilance_ac_case_no = data.get('case_no', '')
+            details.receipt_date = data.get('receipt_date', '')
+            details.finalised = 'Yes' if data.get('finalised') else 'No'
+            details.finalised_date = data.get('finalised_date', '')
+        else:
+            details = VigilanceACDetails(
+                file_number=file_number,
+                vigilance_ac_case_no=data.get('case_no', ''),
+                receipt_date=data.get('receipt_date', ''),
+                finalised='Yes' if data.get('finalised') else 'No',
+                finalised_date=data.get('finalised_date', '')
+            )
+            db.session.add(details)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Vigilance details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/vigilance/get/<path:file_number>')
+@login_required
+def get_vigilance(file_number):
+    details = VigilanceACDetails.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'case_no': details.vigilance_ac_case_no or '',
+            'receipt_date': details.receipt_date or '',
+            'finalised': details.finalised == 'Yes',
+            'finalised_date': details.finalised_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/vigilance/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_vigilance():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = VigilanceACDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Rajya Lok Niyamasabha Details Routes
+# ============================================================================
+@files_bp.route('/sabha/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_sabha():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = RajyaLokNiyamasabhaDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            details.sabha_type = data.get('sabha_type', '')
+            details.receipt_date = data.get('receipt_date', '')
+            details.report_status = data.get('report_status', '')
+            details.sent_date = data.get('sent_date', '')
+            details.finalised = 'Yes' if data.get('finalised') else 'No'
+            details.finalised_date = data.get('finalised_date', '')
+        else:
+            details = RajyaLokNiyamasabhaDetails(
+                file_number=file_number,
+                sabha_type=data.get('sabha_type', ''),
+                receipt_date=data.get('receipt_date', ''),
+                report_status=data.get('report_status', ''),
+                sent_date=data.get('sent_date', ''),
+                finalised='Yes' if data.get('finalised') else 'No',
+                finalised_date=data.get('finalised_date', '')
+            )
+            db.session.add(details)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Sabha details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/sabha/get/<path:file_number>')
+@login_required
+def get_sabha(file_number):
+    details = RajyaLokNiyamasabhaDetails.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'sabha_type': details.sabha_type or '',
+            'receipt_date': details.receipt_date or '',
+            'report_status': details.report_status or '',
+            'sent_date': details.sent_date or '',
+            'finalised': details.finalised == 'Yes',
+            'finalised_date': details.finalised_date or ''
+        }})
     return jsonify({'success': True, 'data': None})
