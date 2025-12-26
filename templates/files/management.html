@@ -4620,13 +4620,24 @@
             return;
         }
         
+        if (!currentFileNumber) {
+            alert('Error: No file number available.');
+            return;
+        }
+        
+        console.log('Adding communication:', currentFileNumber, name);
+        
         fetch('/file-movements/communications/add', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({file_number: currentFileNumber, name: name})
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('addCommNameModal')).hide();
                 loadCommunicationsList();
@@ -4637,6 +4648,10 @@
             } else {
                 alert(data.message || 'Failed to add communication.');
             }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Network error: ' + error.message);
         });
     }
     
