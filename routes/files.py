@@ -684,62 +684,78 @@ def manage_pr_entries(file_number):
     if request.method == 'POST':
         entry_id = request.form.get('entry_id', '').strip()
         
-        if entry_id:
-            # Update existing entry
-            pr_entry = PREntry.query.get_or_404(int(entry_id))
-            pr_entry.serial_number = request.form.get('serial_number', '')
-            pr_entry.current_number = request.form.get('current_number', '')
-            pr_entry.date_receipt_clerk = request.form.get('date_receipt_clerk', '')
-            pr_entry.title = request.form.get('title', '')
-            pr_entry.from_whom_outside_name = request.form.get('from_whom_outside_name', '')
-            pr_entry.from_whom_outside_number = request.form.get('from_whom_outside_number', '')
-            pr_entry.from_whom_outside_date = request.form.get('from_whom_outside_date', '')
-            pr_entry.submitted_by_clerk_date = request.form.get('submitted_by_clerk_date', '')
-            pr_entry.return_to_clerk_date = request.form.get('return_to_clerk_date', '')
-            pr_entry.reference_issued_to_whom = request.form.get('reference_issued_to_whom', '')
-            pr_entry.reference_issued_date = request.form.get('reference_issued_date', '')
-            pr_entry.reply_fresh_current_from_whom = request.form.get('reply_fresh_current_from_whom', '')
-            pr_entry.reply_fresh_current_number = request.form.get('reply_fresh_current_number', '')
-            pr_entry.reply_fresh_current_date = request.form.get('reply_fresh_current_date', '')
-            pr_entry.date_receipt_clerk_fresh = request.form.get('date_receipt_clerk_fresh', '')
-            pr_entry.disposal_nature = request.form.get('disposal_nature', '')
-            pr_entry.disposal_date = request.form.get('disposal_date', '')
-            
-            # Update file's last_modified
-            file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            db.session.commit()
-            flash('PR Entry updated successfully.', 'success')
-        else:
-            # Create new entry
-            pr_entry = PREntry(
-                file_number=file_number,
-                serial_number=request.form.get('serial_number', ''),
-                current_number=request.form.get('current_number', ''),
-                date_receipt_clerk=request.form.get('date_receipt_clerk', ''),
-                title=request.form.get('title', ''),
-                from_whom_outside_name=request.form.get('from_whom_outside_name', ''),
-                from_whom_outside_number=request.form.get('from_whom_outside_number', ''),
-                from_whom_outside_date=request.form.get('from_whom_outside_date', ''),
-                submitted_by_clerk_date=request.form.get('submitted_by_clerk_date', ''),
-                return_to_clerk_date=request.form.get('return_to_clerk_date', ''),
-                reference_issued_to_whom=request.form.get('reference_issued_to_whom', ''),
-                reference_issued_date=request.form.get('reference_issued_date', ''),
-                reply_fresh_current_from_whom=request.form.get('reply_fresh_current_from_whom', ''),
-                reply_fresh_current_number=request.form.get('reply_fresh_current_number', ''),
-                reply_fresh_current_date=request.form.get('reply_fresh_current_date', ''),
-                date_receipt_clerk_fresh=request.form.get('date_receipt_clerk_fresh', ''),
-                disposal_nature=request.form.get('disposal_nature', ''),
-                disposal_date=request.form.get('disposal_date', '')
-            )
-            
-            db.session.add(pr_entry)
-            
-            # Update file's last_modified
-            file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            db.session.commit()
-            flash('PR Entry added successfully.', 'success')
+        # Get form values
+        serial_number = request.form.get('serial_number', '').strip()
+        current_number = request.form.get('current_number', '').strip()
+        date_receipt_clerk = request.form.get('date_receipt_clerk', '').strip()
+        title = request.form.get('title', '').strip()
+        from_whom_outside_name = request.form.get('from_whom_outside_name', '').strip()
+        
+        # Validation - require at least one field to be filled
+        if not any([serial_number, current_number, date_receipt_clerk, title, from_whom_outside_name]):
+            flash('Please fill at least one field before adding an entry.', 'warning')
+            return redirect(url_for('files.manage_pr_entries', file_number=file_number))
+        
+        try:
+            if entry_id:
+                # Update existing entry
+                pr_entry = PREntry.query.get_or_404(int(entry_id))
+                pr_entry.serial_number = serial_number
+                pr_entry.current_number = current_number
+                pr_entry.date_receipt_clerk = date_receipt_clerk
+                pr_entry.title = title
+                pr_entry.from_whom_outside_name = from_whom_outside_name
+                pr_entry.from_whom_outside_number = request.form.get('from_whom_outside_number', '')
+                pr_entry.from_whom_outside_date = request.form.get('from_whom_outside_date', '')
+                pr_entry.submitted_by_clerk_date = request.form.get('submitted_by_clerk_date', '')
+                pr_entry.return_to_clerk_date = request.form.get('return_to_clerk_date', '')
+                pr_entry.reference_issued_to_whom = request.form.get('reference_issued_to_whom', '')
+                pr_entry.reference_issued_date = request.form.get('reference_issued_date', '')
+                pr_entry.reply_fresh_current_from_whom = request.form.get('reply_fresh_current_from_whom', '')
+                pr_entry.reply_fresh_current_number = request.form.get('reply_fresh_current_number', '')
+                pr_entry.reply_fresh_current_date = request.form.get('reply_fresh_current_date', '')
+                pr_entry.date_receipt_clerk_fresh = request.form.get('date_receipt_clerk_fresh', '')
+                pr_entry.disposal_nature = request.form.get('disposal_nature', '')
+                pr_entry.disposal_date = request.form.get('disposal_date', '')
+                
+                # Update file's last_modified
+                file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
+                db.session.commit()
+                flash('PR Entry updated successfully.', 'success')
+            else:
+                # Create new entry
+                pr_entry = PREntry(
+                    file_number=file_number,
+                    serial_number=serial_number,
+                    current_number=current_number,
+                    date_receipt_clerk=date_receipt_clerk,
+                    title=title,
+                    from_whom_outside_name=from_whom_outside_name,
+                    from_whom_outside_number=request.form.get('from_whom_outside_number', ''),
+                    from_whom_outside_date=request.form.get('from_whom_outside_date', ''),
+                    submitted_by_clerk_date=request.form.get('submitted_by_clerk_date', ''),
+                    return_to_clerk_date=request.form.get('return_to_clerk_date', ''),
+                    reference_issued_to_whom=request.form.get('reference_issued_to_whom', ''),
+                    reference_issued_date=request.form.get('reference_issued_date', ''),
+                    reply_fresh_current_from_whom=request.form.get('reply_fresh_current_from_whom', ''),
+                    reply_fresh_current_number=request.form.get('reply_fresh_current_number', ''),
+                    reply_fresh_current_date=request.form.get('reply_fresh_current_date', ''),
+                    date_receipt_clerk_fresh=request.form.get('date_receipt_clerk_fresh', ''),
+                    disposal_nature=request.form.get('disposal_nature', ''),
+                    disposal_date=request.form.get('disposal_date', '')
+                )
+                
+                db.session.add(pr_entry)
+                
+                # Update file's last_modified
+                file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
+                db.session.commit()
+                flash('PR Entry added successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Database error: {str(e)}. Please contact administrator to fix sequence.', 'danger')
         
         return redirect(url_for('files.manage_pr_entries', file_number=file_number))
     
