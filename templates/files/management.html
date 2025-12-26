@@ -3912,12 +3912,15 @@
                 if (data.success && data.data) {
                     document.getElementById('pcCaseNo').value = data.data.case_no || '';
                     document.getElementById('pcFirNo').value = data.data.fir_no || '';
-                    document.getElementById('pcCaseDate').value = data.data.case_date || '';
+                    document.getElementById('pcDate').value = data.data.case_date || '';
                     document.getElementById('pcPoliceStation').value = data.data.police_station || '';
-                    document.getElementById('pcDetained').checked = data.data.detained_over_48_hours === 'Yes';
-                    document.getElementById('pcSuspended').checked = data.data.suspended_from_service === 'Yes';
+                    if (data.data.detained_over_48_hours === 'Yes') document.getElementById('pcDetainedYes').checked = true;
+                    else document.getElementById('pcDetainedNo').checked = true;
+                    if (data.data.suspended_from_service === 'Yes') document.getElementById('pcSuspendedYes').checked = true;
+                    else document.getElementById('pcSuspendedNo').checked = true;
                     document.getElementById('pcPresentStatus').value = data.data.present_status || '';
-                    document.getElementById('pcFinalised').checked = data.data.finalised === 'Yes';
+                    if (data.data.finalised === 'Yes') document.getElementById('pcFinalisedYes').checked = true;
+                    else document.getElementById('pcFinalisedNo').checked = true;
                     document.getElementById('pcFinalisedDate').value = data.data.finalised_date || '';
                     togglePcSuspended();
                     togglePcFinalisedDate();
@@ -3933,12 +3936,12 @@
                 file_number: currentFileNumber,
                 case_no: document.getElementById('pcCaseNo').value,
                 fir_no: document.getElementById('pcFirNo').value,
-                case_date: document.getElementById('pcCaseDate').value,
+                case_date: document.getElementById('pcDate').value,
                 police_station: document.getElementById('pcPoliceStation').value,
-                detained_over_48_hours: document.getElementById('pcDetained').checked ? 'Yes' : 'No',
-                suspended_from_service: document.getElementById('pcSuspended').checked ? 'Yes' : 'No',
+                detained_over_48_hours: document.getElementById('pcDetainedYes').checked ? 'Yes' : 'No',
+                suspended_from_service: document.getElementById('pcSuspendedYes').checked ? 'Yes' : 'No',
                 present_status: document.getElementById('pcPresentStatus').value,
-                finalised: document.getElementById('pcFinalised').checked ? 'Yes' : 'No',
+                finalised: document.getElementById('pcFinalisedYes').checked ? 'Yes' : 'No',
                 finalised_date: document.getElementById('pcFinalisedDate').value
             })
         }).then(r => r.json()).then(result => {
@@ -4525,23 +4528,23 @@
     // POLICE CASE MODAL FUNCTIONS
     // =====================================================
     function togglePcSuspended() {
-        const detained = document.getElementById('pcDetained');
-        const suspendedRow = document.getElementById('pcSuspendedRow');
-        if (detained.checked) {
-            suspendedRow.classList.remove('d-none');
+        const detainedYes = document.getElementById('pcDetainedYes');
+        const suspendedDiv = document.getElementById('pcSuspendedDiv');
+        if (detainedYes.checked) {
+            suspendedDiv.style.display = 'block';
         } else {
-            suspendedRow.classList.add('d-none');
-            document.getElementById('pcSuspended').checked = false;
+            suspendedDiv.style.display = 'none';
+            document.getElementById('pcSuspendedNo').checked = true;
         }
     }
     
     function togglePcFinalisedDate() {
-        const checkbox = document.getElementById('pcFinalised');
-        const dateRow = document.getElementById('pcFinalisedDateRow');
-        if (checkbox.checked) {
-            dateRow.classList.remove('d-none');
+        const finalisedYes = document.getElementById('pcFinalisedYes');
+        const dateDiv = document.getElementById('pcFinalisedDateDiv');
+        if (finalisedYes.checked) {
+            dateDiv.style.display = 'block';
         } else {
-            dateRow.classList.add('d-none');
+            dateDiv.style.display = 'none';
             document.getElementById('pcFinalisedDate').value = '';
         }
     }
@@ -4550,15 +4553,14 @@
     // ATTACK ON DOCTORS MODAL FUNCTIONS
     // =====================================================
     function toggleAodPoliceFields() {
-        const policeComplaint = document.getElementById('aodPoliceComplaint');
-        const policeFields = document.getElementById('aodPoliceFields');
-        if (policeComplaint.checked) {
-            policeFields.classList.remove('d-none');
+        const policeInformedYes = document.getElementById('aodPoliceInformedYes');
+        const policeFieldsDiv = document.getElementById('aodPoliceFieldsDiv');
+        if (policeInformedYes.checked) {
+            policeFieldsDiv.style.display = 'block';
         } else {
-            policeFields.classList.add('d-none');
-            document.getElementById('aodFirNo').value = '';
-            document.getElementById('aodFirDate').value = '';
+            policeFieldsDiv.style.display = 'none';
             document.getElementById('aodPoliceStation').value = '';
+            document.getElementById('aodReportedDate').value = '';
         }
     }
     
@@ -4605,15 +4607,14 @@
     // ATTACK ON STAFFS MODAL FUNCTIONS
     // =====================================================
     function toggleAosPoliceFields() {
-        const policeComplaint = document.getElementById('aosPoliceComplaint');
-        const policeFields = document.getElementById('aosPoliceFields');
-        if (policeComplaint.checked) {
-            policeFields.classList.remove('d-none');
+        const policeInformedYes = document.getElementById('aosPoliceInformedYes');
+        const policeFieldsDiv = document.getElementById('aosPoliceFieldsDiv');
+        if (policeInformedYes.checked) {
+            policeFieldsDiv.style.display = 'block';
         } else {
-            policeFields.classList.add('d-none');
-            document.getElementById('aosFirNo').value = '';
-            document.getElementById('aosFirDate').value = '';
+            policeFieldsDiv.style.display = 'none';
             document.getElementById('aosPoliceStation').value = '';
+            document.getElementById('aosReportedDate').value = '';
         }
     }
     
