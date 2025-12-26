@@ -9,7 +9,8 @@ from models import (File, PREntry, InquiryDetails, TraceDetails, DisciplinaryAct
                     ReportSoughtDetails, ReportAskedDetails, PreliminaryStatement, Rule15Statement,
                     RTIApplication, CourtCase, WomenHarassmentCase, ComplaintDetails, CMOPortalDetails,
                     RVUDetails, SocialSecurityPension, KESCPCRDetails, KHRCDetails, SCSTDetails,
-                    KWCDetails, VigilanceACDetails, RajyaLokNiyamasabhaDetails)
+                    KWCDetails, VigilanceACDetails, RajyaLokNiyamasabhaDetails, PoliceCaseDetails,
+                    AttackOnDoctorsCase, AttackOnStaffsCase)
 from extensions import db, csrf
 from sqlalchemy import or_
 
@@ -2005,3 +2006,466 @@ def get_sabha(file_number):
             'finalised_date': details.finalised_date or ''
         }})
     return jsonify({'success': True, 'data': None})
+
+
+# ============================================================================
+# Court Case Routes
+# ============================================================================
+@files_bp.route('/court-case/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_court_case():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = CourtCase.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = CourtCase(file_number=file_number)
+            db.session.add(details)
+        details.name_of_forum = data.get('name_of_forum', '')
+        details.forum_specify = data.get('forum_specify', '')
+        details.case_no = data.get('case_no', '')
+        details.month = data.get('month', '')
+        details.year = data.get('year', '')
+        details.receipt_date = data.get('receipt_date', '')
+        details.related_to_mo = data.get('related_to_mo', '')
+        details.mo_pen = data.get('mo_pen', '')
+        details.sf_forwarded = data.get('sf_forwarded', '')
+        details.sf_forwarding_date = data.get('sf_forwarding_date', '')
+        details.affidavit_filed = data.get('affidavit_filed', '')
+        details.affidavit_filed_date = data.get('affidavit_filed_date', '')
+        details.present_status = data.get('present_status', '')
+        details.disposed_against_dhs = data.get('disposed_against_dhs', '')
+        details.disposal_date = data.get('disposal_date', '')
+        details.remarks = data.get('remarks', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Court case saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/court-case/get/<path:file_number>')
+@login_required
+def get_court_case(file_number):
+    details = CourtCase.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'name_of_forum': details.name_of_forum or '',
+            'forum_specify': details.forum_specify or '',
+            'case_no': details.case_no or '',
+            'month': details.month or '',
+            'year': details.year or '',
+            'receipt_date': details.receipt_date or '',
+            'related_to_mo': details.related_to_mo or '',
+            'mo_pen': details.mo_pen or '',
+            'sf_forwarded': details.sf_forwarded or '',
+            'sf_forwarding_date': details.sf_forwarding_date or '',
+            'affidavit_filed': details.affidavit_filed or '',
+            'affidavit_filed_date': details.affidavit_filed_date or '',
+            'present_status': details.present_status or '',
+            'disposed_against_dhs': details.disposed_against_dhs or '',
+            'disposal_date': details.disposal_date or '',
+            'remarks': details.remarks or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/court-case/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_court_case():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = CourtCase.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Complaint Routes
+# ============================================================================
+@files_bp.route('/complaint/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_complaint():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = ComplaintDetails.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = ComplaintDetails(file_number=file_number)
+            db.session.add(details)
+        details.plaintiff_type = data.get('plaintiff_type', '')
+        details.plaintiff_pen = data.get('plaintiff_pen', '')
+        details.plaintiff_name = data.get('plaintiff_name', '')
+        details.plaintiff_address = data.get('plaintiff_address', '')
+        details.plaintiff_contact_number = data.get('plaintiff_contact_number', '')
+        details.plaintiff_email = data.get('plaintiff_email', '')
+        details.respondent_type = data.get('respondent_type', '')
+        details.respondent_pen = data.get('respondent_pen', '')
+        details.respondent_name = data.get('respondent_name', '')
+        details.respondent_address = data.get('respondent_address', '')
+        details.respondent_contact_number = data.get('respondent_contact_number', '')
+        details.respondent_email = data.get('respondent_email', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Complaint details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/complaint/get/<path:file_number>')
+@login_required
+def get_complaint(file_number):
+    details = ComplaintDetails.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'plaintiff_type': details.plaintiff_type or '',
+            'plaintiff_pen': details.plaintiff_pen or '',
+            'plaintiff_name': details.plaintiff_name or '',
+            'plaintiff_address': details.plaintiff_address or '',
+            'plaintiff_contact_number': details.plaintiff_contact_number or '',
+            'plaintiff_email': details.plaintiff_email or '',
+            'respondent_type': details.respondent_type or '',
+            'respondent_pen': details.respondent_pen or '',
+            'respondent_name': details.respondent_name or '',
+            'respondent_address': details.respondent_address or '',
+            'respondent_contact_number': details.respondent_contact_number or '',
+            'respondent_email': details.respondent_email or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/complaint/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_complaint():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = ComplaintDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Women Harassment Routes
+# ============================================================================
+@files_bp.route('/women-harassment/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_women_harassment():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = WomenHarassmentCase.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = WomenHarassmentCase(file_number=file_number)
+            db.session.add(details)
+        details.icc_report_attached = data.get('icc_report_attached', False)
+        details.icc_report_date = data.get('icc_report_date', '')
+        details.finalised = data.get('finalised', False)
+        details.finalised_date = data.get('finalised_date', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Women harassment details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/women-harassment/get/<path:file_number>')
+@login_required
+def get_women_harassment(file_number):
+    details = WomenHarassmentCase.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'icc_report_attached': details.icc_report_attached or False,
+            'icc_report_date': details.icc_report_date or '',
+            'finalised': details.finalised or False,
+            'finalised_date': details.finalised_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/women-harassment/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_women_harassment():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = WomenHarassmentCase.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Police Case Routes
+# ============================================================================
+@files_bp.route('/police-case/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_police_case():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = PoliceCaseDetails.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = PoliceCaseDetails(file_number=file_number)
+            db.session.add(details)
+        details.case_no = data.get('case_no', '')
+        details.fir_no = data.get('fir_no', '')
+        details.case_date = data.get('case_date', '')
+        details.police_station = data.get('police_station', '')
+        details.detained_over_48_hours = data.get('detained_over_48_hours', '')
+        details.suspended_from_service = data.get('suspended_from_service', '')
+        details.present_status = data.get('present_status', '')
+        details.finalised = data.get('finalised', '')
+        details.finalised_date = data.get('finalised_date', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Police case saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/police-case/get/<path:file_number>')
+@login_required
+def get_police_case(file_number):
+    details = PoliceCaseDetails.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'case_no': details.case_no or '',
+            'fir_no': details.fir_no or '',
+            'case_date': details.case_date or '',
+            'police_station': details.police_station or '',
+            'detained_over_48_hours': details.detained_over_48_hours or '',
+            'suspended_from_service': details.suspended_from_service or '',
+            'present_status': details.present_status or '',
+            'finalised': details.finalised or '',
+            'finalised_date': details.finalised_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/police-case/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_police_case():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = PoliceCaseDetails.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Attack on Doctors Routes
+# ============================================================================
+@files_bp.route('/attack-doctors/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_attack_doctors():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = AttackOnDoctorsCase.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = AttackOnDoctorsCase(file_number=file_number)
+            db.session.add(details)
+        details.police_informed = data.get('police_informed', '')
+        details.police_station = data.get('police_station', '')
+        details.reported_date = data.get('reported_date', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Attack on doctors details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/attack-doctors/get/<path:file_number>')
+@login_required
+def get_attack_doctors(file_number):
+    details = AttackOnDoctorsCase.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'police_informed': details.police_informed or '',
+            'police_station': details.police_station or '',
+            'reported_date': details.reported_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/attack-doctors/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_attack_doctors():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = AttackOnDoctorsCase.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Attack on Staffs Routes
+# ============================================================================
+@files_bp.route('/attack-staffs/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_attack_staffs():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = AttackOnStaffsCase.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = AttackOnStaffsCase(file_number=file_number)
+            db.session.add(details)
+        details.police_informed = data.get('police_informed', '')
+        details.police_station = data.get('police_station', '')
+        details.reported_date = data.get('reported_date', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Attack on staffs details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/attack-staffs/get/<path:file_number>')
+@login_required
+def get_attack_staffs(file_number):
+    details = AttackOnStaffsCase.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'police_informed': details.police_informed or '',
+            'police_station': details.police_station or '',
+            'reported_date': details.reported_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/attack-staffs/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_attack_staffs():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = AttackOnStaffsCase.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+# ============================================================================
+# Social Security Pension Routes
+# ============================================================================
+@files_bp.route('/social-security/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_social_security():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number required.'})
+        details = SocialSecurityPension.query.filter_by(file_number=file_number).first()
+        if not details:
+            details = SocialSecurityPension(file_number=file_number)
+            db.session.add(details)
+        details.main_list_sl_no = data.get('main_list_sl_no', '')
+        details.pen = data.get('pen', '')
+        details.name = data.get('name', '')
+        details.sevana_pensioner_id = data.get('sevana_pensioner_id', '')
+        details.aadhar_no = data.get('aadhar_no', '')
+        details.amount = float(data.get('amount', 0) or 0)
+        details.refunded_status = data.get('refunded_status', '')
+        details.refunded_amount = float(data.get('refunded_amount', 0) or 0)
+        details.letter_no = data.get('letter_no', '')
+        details.letter_date = data.get('letter_date', '')
+        details.receipt_no = data.get('receipt_no', '')
+        details.finalised = data.get('finalised', '')
+        details.finalised_date = data.get('finalised_date', '')
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Social security pension details saved.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@files_bp.route('/social-security/get/<path:file_number>')
+@login_required
+def get_social_security(file_number):
+    details = SocialSecurityPension.query.filter_by(file_number=file_number).first()
+    if details:
+        return jsonify({'success': True, 'data': {
+            'main_list_sl_no': details.main_list_sl_no or '',
+            'pen': details.pen or '',
+            'name': details.name or '',
+            'sevana_pensioner_id': details.sevana_pensioner_id or '',
+            'aadhar_no': details.aadhar_no or '',
+            'amount': details.amount or 0,
+            'refunded_status': details.refunded_status or '',
+            'refunded_amount': details.refunded_amount or 0,
+            'letter_no': details.letter_no or '',
+            'letter_date': details.letter_date or '',
+            'receipt_no': details.receipt_no or '',
+            'finalised': details.finalised or '',
+            'finalised_date': details.finalised_date or ''
+        }})
+    return jsonify({'success': True, 'data': None})
+
+@files_bp.route('/social-security/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_social_security():
+    try:
+        data = request.get_json(force=True, silent=True)
+        file_number = data.get('file_number', '').strip()
+        details = SocialSecurityPension.query.filter_by(file_number=file_number).first()
+        if details:
+            db.session.delete(details)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Not found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})

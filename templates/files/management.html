@@ -2697,9 +2697,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" title="Save Changes"><i class="bi bi-save"></i> Save/Update</button>
-                <button type="button" class="btn btn-warning" title="Edit Entry"><i class="bi bi-pencil"></i> Edit</button>
-                <button type="button" class="btn btn-danger" title="Delete Entry"><i class="bi bi-trash"></i> Delete</button>
+                <button type="button" class="btn btn-primary" id="sspSaveBtn" title="Save Changes"><i class="bi bi-save"></i> Save/Update</button>
+                <button type="button" class="btn btn-warning" id="sspEditBtn" title="Edit Entry"><i class="bi bi-pencil"></i> Edit</button>
+                <button type="button" class="btn btn-danger" id="sspDeleteBtn" title="Delete Entry"><i class="bi bi-trash"></i> Delete</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" title="Close Dialog">Close</button>
             </div>
         </div>
@@ -3759,6 +3759,335 @@
         if (!currentFileNumber || !confirm('Delete?')) return;
         fetch('/files/sabha/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
             .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('rajyaLokModal')).hide(); });
+    });
+    
+    // =====================================================
+    // COURT CASE SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('courtCaseModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/court-case/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('courtCaseNo').value = data.data.case_no || '';
+                    document.getElementById('courtNameOfForum').value = data.data.name_of_forum || '';
+                    document.getElementById('courtForumSpecify').value = data.data.forum_specify || '';
+                    document.getElementById('courtMonth').value = data.data.month || '';
+                    document.getElementById('courtYear').value = data.data.year || '';
+                    document.getElementById('courtReceiptDate').value = data.data.receipt_date || '';
+                    // Court case remarks
+                    const remarksEl = document.getElementById('courtCasenotes');
+                    if (remarksEl) remarksEl.value = data.data.remarks || '';
+                }
+            }).catch(err => console.error('Error loading court case:', err));
+    });
+    
+    document.getElementById('courtCaseSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/court-case/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                case_no: document.getElementById('courtCaseNo').value,
+                name_of_forum: document.getElementById('courtNameOfForum').value,
+                forum_specify: document.getElementById('courtForumSpecify').value,
+                month: document.getElementById('courtMonth').value,
+                year: document.getElementById('courtYear').value,
+                receipt_date: document.getElementById('courtReceiptDate').value,
+                remarks: document.getElementById('courtCasenotes')?.value || ''
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('courtCaseModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('courtCaseDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Court Case details?')) return;
+        fetch('/files/court-case/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('courtCaseModal')).hide(); });
+    });
+    
+    // =====================================================
+    // COMPLAINT SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('complaintModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/complaint/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('plaintiffName').value = data.data.plaintiff_name || '';
+                    document.getElementById('plaintiffPen').value = data.data.plaintiff_pen || '';
+                    document.getElementById('plaintiffAddress').value = data.data.plaintiff_address || '';
+                    document.getElementById('plaintiffPhone').value = data.data.plaintiff_contact_number || '';
+                    document.getElementById('plaintiffEmail').value = data.data.plaintiff_email || '';
+                    document.getElementById('respondentName').value = data.data.respondent_name || '';
+                    document.getElementById('respondentPen').value = data.data.respondent_pen || '';
+                    document.getElementById('respondentAddress').value = data.data.respondent_address || '';
+                    document.getElementById('respondentPhone').value = data.data.respondent_contact_number || '';
+                    document.getElementById('respondentEmail').value = data.data.respondent_email || '';
+                }
+            }).catch(err => console.error('Error loading complaint:', err));
+    });
+    
+    document.getElementById('complaintSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/complaint/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                plaintiff_name: document.getElementById('plaintiffName').value,
+                plaintiff_pen: document.getElementById('plaintiffPen').value,
+                plaintiff_address: document.getElementById('plaintiffAddress').value,
+                plaintiff_contact_number: document.getElementById('plaintiffPhone').value,
+                plaintiff_email: document.getElementById('plaintiffEmail').value,
+                respondent_name: document.getElementById('respondentName').value,
+                respondent_pen: document.getElementById('respondentPen').value,
+                respondent_address: document.getElementById('respondentAddress').value,
+                respondent_contact_number: document.getElementById('respondentPhone').value,
+                respondent_email: document.getElementById('respondentEmail').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('complaintDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Complaint details?')) return;
+        fetch('/files/complaint/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide(); });
+    });
+    
+    // =====================================================
+    // WOMEN HARASSMENT SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('womenHarassmentModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/women-harassment/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    if (data.data.icc_report_attached) document.getElementById('whIccAttachedYes').checked = true;
+                    else document.getElementById('whIccAttachedNo').checked = true;
+                    document.getElementById('whIccReportDate').value = data.data.icc_report_date || '';
+                    if (data.data.finalised) document.getElementById('whFinalisedYes').checked = true;
+                    else document.getElementById('whFinalisedNo').checked = true;
+                    document.getElementById('whFinalisedDate').value = data.data.finalised_date || '';
+                    toggleWhIccDate();
+                    toggleWhFinalisedDate();
+                }
+            }).catch(err => console.error('Error loading women harassment:', err));
+    });
+    
+    document.getElementById('whSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/women-harassment/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                icc_report_attached: document.getElementById('whIccAttachedYes').checked,
+                icc_report_date: document.getElementById('whIccReportDate').value,
+                finalised: document.getElementById('whFinalisedYes').checked,
+                finalised_date: document.getElementById('whFinalisedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('womenHarassmentModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('whDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Women Harassment details?')) return;
+        fetch('/files/women-harassment/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('womenHarassmentModal')).hide(); });
+    });
+    
+    // =====================================================
+    // POLICE CASE SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('policeCaseModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/police-case/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('pcCaseNo').value = data.data.case_no || '';
+                    document.getElementById('pcFirNo').value = data.data.fir_no || '';
+                    document.getElementById('pcCaseDate').value = data.data.case_date || '';
+                    document.getElementById('pcPoliceStation').value = data.data.police_station || '';
+                    document.getElementById('pcDetained').checked = data.data.detained_over_48_hours === 'Yes';
+                    document.getElementById('pcSuspended').checked = data.data.suspended_from_service === 'Yes';
+                    document.getElementById('pcPresentStatus').value = data.data.present_status || '';
+                    document.getElementById('pcFinalised').checked = data.data.finalised === 'Yes';
+                    document.getElementById('pcFinalisedDate').value = data.data.finalised_date || '';
+                    togglePcSuspended();
+                    togglePcFinalisedDate();
+                }
+            }).catch(err => console.error('Error loading police case:', err));
+    });
+    
+    document.getElementById('pcSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/police-case/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                case_no: document.getElementById('pcCaseNo').value,
+                fir_no: document.getElementById('pcFirNo').value,
+                case_date: document.getElementById('pcCaseDate').value,
+                police_station: document.getElementById('pcPoliceStation').value,
+                detained_over_48_hours: document.getElementById('pcDetained').checked ? 'Yes' : 'No',
+                suspended_from_service: document.getElementById('pcSuspended').checked ? 'Yes' : 'No',
+                present_status: document.getElementById('pcPresentStatus').value,
+                finalised: document.getElementById('pcFinalised').checked ? 'Yes' : 'No',
+                finalised_date: document.getElementById('pcFinalisedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('policeCaseModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('pcDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Police Case details?')) return;
+        fetch('/files/police-case/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('policeCaseModal')).hide(); });
+    });
+    
+    // =====================================================
+    // ATTACK ON DOCTORS SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('attackDoctorsModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/attack-doctors/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    if (data.data.police_informed === 'Yes') document.getElementById('aodPoliceInformedYes').checked = true;
+                    else document.getElementById('aodPoliceInformedNo').checked = true;
+                    document.getElementById('aodPoliceStation').value = data.data.police_station || '';
+                    document.getElementById('aodReportedDate').value = data.data.reported_date || '';
+                    toggleAodPoliceFields();
+                }
+            }).catch(err => console.error('Error loading attack on doctors:', err));
+    });
+    
+    document.getElementById('aodSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/attack-doctors/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                police_informed: document.getElementById('aodPoliceInformedYes').checked ? 'Yes' : 'No',
+                police_station: document.getElementById('aodPoliceStation').value,
+                reported_date: document.getElementById('aodReportedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('attackDoctorsModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('aodDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Attack on Doctors details?')) return;
+        fetch('/files/attack-doctors/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('attackDoctorsModal')).hide(); });
+    });
+    
+    // =====================================================
+    // ATTACK ON STAFFS SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('attackStaffsModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/attack-staffs/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    if (data.data.police_informed === 'Yes') document.getElementById('aosPoliceInformedYes').checked = true;
+                    else document.getElementById('aosPoliceInformedNo').checked = true;
+                    document.getElementById('aosPoliceStation').value = data.data.police_station || '';
+                    document.getElementById('aosReportedDate').value = data.data.reported_date || '';
+                    toggleAosPoliceFields();
+                }
+            }).catch(err => console.error('Error loading attack on staffs:', err));
+    });
+    
+    document.getElementById('aosSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/attack-staffs/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                police_informed: document.getElementById('aosPoliceInformedYes').checked ? 'Yes' : 'No',
+                police_station: document.getElementById('aosPoliceStation').value,
+                reported_date: document.getElementById('aosReportedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('attackStaffsModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('aosDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Attack on Staffs details?')) return;
+        fetch('/files/attack-staffs/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('attackStaffsModal')).hide(); });
+    });
+    
+    // =====================================================
+    // SOCIAL SECURITY PENSION SAVE/DELETE/LOAD HANDLERS
+    // =====================================================
+    document.getElementById('socialSecurityModal')?.addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch('/files/social-security/get/' + encodeURIComponent(currentFileNumber))
+            .then(r => r.json()).then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('sspMainListSlNo').value = data.data.main_list_sl_no || '';
+                    document.getElementById('sspPen').value = data.data.pen || '';
+                    document.getElementById('sspName').value = data.data.name || '';
+                    document.getElementById('sspSevanaPensionerId').value = data.data.sevana_pensioner_id || '';
+                    document.getElementById('sspAadharNo').value = data.data.aadhar_no || '';
+                    document.getElementById('sspAmount').value = data.data.amount || '';
+                    document.getElementById('sspRefundedStatus').value = data.data.refunded_status || 'No';
+                    document.getElementById('sspRefundedAmount').value = data.data.refunded_amount || '';
+                    document.getElementById('sspLetterNo').value = data.data.letter_no || '';
+                    document.getElementById('sspLetterDate').value = data.data.letter_date || '';
+                    document.getElementById('sspReceiptNo').value = data.data.receipt_no || '';
+                    document.getElementById('sspFinalised').checked = data.data.finalised === 'Yes';
+                    document.getElementById('sspFinalisedDate').value = data.data.finalised_date || '';
+                    toggleSspRefundedAmount();
+                    toggleSspFinalisedDate();
+                }
+            }).catch(err => console.error('Error loading social security:', err));
+    });
+    
+    document.getElementById('sspSaveBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber) { alert('No file selected.'); return; }
+        fetch('/files/social-security/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                file_number: currentFileNumber,
+                main_list_sl_no: document.getElementById('sspMainListSlNo').value,
+                pen: document.getElementById('sspPen').value,
+                name: document.getElementById('sspName').value,
+                sevana_pensioner_id: document.getElementById('sspSevanaPensionerId').value,
+                aadhar_no: document.getElementById('sspAadharNo').value,
+                amount: parseFloat(document.getElementById('sspAmount').value) || 0,
+                refunded_status: document.getElementById('sspRefundedStatus').value,
+                refunded_amount: parseFloat(document.getElementById('sspRefundedAmount').value) || 0,
+                letter_no: document.getElementById('sspLetterNo').value,
+                letter_date: document.getElementById('sspLetterDate').value,
+                receipt_no: document.getElementById('sspReceiptNo').value,
+                finalised: document.getElementById('sspFinalised').checked ? 'Yes' : 'No',
+                finalised_date: document.getElementById('sspFinalisedDate').value
+            })
+        }).then(r => r.json()).then(result => {
+            if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('socialSecurityModal')).hide(); }
+            else { alert(result.message); }
+        }).catch(err => alert('Error: ' + err.message));
+    });
+    
+    document.getElementById('sspDeleteBtn')?.addEventListener('click', function() {
+        if (!currentFileNumber || !confirm('Delete Social Security Pension details?')) return;
+        fetch('/files/social-security/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
+            .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('socialSecurityModal')).hide(); });
     });
     
     function toggleRvuInquiryDate() {
