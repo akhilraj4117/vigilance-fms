@@ -379,9 +379,9 @@ class WomenHarassmentCase(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     file_number = db.Column(db.String(100), db.ForeignKey('files.file_number'), unique=True, nullable=False)
-    icc_report_attached = db.Column(db.Boolean, default=False)
+    icc_report_attached = db.Column(db.Integer, default=0)  # INTEGER for PostgreSQL compatibility
     icc_report_date = db.Column(db.String(20))
-    finalised = db.Column(db.Boolean, default=False)
+    finalised = db.Column(db.Integer, default=0)  # INTEGER for PostgreSQL compatibility
     finalised_date = db.Column(db.String(20))
     
     employees_involved = db.relationship('WHEmployeeInvolved', backref='case', lazy='dynamic', cascade='all, delete-orphan')

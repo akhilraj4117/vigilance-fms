@@ -2178,9 +2178,9 @@ def save_women_harassment():
         if not details:
             details = WomenHarassmentCase(file_number=file_number)
             db.session.add(details)
-        details.icc_report_attached = data.get('icc_report_attached', False)
+        details.icc_report_attached = 1 if data.get('icc_report_attached', False) else 0
         details.icc_report_date = data.get('icc_report_date', '')
-        details.finalised = data.get('finalised', False)
+        details.finalised = 1 if data.get('finalised', False) else 0
         details.finalised_date = data.get('finalised_date', '')
         db.session.commit()
         return jsonify({'success': True, 'message': 'Women harassment details saved.'})
@@ -2194,9 +2194,9 @@ def get_women_harassment(file_number):
     details = WomenHarassmentCase.query.filter_by(file_number=file_number).first()
     if details:
         return jsonify({'success': True, 'data': {
-            'icc_report_attached': details.icc_report_attached or False,
+            'icc_report_attached': details.icc_report_attached == 1,
             'icc_report_date': details.icc_report_date or '',
-            'finalised': details.finalised or False,
+            'finalised': details.finalised == 1,
             'finalised_date': details.finalised_date or ''
         }})
     return jsonify({'success': True, 'data': None})
