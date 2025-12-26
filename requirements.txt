@@ -14,10 +14,10 @@ Flask-WTF==1.2.1
 WTForms==3.1.1
 
 # Production Server
-gunicorn==21.2.0
+gunicorn==23.0.0
 
-# PostgreSQL Driver (for Render.com)
-psycopg2-binary==2.9.9
+# PostgreSQL Driver (psycopg3 for Python 3.13 compatibility)
+psycopg[binary]==3.2.3
 
 # Environment Variables
 python-dotenv==1.0.0
