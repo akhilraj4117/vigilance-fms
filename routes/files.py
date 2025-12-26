@@ -9,7 +9,7 @@ from models import (File, PREntry, InquiryDetails, TraceDetails, DisciplinaryAct
                     ReportSoughtDetails, ReportAskedDetails, PreliminaryStatement, Rule15Statement,
                     RTIApplication, CourtCase, WomenHarassmentCase, ComplaintDetails, CMOPortalDetails,
                     RVUDetails, SocialSecurityPension, KESCPCRDetails, KHRCDetails)
-from extensions import db
+from extensions import db, csrf
 from sqlalchemy import or_
 
 files_bp = Blueprint('files', __name__)
@@ -1623,3 +1623,93 @@ def generate_statement_document():
         as_attachment=True,
         download_name=filename
     )
+
+
+@files_bp.route('/cmo-portal/save', methods=['POST'])
+@csrf.exempt
+@login_required
+def save_cmo_portal():
+    """Save or update CMO Portal details."""
+    try:
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received.'})
+        
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number is required.'})
+        
+        docket_number = data.get('docket_number', '').strip()
+        date_of_receipt = data.get('date_of_receipt', '').strip()
+        finalised = 'Yes' if data.get('finalised') else 'No'
+        finalised_date = data.get('finalised_date', '').strip()
+        
+        # Check if record exists
+        cmo_details = CMOPortalDetails.query.filter_by(file_number=file_number).first()
+        
+        if cmo_details:
+            # Update existing
+            cmo_details.docket_number = docket_number
+            cmo_details.date_of_receipt = date_of_receipt
+            cmo_details.finalised = finalised
+            cmo_details.finalised_date = finalised_date
+        else:
+            # Create new
+            cmo_details = CMOPortalDetails(
+                file_number=file_number,
+                docket_number=docket_number,
+                date_of_receipt=date_of_receipt,
+                finalised=finalised,
+                finalised_date=finalised_date
+            )
+            db.session.add(cmo_details)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'CMO Portal details saved successfully.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+
+@files_bp.route('/cmo-portal/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_cmo_portal():
+    """Delete CMO Portal details."""
+    try:
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received.'})
+        
+        file_number = data.get('file_number', '').strip()
+        if not file_number:
+            return jsonify({'success': False, 'message': 'File number is required.'})
+        
+        cmo_details = CMOPortalDetails.query.filter_by(file_number=file_number).first()
+        if cmo_details:
+            db.session.delete(cmo_details)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'CMO Portal details deleted successfully.'})
+        else:
+            return jsonify({'success': False, 'message': 'No CMO Portal details found.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+
+@files_bp.route('/cmo-portal/get/<path:file_number>')
+@login_required
+def get_cmo_portal(file_number):
+    """Get CMO Portal details for a file."""
+    cmo_details = CMOPortalDetails.query.filter_by(file_number=file_number).first()
+    if cmo_details:
+        return jsonify({
+            'success': True,
+            'data': {
+                'docket_number': cmo_details.docket_number or '',
+                'date_of_receipt': cmo_details.date_of_receipt or '',
+                'finalised': cmo_details.finalised == 'Yes',
+                'finalised_date': cmo_details.finalised_date or ''
+            }
+        })
+    return jsonify({'success': True, 'data': None})

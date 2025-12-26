@@ -3438,6 +3438,8 @@
     // =====================================================
     // CMO PORTAL MODAL FUNCTIONS
     // =====================================================
+    const currentFileNumber = '{{ current_file.file_number if current_file else "" }}';
+    
     function toggleCmoFinalisedDate() {
         const checkbox = document.getElementById('cmoFinalised');
         const dateInput = document.getElementById('cmoFinalisedDate');
@@ -3448,6 +3450,99 @@
             dateInput.value = '';
         }
     }
+    
+    // Load CMO Portal data when modal opens
+    document.getElementById('cmoPortalModal').addEventListener('show.bs.modal', function() {
+        if (!currentFileNumber) return;
+        fetch(`/files/cmo-portal/get/${encodeURIComponent(currentFileNumber)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    document.getElementById('cmoDocketNumber').value = data.data.docket_number || '';
+                    document.getElementById('cmoDateOfReceipt').value = data.data.date_of_receipt || '';
+                    document.getElementById('cmoFinalised').checked = data.data.finalised;
+                    document.getElementById('cmoFinalisedDate').value = data.data.finalised_date || '';
+                    toggleCmoFinalisedDate();
+                } else {
+                    // Clear form for new entry
+                    document.getElementById('cmoDocketNumber').value = '';
+                    document.getElementById('cmoDateOfReceipt').value = '';
+                    document.getElementById('cmoFinalised').checked = false;
+                    document.getElementById('cmoFinalisedDate').value = '';
+                    document.getElementById('cmoFinalisedDate').disabled = true;
+                }
+            })
+            .catch(err => console.error('Error loading CMO data:', err));
+    });
+    
+    // Save CMO Portal
+    document.getElementById('cmoSaveBtn').addEventListener('click', function() {
+        if (!currentFileNumber) {
+            alert('No file selected.');
+            return;
+        }
+        const data = {
+            file_number: currentFileNumber,
+            docket_number: document.getElementById('cmoDocketNumber').value,
+            date_of_receipt: document.getElementById('cmoDateOfReceipt').value,
+            finalised: document.getElementById('cmoFinalised').checked,
+            finalised_date: document.getElementById('cmoFinalisedDate').value
+        };
+        
+        fetch('/files/cmo-portal/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('CMO Portal details saved successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('cmoPortalModal')).hide();
+            } else {
+                alert(result.message || 'Failed to save.');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Network error: ' + err.message);
+        });
+    });
+    
+    // Delete CMO Portal
+    document.getElementById('cmoDeleteBtn').addEventListener('click', function() {
+        if (!currentFileNumber) {
+            alert('No file selected.');
+            return;
+        }
+        if (!confirm('Are you sure you want to delete CMO Portal details?')) return;
+        
+        fetch('/files/cmo-portal/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({file_number: currentFileNumber})
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('CMO Portal details deleted.');
+                document.getElementById('cmoDocketNumber').value = '';
+                document.getElementById('cmoDateOfReceipt').value = '';
+                document.getElementById('cmoFinalised').checked = false;
+                document.getElementById('cmoFinalisedDate').value = '';
+                document.getElementById('cmoFinalisedDate').disabled = true;
+                bootstrap.Modal.getInstance(document.getElementById('cmoPortalModal')).hide();
+            } else {
+                alert(result.message || 'Failed to delete.');
+            }
+        })
+        .catch(err => alert('Network error: ' + err.message));
+    });
+    
+    // Edit CMO Portal (just enables fields - they're already editable)
+    document.getElementById('cmoEditBtn').addEventListener('click', function() {
+        document.getElementById('cmoDocketNumber').focus();
+    });
     
     // =====================================================
     // RVU MODAL FUNCTIONS
