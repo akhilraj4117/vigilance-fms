@@ -3279,11 +3279,13 @@
     function addFileDetailsRowWithData(slNo, details) {
         const tbody = document.getElementById('fileDetailsTableBody');
         const row = document.createElement('tr');
+        const isEditing = fileDetailsEditingEnabled;
         row.innerHTML = `
             <td class="text-center align-middle" style="width: 80px;">${slNo}</td>
             <td>
                 <input type="text" class="form-control file-details-input" value="${escapeHtml(details)}" 
-                       style="border: none; background: transparent;" readonly
+                       style="border: ${isEditing ? '1px solid #ced4da' : 'none'}; background: ${isEditing ? '#fff' : 'transparent'};" 
+                       ${isEditing ? '' : 'readonly'}
                        onclick="selectFileDetailsRow(this)">
             </td>
         `;
