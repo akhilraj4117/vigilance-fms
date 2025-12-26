@@ -848,21 +848,21 @@ class Communication(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     file_number = db.Column(db.String(100), db.ForeignKey('files.file_number'), nullable=False)
-    document_type = db.Column(db.String(100), nullable=False)
-    document_title = db.Column(db.String(200), nullable=False)
-    malayalam_content = db.Column(db.Text, nullable=False)
+    document_type = db.Column(db.String(100))
+    document_title = db.Column(db.String(200))
+    malayalam_content = db.Column(db.Text)
     english_summary = db.Column(db.Text)
     document_path = db.Column(db.String(500))
     temp_path = db.Column(db.String(500))
-    created_date = db.Column(db.String(50), nullable=False)
+    created_date = db.Column(db.String(50))
     created_by = db.Column(db.String(100))
     last_modified = db.Column(db.String(50))
     document_format = db.Column(db.String(50))
     status = db.Column(db.String(50))
     doc_metadata = db.Column('metadata', db.Text)  # 'metadata' is reserved in SQLAlchemy
-    communication_name = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    modified_date = db.Column(db.String(50), nullable=False)
+    communication_name = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    modified_date = db.Column(db.String(50))
     
     def __repr__(self):
         return f'<Communication {self.file_number} - {self.document_title}>'

@@ -783,7 +783,7 @@ def add_communication():
     if existing:
         return jsonify({'success': False, 'message': 'A communication with this name already exists for this file.'})
     
-    now = datetime.now().isoformat()
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     comm = Communication(
         file_number=file_number,
         communication_name=name,
