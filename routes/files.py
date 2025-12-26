@@ -899,32 +899,32 @@ def save_inquiry_details():
         flash('File number is required.', 'danger')
         return redirect(url_for('files.file_management'))
     
-    # Check if inquiry details already exist for this file
-    inquiry = InquiryDetails.query.filter_by(file_number=file_number).first()
-    
-    if not inquiry:
-        inquiry = InquiryDetails(file_number=file_number)
-        db.session.add(inquiry)
-    
-    # Update preliminary inquiry fields (use 1/0 for PostgreSQL integer columns)
-    inquiry.prelim_conducted = 1 if 'prelim_conducted' in request.form else 0
-    inquiry.prelim_io_name = request.form.get('prelim_io_name', '').strip()
-    inquiry.prelim_inquiry_date = request.form.get('prelim_inquiry_date', '')
-    inquiry.prelim_venue = request.form.get('prelim_venue', '').strip()
-    inquiry.prelim_report_submitted = 1 if 'prelim_report_submitted' in request.form else 0
-    inquiry.prelim_report_to = request.form.get('prelim_report_to', '').strip()
-    inquiry.prelim_report_date = request.form.get('prelim_report_date', '')
-    
-    # Update Rule 15(ii) inquiry fields (use 1/0 for PostgreSQL integer columns)
-    inquiry.rule15_conducted = 1 if 'rule15_conducted' in request.form else 0
-    inquiry.rule15_io_name = request.form.get('rule15_io_name', '').strip()
-    inquiry.rule15_inquiry_date = request.form.get('rule15_inquiry_date', '')
-    inquiry.rule15_venue = request.form.get('rule15_venue', '').strip()
-    inquiry.rule15_report_submitted = 1 if 'rule15_report_submitted' in request.form else 0
-    inquiry.rule15_report_to = request.form.get('rule15_report_to', '').strip()
-    inquiry.rule15_report_date = request.form.get('rule15_report_date', '')
-    
     try:
+        # Check if inquiry details already exist for this file
+        inquiry = InquiryDetails.query.filter_by(file_number=file_number).first()
+        
+        if not inquiry:
+            inquiry = InquiryDetails(file_number=file_number)
+            db.session.add(inquiry)
+        
+        # Update preliminary inquiry fields (use 1/0 for PostgreSQL integer columns)
+        inquiry.prelim_conducted = 1 if 'prelim_conducted' in request.form else 0
+        inquiry.prelim_io_name = request.form.get('prelim_io_name', '').strip()
+        inquiry.prelim_inquiry_date = request.form.get('prelim_inquiry_date', '')
+        inquiry.prelim_venue = request.form.get('prelim_venue', '').strip()
+        inquiry.prelim_report_submitted = 1 if 'prelim_report_submitted' in request.form else 0
+        inquiry.prelim_report_to = request.form.get('prelim_report_to', '').strip()
+        inquiry.prelim_report_date = request.form.get('prelim_report_date', '')
+        
+        # Update Rule 15(ii) inquiry fields (use 1/0 for PostgreSQL integer columns)
+        inquiry.rule15_conducted = 1 if 'rule15_conducted' in request.form else 0
+        inquiry.rule15_io_name = request.form.get('rule15_io_name', '').strip()
+        inquiry.rule15_inquiry_date = request.form.get('rule15_inquiry_date', '')
+        inquiry.rule15_venue = request.form.get('rule15_venue', '').strip()
+        inquiry.rule15_report_submitted = 1 if 'rule15_report_submitted' in request.form else 0
+        inquiry.rule15_report_to = request.form.get('rule15_report_to', '').strip()
+        inquiry.rule15_report_date = request.form.get('rule15_report_date', '')
+        
         # Update file's last_modified
         file = File.query.filter_by(file_number=file_number).first()
         if file:
