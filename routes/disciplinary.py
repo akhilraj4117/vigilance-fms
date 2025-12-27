@@ -497,28 +497,23 @@ def index():
         }
         
     elif tab == 'court_case':
-        # Court Case tab - join with CourtCase table
-        query = db.session.query(DisciplinaryAction, CourtCase).outerjoin(
-            CourtCase, DisciplinaryAction.file_number == CourtCase.file_number
-        ).filter(
-            CourtCase.id.isnot(None)  # Only include records that have court case entries
+        # Court Case tab - query CourtCase joined with File table
+        # This shows all court cases, not just those linked to disciplinary actions
+        query = db.session.query(File, CourtCase).join(
+            CourtCase, File.file_number == CourtCase.file_number
         )
         
         if search_query:
             query = query.filter(
                 or_(
-                    DisciplinaryAction.pen.ilike(f'%{search_query}%'),
-                    DisciplinaryAction.employee_name.ilike(f'%{search_query}%'),
-                    DisciplinaryAction.file_number.ilike(f'%{search_query}%'),
-                    CourtCase.case_no.ilike(f'%{search_query}%')
+                    File.file_number.ilike(f'%{search_query}%'),
+                    File.subject.ilike(f'%{search_query}%'),
+                    CourtCase.case_no.ilike(f'%{search_query}%'),
+                    CourtCase.name_of_forum.ilike(f'%{search_query}%')
                 )
             )
         
         # Additional filters for court case tab
-        if institution_filter:
-            query = query.filter(DisciplinaryAction.institution == institution_filter)
-        if designation_filter:
-            query = query.filter(DisciplinaryAction.designation == designation_filter)
         if court_forum_filter:
             query = query.filter(CourtCase.name_of_forum == court_forum_filter)
         if court_status_filter:
@@ -527,16 +522,12 @@ def index():
         # Apply sorting for court case tab
         if sort_by:
             sort_column = None
-            if sort_by == 'employee_name':
-                sort_column = DisciplinaryAction.employee_name
-            elif sort_by == 'pen':
-                sort_column = DisciplinaryAction.pen
-            elif sort_by == 'file_number':
-                sort_column = DisciplinaryAction.file_number
+            if sort_by == 'file_number':
+                sort_column = File.file_number
             elif sort_by == 'case_no':
                 sort_column = CourtCase.case_no
             elif sort_by == 'court_name':
-                sort_column = CourtCase.court_name
+                sort_column = CourtCase.name_of_forum
             
             if sort_column is not None:
                 if sort_order == 'desc':
@@ -544,9 +535,9 @@ def index():
                 else:
                     query = query.order_by(sort_column.asc())
             else:
-                query = query.order_by(DisciplinaryAction.id.desc())
+                query = query.order_by(CourtCase.id.desc())
         else:
-            query = query.order_by(DisciplinaryAction.id.desc())
+            query = query.order_by(CourtCase.id.desc())
         
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         results = pagination.items

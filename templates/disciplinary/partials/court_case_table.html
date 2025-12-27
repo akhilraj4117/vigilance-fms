@@ -104,19 +104,19 @@
             </tr>
         </thead>
         <tbody>
-            {% for da, court_case in results %}
+            {% for file, court_case in results %}
             <tr>
                 <td>{{ loop.index + ((pagination.page - 1) * pagination.per_page) }}</td>
                 <td>
-                    <a href="{{ url_for('files.view_file', file_number=da.file_number) }}">
-                        {{ da.file_number }}
+                    <a href="{{ url_for('files.view_file', file_number=file.file_number) }}">
+                        {{ file.file_number }}
                     </a>
                 </td>
                 <td>{{ court_case.month if court_case else '-' }}/{{ court_case.year if court_case else '-' }}</td>
                 <td>{{ court_case.case_no if court_case else '-' }}</td>
                 <td>{{ court_case.name_of_forum if court_case else '-' }}</td>
-                <td class="text-truncate" style="max-width: 150px;" title="{{ court_case.subject if court_case else '' }}">
-                    {{ (da.file.subject[:50] + '...') if da.file and da.file.subject and da.file.subject|length > 50 else (da.file.subject if da.file else '-') }}
+                <td class="text-truncate" style="max-width: 150px;" title="{{ file.subject if file else '' }}">
+                    {{ (file.subject[:50] + '...') if file and file.subject and file.subject|length > 50 else (file.subject if file else '-') }}
                 </td>
                 <td>
                     {% if court_case and court_case.related_to_mo == 'Yes' %}
@@ -208,13 +208,9 @@
                     {{ court_case.remarks if court_case else '-' }}
                 </td>
                 <td>
-                    <a href="{{ url_for('disciplinary.view_action', id=da.id) }}" 
+                    <a href="{{ url_for('files.view_file', file_number=file.file_number) }}" 
                        class="btn btn-sm btn-info" title="View">
                         <i class="bi bi-eye"></i>
-                    </a>
-                    <a href="{{ url_for('disciplinary.edit_action', id=da.id) }}" 
-                       class="btn btn-sm btn-warning" title="Edit">
-                        <i class="bi bi-pencil"></i>
                     </a>
                 </td>
             </tr>

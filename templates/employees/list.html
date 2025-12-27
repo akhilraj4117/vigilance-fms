@@ -167,18 +167,23 @@
             <h6 class="mb-0"><i class="bi bi-search"></i> Search Employee</h6>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <input type="text" class="form-control" id="searchInput" 
-                           placeholder="Enter Name or PEN to search..." value="{{ search_query }}"
-                           onkeyup="filterEmployeeTable()">
+            <form action="{{ url_for('employees.list_employees') }}" method="GET" id="searchForm">
+                <div class="row">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control" id="searchInput" name="q"
+                               placeholder="Enter Name or PEN to search..." value="{{ search_query }}"
+                               onkeyup="filterEmployeeTableLocal()">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <button type="button" class="btn btn-secondary" onclick="clearSearch()">
-                        <i class="bi bi-x-circle"></i> Clear
-                    </button>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
     
@@ -426,15 +431,19 @@ function selectRow(row) {
     selectedEmployeeId = row.getAttribute('data-id');
 }
 
-function filterEmployeeTable() {
+// Local filtering for current page (instant feedback while typing)
+function filterEmployeeTableLocal() {
     const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
     const rows = document.querySelectorAll('.employee-row');
     
     rows.forEach(row => {
         const pen = (row.getAttribute('data-pen') || '').toLowerCase();
         const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const designation = (row.getAttribute('data-designation') || '').toLowerCase();
+        const institution = (row.getAttribute('data-institution') || '').toLowerCase();
         
-        if (pen.includes(searchText) || name.includes(searchText)) {
+        if (pen.includes(searchText) || name.includes(searchText) || 
+            designation.includes(searchText) || institution.includes(searchText)) {
             row.style.display = '';
         } else {
             row.style.display = 'none';
@@ -442,10 +451,12 @@ function filterEmployeeTable() {
     });
 }
 
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    filterEmployeeTable();
-}
+// Submit search form on Enter key
+document.getElementById('searchInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('searchForm').submit();
+    }
+});
 
 function clearForm() {
     document.getElementById('pen').value = '';
