@@ -83,10 +83,10 @@ def get_tab_statistics(tab, subtab):
         elif tab == 'file_types':
             stats['file_types'] = get_file_type_distribution()
             
-        elif tab == 'institutions':
+        elif tab == 'institution_types':
             stats['institution_types'] = get_institution_type_counts()
             
-        elif tab == 'year_wise':
+        elif tab == 'files_by_year':
             stats['files_by_year'] = get_files_by_year()
             
         elif tab == 'ua_stats':
