@@ -777,165 +777,220 @@ def get_da_years():
 
 
 def get_da_monthly_stats(selected_year):
-    """Get month-wise DA statistics for the selected year using raw SQL matching desktop app.
+    """Get month-wise DA statistics for the selected year using optimized aggregated SQL.
     
     Uses PostgreSQL RIGHT() function instead of substr() for year extraction.
     Matches desktop app logic exactly:
     - MOC DHS: only explicit 'DHS' or 'DMO' values (not including 'None'/empty)
     - SCN DHS: includes NULL, empty, 'None', and 'DHS'
+    
+    Optimized to use aggregated queries instead of individual queries per month.
     """
     months = ['January', 'February', 'March', 'April', 'May', 'June',
               'July', 'August', 'September', 'October', 'November', 'December']
     
+    # Initialize monthly data structure
     monthly_data = {}
-    
-    for month_idx, month_name in enumerate(months, start=1):
-        month_str = f"{month_idx:02d}"
+    for month_name in months:
         monthly_data[month_name] = {
             'moc_dhs': 0, 'wsd_same_dhs': 0, 'wsd_prev_dhs': 0,
             'moc_govt': 0, 'wsd_same_govt': 0, 'wsd_prev_govt': 0,
             'scn_dhs': 0, 'reply_same_dhs': 0, 'reply_prev_dhs': 0,
             'scn_govt': 0, 'reply_same_govt': 0, 'reply_prev_govt': 0
         }
+    
+    month_map = {f"{i:02d}": months[i-1] for i in range(1, 13)}
+    
+    try:
+        # Query 1: MOC DHS counts by month
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(moc_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+            AND moc_issued = 'Issued'
+            AND LENGTH(moc_date) >= 10
+            GROUP BY SUBSTRING(moc_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['moc_dhs'] = row[1]
         
-        try:
-            # 1. MOC from DHS issued in this month (DD-MM-YYYY format)
-            # Desktop app: only explicit DHS or DMO values (NOT including 'None' or empty)
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
-                AND moc_issued = 'Issued'
-                AND LENGTH(moc_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['moc_dhs'] = result.scalar() or 0
-            
-            # 2. WSD forwarded same month for DHS MOCs
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
-                AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
-                AND moc_issued = 'Issued'
-                AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
-                AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['wsd_same_dhs'] = result.scalar() or 0
-            
-            # 3. WSD forwarded in this month for DHS MOCs issued in any previous month of this year
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year
-                AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND SUBSTRING(moc_date, 4, 2) != :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
-                AND moc_issued = 'Issued'
-                AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
-                AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['wsd_prev_dhs'] = result.scalar() or 0
-            
-            # 4. MOC from Govt issued in this month
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
-                AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
-                AND LENGTH(moc_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['moc_govt'] = result.scalar() or 0
-            
-            # 5. WSD forwarded same month for Govt MOCs
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
-                AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
-                AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
-                AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['wsd_same_govt'] = result.scalar() or 0
-            
-            # 6. WSD forwarded in this month for Govt MOCs issued in any previous month of this year
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(moc_date, 4) = :year
-                AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND SUBSTRING(moc_date, 4, 2) != :month
-                AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
-                AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
-                AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['wsd_prev_govt'] = result.scalar() or 0
-            
-            # 7. SCN from DHS issued in this month
-            # Desktop app: includes NULL, empty, 'None' string, and 'DHS'
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year AND SUBSTRING(scn_issued_date, 4, 2) = :month
-                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
-                AND scn_issued_date IS NOT NULL AND scn_issued_date != '' AND scn_issued_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['scn_dhs'] = result.scalar() or 0
-            
-            # 8. Replies forwarded same month for DHS SCNs
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year AND SUBSTRING(scn_issued_date, 4, 2) = :month
-                AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year AND SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) = :month
-                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
-                AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['reply_same_dhs'] = result.scalar() or 0
-            
-            # 9. Replies forwarded in this month for DHS SCNs issued in any previous month of this year
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year
-                AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year AND SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) = :month
-                AND SUBSTRING(scn_issued_date, 4, 2) != :month
-                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
-                AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['reply_prev_dhs'] = result.scalar() or 0
-            
-            # 10. SCN from Govt issued in this month
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year AND SUBSTRING(scn_issued_date, 4, 2) = :month
-                AND scn_issued_by = 'Govt.'
-                AND scn_issued_date IS NOT NULL AND scn_issued_date != '' AND scn_issued_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['scn_govt'] = result.scalar() or 0
-            
-            # 11. Replies forwarded same month for Govt SCNs
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year AND SUBSTRING(scn_issued_date, 4, 2) = :month
-                AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year AND SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) = :month
-                AND scn_issued_by = 'Govt.'
-                AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['reply_same_govt'] = result.scalar() or 0
-            
-            # 12. Replies forwarded in this month for Govt SCNs issued in any previous month of this year
-            result = db.session.execute(db.text("""
-                SELECT COUNT(*) FROM disciplinary_action_details
-                WHERE RIGHT(scn_issued_date, 4) = :year
-                AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year AND SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) = :month
-                AND SUBSTRING(scn_issued_date, 4, 2) != :month
-                AND scn_issued_by = 'Govt.'
-                AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
-                AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
-            """), {'year': selected_year, 'month': month_str})
-            monthly_data[month_name]['reply_prev_govt'] = result.scalar() or 0
-            
-        except Exception as e:
-            print(f"Error getting DA stats for {month_name}: {e}")
+        # Query 2: WSD same month for DHS MOCs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(moc_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND RIGHT(wsd_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(moc_date, 4, 2) = SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+            AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+            AND moc_issued = 'Issued'
+            AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
+            AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(moc_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['wsd_same_dhs'] = row[1]
+        
+        # Query 3: WSD prev month for DHS MOCs (WSD forwarded this month, MOC from different month)
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(wsd_sent_to_dhs_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND RIGHT(wsd_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(moc_date, 4, 2) != SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+            AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+            AND moc_issued = 'Issued'
+            AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
+            AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['wsd_prev_dhs'] = row[1]
+        
+        # Query 4: MOC Govt counts by month
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(moc_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
+            AND LENGTH(moc_date) >= 10
+            GROUP BY SUBSTRING(moc_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['moc_govt'] = row[1]
+        
+        # Query 5: WSD same month for Govt MOCs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(moc_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND RIGHT(wsd_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(moc_date, 4, 2) = SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+            AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
+            AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
+            AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(moc_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['wsd_same_govt'] = row[1]
+        
+        # Query 6: WSD prev month for Govt MOCs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(wsd_sent_to_dhs_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(moc_date, 4) = :year
+            AND RIGHT(wsd_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(moc_date, 4, 2) != SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+            AND moc_issued_by = 'Govt.' AND moc_issued = 'Issued'
+            AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
+            AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(wsd_sent_to_dhs_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['wsd_prev_govt'] = row[1]
+        
+        # Query 7: SCN DHS counts by month
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_issued_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
+            AND scn_issued_date IS NOT NULL AND scn_issued_date != '' AND scn_issued_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10
+            GROUP BY SUBSTRING(scn_issued_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['scn_dhs'] = row[1]
+        
+        # Query 8: Reply same month for DHS SCNs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_issued_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(scn_issued_date, 4, 2) = SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+            AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
+            AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(scn_issued_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['reply_same_dhs'] = row[1]
+        
+        # Query 9: Reply prev month for DHS SCNs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(scn_issued_date, 4, 2) != SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+            AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'None' OR scn_issued_by = 'DHS')
+            AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['reply_prev_dhs'] = row[1]
+        
+        # Query 10: SCN Govt counts by month
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_issued_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND scn_issued_by = 'Govt.'
+            AND scn_issued_date IS NOT NULL AND scn_issued_date != '' AND scn_issued_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10
+            GROUP BY SUBSTRING(scn_issued_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['scn_govt'] = row[1]
+        
+        # Query 11: Reply same month for Govt SCNs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_issued_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(scn_issued_date, 4, 2) = SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+            AND scn_issued_by = 'Govt.'
+            AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(scn_issued_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['reply_same_govt'] = row[1]
+        
+        # Query 12: Reply prev month for Govt SCNs
+        result = db.session.execute(db.text("""
+            SELECT SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2) as month, COUNT(*) as cnt
+            FROM disciplinary_action_details
+            WHERE RIGHT(scn_issued_date, 4) = :year
+            AND RIGHT(scn_reply_sent_to_dhs_date, 4) = :year
+            AND SUBSTRING(scn_issued_date, 4, 2) != SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+            AND scn_issued_by = 'Govt.'
+            AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != '' AND scn_reply_sent_to_dhs_date != 'None'
+            AND LENGTH(scn_issued_date) >= 10 AND LENGTH(scn_reply_sent_to_dhs_date) >= 10
+            GROUP BY SUBSTRING(scn_reply_sent_to_dhs_date, 4, 2)
+        """), {'year': selected_year})
+        for row in result:
+            if row[0] in month_map:
+                monthly_data[month_map[row[0]]]['reply_prev_govt'] = row[1]
+    
+    except Exception as e:
+        print(f"Error getting DA monthly stats: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Add "Previous Data" - all records from years before selected year
     previous_data = {
@@ -946,7 +1001,7 @@ def get_da_monthly_stats(selected_year):
     }
     
     try:
-        # Previous MOC DHS - desktop: only explicit DHS or DMO
+        # Previous MOC DHS
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE RIGHT(moc_date, 4) < :year
@@ -965,7 +1020,7 @@ def get_da_monthly_stats(selected_year):
         """), {'year': selected_year})
         previous_data['moc_govt'] = result.scalar() or 0
         
-        # Previous SCN DHS - desktop: includes NULL, empty, 'None', 'DHS'
+        # Previous SCN DHS
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE RIGHT(scn_issued_date, 4) < :year
