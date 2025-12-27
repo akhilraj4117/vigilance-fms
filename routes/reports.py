@@ -31,18 +31,21 @@ def index():
     subtab = request.args.get('subtab', 'eoffice_physical')
     year = request.args.get('year', '')
     
-    # Get all statistics data
-    stats = get_all_statistics()
+    # Only load statistics needed for the current tab (lazy loading)
+    stats = get_tab_statistics(tab, subtab)
     
-    # Get available years for DA Overview
-    years = get_da_years()
-    if not year and years:
-        year = years[-1]  # Default to most recent year
-    
-    # Get DA monthly stats if year is selected
+    # Get available years for DA Overview (only if needed)
+    years = []
     da_monthly_stats = {}
-    if year and year != 'No data':
-        da_monthly_stats = get_da_monthly_stats(year)
+    
+    if tab == 'da_overview':
+        years = get_da_years()
+        if not year and years and years[0] != 'No data':
+            year = years[-1]  # Default to most recent year
+        
+        # Get DA monthly stats if year is selected
+        if year and year != 'No data':
+            da_monthly_stats = get_da_monthly_stats(year)
     
     return render_template('reports/index.html',
                           tab=tab,
@@ -51,6 +54,55 @@ def index():
                           years=years,
                           selected_year=year,
                           da_monthly_stats=da_monthly_stats)
+
+
+def get_tab_statistics(tab, subtab):
+    """Get statistics only for the requested tab (lazy loading for performance)."""
+    stats = {}
+    
+    try:
+        if tab == 'file_status':
+            # Load only file status related stats
+            if subtab == 'eoffice_physical':
+                stats['eoffice_physical'] = get_file_type_counts_by_status()
+            elif subtab == 'status_distribution':
+                stats['status_distribution'] = get_status_distribution()
+            elif subtab == 'da_files':
+                stats['da_files'] = get_da_files_counts()
+            elif subtab == 'category_status':
+                stats['category_by_status'] = get_category_counts_by_status()
+            elif subtab == 'type_status':
+                stats['type_by_status'] = get_type_counts_by_status()
+            else:
+                # Default: load basic stats
+                stats['eoffice_physical'] = get_file_type_counts_by_status()
+                
+        elif tab == 'categories':
+            stats['categories'] = get_category_distribution()
+            
+        elif tab == 'file_types':
+            stats['file_types'] = get_file_type_distribution()
+            
+        elif tab == 'institutions':
+            stats['institution_types'] = get_institution_type_counts()
+            
+        elif tab == 'year_wise':
+            stats['files_by_year'] = get_files_by_year()
+            
+        elif tab == 'ua_stats':
+            stats['ua_stats'] = get_ua_statistics()
+            
+        elif tab == 'related_employees':
+            stats['related_employees'] = get_related_employees()
+            
+        elif tab == 'da_overview':
+            # DA overview stats are loaded separately
+            pass
+            
+    except Exception as e:
+        print(f"Error getting statistics for tab {tab}: {e}")
+    
+    return stats
 
 
 def get_all_statistics():
@@ -699,27 +751,27 @@ def get_related_employees():
 
 
 def get_da_years():
-    """Get available years from DA records."""
+    """Get available years from DA records using optimized SQL query."""
     years = set()
     
-    # Get years from moc_date and scn_issued_date
-    da_records = DisciplinaryAction.query.all()
-    for da in da_records:
-        # Extract year from DD-MM-YYYY format
-        if da.moc_date and len(da.moc_date) >= 10:
-            try:
-                year = da.moc_date[-4:]
-                if year.isdigit():
-                    years.add(year)
-            except:
-                pass
-        if da.scn_issued_date and len(da.scn_issued_date) >= 10:
-            try:
-                year = da.scn_issued_date[-4:]
-                if year.isdigit():
-                    years.add(year)
-            except:
-                pass
+    try:
+        # Use SQL to extract years efficiently instead of loading all records
+        # Extract year from DD-MM-YYYY format (last 4 characters)
+        result = db.session.execute(db.text("""
+            SELECT DISTINCT substr(moc_date, -4) as year FROM disciplinary_action_details
+            WHERE moc_date IS NOT NULL AND length(moc_date) >= 10
+            UNION
+            SELECT DISTINCT substr(scn_issued_date, -4) as year FROM disciplinary_action_details
+            WHERE scn_issued_date IS NOT NULL AND length(scn_issued_date) >= 10
+        """))
+        
+        for row in result:
+            year = row[0]
+            if year and year.isdigit() and 1900 <= int(year) <= 2100:
+                years.add(year)
+                
+    except Exception as e:
+        print(f"Error getting DA years: {e}")
     
     return sorted(list(years)) if years else ['No data']
 
