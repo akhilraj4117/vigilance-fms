@@ -1125,6 +1125,42 @@ def export_da_overview(year):
     )
 
 
+@reports_bp.route('/export-related-employees')
+@login_required
+def export_related_employees():
+    """Export Related Employees to CSV."""
+    employees_data = get_related_employees()
+    employees = employees_data.get('employees', [])
+    
+    output = io.StringIO()
+    # Add UTF-8 BOM for Excel to recognize Unicode characters (Malayalam etc.)
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    
+    # Header matching desktop app columns
+    writer.writerow(['Sl.No.', 'Name', 'Designation', 'PEN', 'File Number', 'Subject', 'Source'])
+    
+    # Write data
+    for i, emp in enumerate(employees, 1):
+        writer.writerow([
+            i,
+            emp.get('name', ''),
+            emp.get('designation', ''),
+            emp.get('pen', ''),
+            emp.get('file_number', ''),
+            emp.get('subject', ''),
+            emp.get('source', '')
+        ])
+    
+    output.seek(0)
+    
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv; charset=utf-8-sig',
+        headers={'Content-Disposition': 'attachment; filename=Related_Employees.csv'}
+    )
+
+
 @reports_bp.route('/file-summary')
 @login_required
 def file_summary():

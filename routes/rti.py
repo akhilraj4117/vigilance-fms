@@ -18,6 +18,42 @@ def rti_index():
     """RTI Info main page with 3 tabs matching desktop app."""
     active_tab = request.args.get('tab', 'application')
     search = request.args.get('q', '').strip()
+    sort_by = request.args.get('sort', 'id')
+    sort_order = request.args.get('order', 'desc')
+    
+    # Define sortable columns for each register
+    app_sort_columns = {
+        'id': RTIApplication.id,
+        'sl_no': RTIApplication.sl_no,
+        'application_no': RTIApplication.original_application_no,
+        'date_receipt': RTIApplication.date_of_receipt,
+        'applicant': RTIApplication.applicant_name,
+        'date_disposal': RTIApplication.date_of_disposal,
+        'status': RTIApplication.status,
+        'file_number': RTIApplication.file_number
+    }
+    
+    appeal_sort_columns = {
+        'id': RTIAppeal.id,
+        'sl_no': RTIAppeal.sl_no,
+        'appeal_no': RTIAppeal.appeal_no,
+        'application_no': RTIAppeal.original_application_no,
+        'date_receipt': RTIAppeal.date_of_receipt,
+        'appellant': RTIAppeal.appellant_name,
+        'date_disposal': RTIAppeal.date_of_disposal,
+        'outcome': RTIAppeal.outcome
+    }
+    
+    fee_sort_columns = {
+        'id': RTIApplication.id,
+        'sl_no': RTIApplication.sl_no,
+        'application_no': RTIApplication.original_application_no,
+        'applicant': RTIApplication.applicant_name,
+        'fee_paid': RTIApplication.fee_paid,
+        'date_receipt': RTIApplication.date_of_receipt,
+        'receipt_no': RTIApplication.receipt_no,
+        'file_number': RTIApplication.file_number
+    }
     
     # RTI Application Register
     app_query = RTIApplication.query
@@ -30,7 +66,13 @@ def rti_index():
                 RTIApplication.file_number.ilike(f'%{search}%')
             )
         )
-    applications = app_query.order_by(RTIApplication.id.desc()).all()
+    # Apply sorting for applications
+    app_sort_col = app_sort_columns.get(sort_by, RTIApplication.id)
+    if sort_order == 'asc':
+        app_query = app_query.order_by(app_sort_col.asc())
+    else:
+        app_query = app_query.order_by(app_sort_col.desc())
+    applications = app_query.all()
     
     # RTI Appeal Register
     appeal_query = RTIAppeal.query
@@ -42,7 +84,13 @@ def rti_index():
                 RTIAppeal.appellant_name.ilike(f'%{search}%')
             )
         )
-    appeals = appeal_query.order_by(RTIAppeal.id.desc()).all()
+    # Apply sorting for appeals
+    appeal_sort_col = appeal_sort_columns.get(sort_by, RTIAppeal.id)
+    if sort_order == 'asc':
+        appeal_query = appeal_query.order_by(appeal_sort_col.asc())
+    else:
+        appeal_query = appeal_query.order_by(appeal_sort_col.desc())
+    appeals = appeal_query.all()
     
     # RTI Fee Register (uses RTIApplication table with fee data)
     fee_query = RTIApplication.query.filter(
@@ -62,11 +110,19 @@ def rti_index():
                 RTIApplication.file_number.ilike(f'%{search}%')
             )
         )
-    fee_entries = fee_query.order_by(RTIApplication.id.desc()).all()
+    # Apply sorting for fees
+    fee_sort_col = fee_sort_columns.get(sort_by, RTIApplication.id)
+    if sort_order == 'asc':
+        fee_query = fee_query.order_by(fee_sort_col.asc())
+    else:
+        fee_query = fee_query.order_by(fee_sort_col.desc())
+    fee_entries = fee_query.all()
     
     return render_template('rti/index.html',
                           active_tab=active_tab,
                           search=search,
+                          sort_by=sort_by,
+                          sort_order=sort_order,
                           applications=applications,
                           appeals=appeals,
                           fee_entries=fee_entries)

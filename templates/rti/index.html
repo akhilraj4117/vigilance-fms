@@ -30,6 +30,22 @@
         border-bottom: 3px solid #1e3c72;
         padding-bottom: 0;
     }
+    /* Sortable column headers */
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .sortable:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+    .sortable .sort-icon {
+        margin-left: 5px;
+        opacity: 0.5;
+    }
+    .sortable.active .sort-icon {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -95,19 +111,33 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Sl.No.</th>
-                                    <th>Original Application No.</th>
-                                    <th>Date of Receipt</th>
-                                    <th>Applicant's Name</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('application', 'sl_no')">
+                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('application', 'application_no')">
+                                        Original Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('application', 'date_receipt')">
+                                        Date of Receipt <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="sortTable('application', 'applicant')">
+                                        Applicant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Address</th>
                                     <th>Subject of Information</th>
                                     <th>Fee Paid (₹)</th>
                                     <th>Mode of Payment</th>
                                     <th>Date of Acknowledgment</th>
-                                    <th>Date of Disposal</th>
-                                    <th>Status</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="sortTable('application', 'date_disposal')">
+                                        Date of Disposal <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'status' else '' }}" onclick="sortTable('application', 'status')">
+                                        Status <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Remarks</th>
-                                    <th>File Number</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="sortTable('application', 'file_number')">
+                                        File Number <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -211,15 +241,29 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Sl.No.</th>
-                                    <th>Appeal No.</th>
-                                    <th>Original Application No.</th>
-                                    <th>Date of Receipt</th>
-                                    <th>Appellant's Name</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('appeal', 'sl_no')">
+                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'appeal_no' else '' }}" onclick="sortTable('appeal', 'appeal_no')">
+                                        Appeal No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('appeal', 'application_no')">
+                                        Original Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('appeal', 'date_receipt')">
+                                        Date of Receipt <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'appellant' else '' }}" onclick="sortTable('appeal', 'appellant')">
+                                        Appellant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Date of SPIO Response</th>
                                     <th>Date of Hearing</th>
-                                    <th>Date of Disposal</th>
-                                    <th>Outcome</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="sortTable('appeal', 'date_disposal')">
+                                        Date of Disposal <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'outcome' else '' }}" onclick="sortTable('appeal', 'outcome')">
+                                        Outcome <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Remarks</th>
                                     <th>File Number</th>
                                     <th>Actions</th>
@@ -321,17 +365,31 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Sl.No.</th>
-                                    <th>Application No.</th>
-                                    <th>Applicant's Name</th>
-                                    <th>Fee Paid (Rs.)</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('fee', 'sl_no')">
+                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('fee', 'application_no')">
+                                        Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="sortTable('fee', 'applicant')">
+                                        Applicant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'fee_paid' else '' }}" onclick="sortTable('fee', 'fee_paid')">
+                                        Fee Paid (Rs.) <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Mode of Payment</th>
-                                    <th>Date of Payment</th>
-                                    <th>Receipt No.</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('fee', 'date_receipt')">
+                                        Date of Payment <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
+                                    <th class="sortable {{ 'active' if sort_by == 'receipt_no' else '' }}" onclick="sortTable('fee', 'receipt_no')">
+                                        Receipt No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Additional Fee (Rs.)</th>
                                     <th>Purpose</th>
                                     <th>Remarks</th>
-                                    <th>File Number</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="sortTable('fee', 'file_number')">
+                                        File Number <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    </th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -386,4 +444,24 @@
         </div>
     </div>
 </div>
+
+<script>
+function sortTable(tab, column) {
+    const currentUrl = new URL(window.location.href);
+    const currentSort = currentUrl.searchParams.get('sort');
+    const currentOrder = currentUrl.searchParams.get('order') || 'desc';
+    
+    // Toggle order if same column clicked
+    let newOrder = 'asc';
+    if (currentSort === column && currentOrder === 'asc') {
+        newOrder = 'desc';
+    }
+    
+    currentUrl.searchParams.set('tab', tab);
+    currentUrl.searchParams.set('sort', column);
+    currentUrl.searchParams.set('order', newOrder);
+    
+    window.location.href = currentUrl.toString();
+}
+</script>
 {% endblock %}

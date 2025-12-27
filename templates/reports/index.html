@@ -644,6 +644,9 @@
                     </div>
                 </div>
                 <div class="col-md-6 text-end">
+                    <a href="{{ url_for('reports.export_related_employees') }}" class="btn btn-success me-2">
+                        <i class="bi bi-download"></i> Export to Excel
+                    </a>
                     <span id="employeeCount" class="text-muted">Showing {{ stats.related_employees.total }} employees</span>
                 </div>
             </div>
