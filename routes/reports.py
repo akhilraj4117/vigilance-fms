@@ -1221,11 +1221,17 @@ def court_cases():
     per_page = 50
     
     status_filter = request.args.get('status', '')
+    court_type = request.args.get('court_type', '')
+    year = request.args.get('year', '')
     
     query = CourtCase.query
     
     if status_filter:
-        query = query.filter(CourtCase.case_status == status_filter)
+        query = query.filter(CourtCase.present_status == status_filter)
+    if court_type:
+        query = query.filter(CourtCase.name_of_forum == court_type)
+    if year:
+        query = query.filter(CourtCase.year == year)
     
     query = query.order_by(CourtCase.id.desc())
     
@@ -1233,16 +1239,47 @@ def court_cases():
     cases = pagination.items
     
     # Get unique statuses
-    statuses = db.session.query(CourtCase.case_status).distinct().filter(
-        CourtCase.case_status != None, CourtCase.case_status != ''
+    statuses = db.session.query(CourtCase.present_status).distinct().filter(
+        CourtCase.present_status != None, CourtCase.present_status != ''
     ).all()
     statuses = [s[0] for s in statuses]
+    
+    # Get unique years
+    years = db.session.query(CourtCase.year).distinct().filter(
+        CourtCase.year != None, CourtCase.year != ''
+    ).all()
+    years = sorted([y[0] for y in years], reverse=True)
+    
+    # Summary stats
+    summary = {
+        'total': CourtCase.query.count(),
+        'pending': CourtCase.query.filter(CourtCase.present_status == 'Pending').count(),
+        'disposed': CourtCase.query.filter(CourtCase.present_status == 'Disposed').count(),
+        'stayed': CourtCase.query.filter(CourtCase.present_status == 'Stayed').count()
+    }
+    
+    # Court-wise summary
+    court_summary = []
     
     return render_template('reports/court_cases.html',
                           cases=cases,
                           pagination=pagination,
                           statuses=statuses,
-                          status_filter=status_filter)
+                          status_filter=status_filter,
+                          court_type=court_type,
+                          year=year,
+                          years=years,
+                          summary=summary,
+                          court_summary=court_summary,
+                          upcoming_hearings=[])
+
+
+@reports_bp.route('/court-case/<int:id>')
+@login_required
+def view_court_case(id):
+    """View court case details."""
+    case = CourtCase.query.get_or_404(id)
+    return redirect(url_for('files.view_file', file_number=case.file_number))
 
 
 @reports_bp.route('/inquiries')

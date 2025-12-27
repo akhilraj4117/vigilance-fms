@@ -3769,15 +3769,53 @@
         fetch('/files/court-case/get/' + encodeURIComponent(currentFileNumber))
             .then(r => r.json()).then(data => {
                 if (data.success && data.data) {
-                    document.getElementById('courtCaseNo').value = data.data.case_no || '';
-                    document.getElementById('courtNameOfForum').value = data.data.name_of_forum || '';
-                    document.getElementById('courtForumSpecify').value = data.data.forum_specify || '';
-                    document.getElementById('courtMonth').value = data.data.month || '';
-                    document.getElementById('courtYear').value = data.data.year || '';
-                    document.getElementById('courtReceiptDate').value = data.data.receipt_date || '';
-                    // Court case remarks
+                    const d = data.data;
+                    document.getElementById('courtCaseNo').value = d.case_no || '';
+                    document.getElementById('courtNameOfForum').value = d.name_of_forum || '';
+                    document.getElementById('courtForumSpecify').value = d.forum_specify || '';
+                    document.getElementById('courtMonth').value = d.month || '';
+                    document.getElementById('courtYear').value = d.year || '';
+                    document.getElementById('courtReceiptDate').value = d.receipt_date || '';
+                    // Related to MO
+                    if (d.related_to_mo === 'Yes') {
+                        document.getElementById('courtRelatedToMOYes').checked = true;
+                    } else {
+                        document.getElementById('courtRelatedToMONo').checked = true;
+                    }
+                    document.getElementById('courtMOPen').value = d.mo_pen || '';
+                    toggleCourtMOFields();
+                    // SF Forwarded
+                    if (d.sf_forwarded === 'Yes') {
+                        document.getElementById('courtSFForwardedYes').checked = true;
+                    } else {
+                        document.getElementById('courtSFForwardedNo').checked = true;
+                    }
+                    document.getElementById('courtSFForwardingDate').value = d.sf_forwarding_date || '';
+                    toggleCourtSFDate();
+                    // Affidavit Filed
+                    if (d.affidavit_filed === 'Yes') {
+                        document.getElementById('courtAffidavitFiledYes').checked = true;
+                    } else {
+                        document.getElementById('courtAffidavitFiledNo').checked = true;
+                    }
+                    document.getElementById('courtAffidavitFiledDate').value = d.affidavit_filed_date || '';
+                    toggleCourtAffidavitDate();
+                    // Present Status
+                    const presentStatusEl = document.getElementById('courtPresentStatus');
+                    if (presentStatusEl) presentStatusEl.value = d.present_status || '';
+                    // Disposed against DHS
+                    if (d.disposed_against_dhs === 'Yes') {
+                        document.getElementById('courtDisposedAgainstDHSYes').checked = true;
+                    } else {
+                        document.getElementById('courtDisposedAgainstDHSNo').checked = true;
+                    }
+                    document.getElementById('courtDisposalDate').value = d.disposal_date || '';
+                    toggleCourtDisposalDate();
+                    // Remarks
                     const remarksEl = document.getElementById('courtCasenotes');
-                    if (remarksEl) remarksEl.value = data.data.remarks || '';
+                    if (remarksEl) remarksEl.value = d.remarks || '';
+                    // Forum specify toggle
+                    toggleCourtForumSpecify();
                 }
             }).catch(err => console.error('Error loading court case:', err));
     });
@@ -3794,6 +3832,15 @@
                 month: document.getElementById('courtMonth').value,
                 year: document.getElementById('courtYear').value,
                 receipt_date: document.getElementById('courtReceiptDate').value,
+                related_to_mo: document.getElementById('courtRelatedToMOYes')?.checked ? 'Yes' : 'No',
+                mo_pen: document.getElementById('courtMOPen')?.value || '',
+                sf_forwarded: document.getElementById('courtSFForwardedYes')?.checked ? 'Yes' : 'No',
+                sf_forwarding_date: document.getElementById('courtSFForwardingDate')?.value || '',
+                affidavit_filed: document.getElementById('courtAffidavitFiledYes')?.checked ? 'Yes' : 'No',
+                affidavit_filed_date: document.getElementById('courtAffidavitFiledDate')?.value || '',
+                present_status: document.getElementById('courtPresentStatus')?.value || '',
+                disposed_against_dhs: document.getElementById('courtDisposedAgainstDHSYes')?.checked ? 'Yes' : 'No',
+                disposal_date: document.getElementById('courtDisposalDate')?.value || '',
                 remarks: document.getElementById('courtCasenotes')?.value || ''
             })
         }).then(r => r.json()).then(result => {
