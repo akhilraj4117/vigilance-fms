@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import RTIApplication, RTIAppeal, File
 from extensions import db
-from sqlalchemy import or_
+from sqlalchemy import or_, asc, desc, nullslast
 import csv
 import io
 
@@ -67,11 +67,14 @@ def rti_index():
             )
         )
     # Apply sorting for applications
-    app_sort_col = app_sort_columns.get(sort_by, RTIApplication.id)
-    if sort_order == 'asc':
-        app_query = app_query.order_by(app_sort_col.asc())
+    if active_tab == 'application':
+        app_sort_col = app_sort_columns.get(sort_by, RTIApplication.id)
+        if sort_order == 'asc':
+            app_query = app_query.order_by(nullslast(asc(app_sort_col)))
+        else:
+            app_query = app_query.order_by(nullslast(desc(app_sort_col)))
     else:
-        app_query = app_query.order_by(app_sort_col.desc())
+        app_query = app_query.order_by(desc(RTIApplication.id))
     applications = app_query.all()
     
     # RTI Appeal Register
@@ -85,11 +88,14 @@ def rti_index():
             )
         )
     # Apply sorting for appeals
-    appeal_sort_col = appeal_sort_columns.get(sort_by, RTIAppeal.id)
-    if sort_order == 'asc':
-        appeal_query = appeal_query.order_by(appeal_sort_col.asc())
+    if active_tab == 'appeal':
+        appeal_sort_col = appeal_sort_columns.get(sort_by, RTIAppeal.id)
+        if sort_order == 'asc':
+            appeal_query = appeal_query.order_by(nullslast(asc(appeal_sort_col)))
+        else:
+            appeal_query = appeal_query.order_by(nullslast(desc(appeal_sort_col)))
     else:
-        appeal_query = appeal_query.order_by(appeal_sort_col.desc())
+        appeal_query = appeal_query.order_by(desc(RTIAppeal.id))
     appeals = appeal_query.all()
     
     # RTI Fee Register (uses RTIApplication table with fee data)
@@ -111,11 +117,14 @@ def rti_index():
             )
         )
     # Apply sorting for fees
-    fee_sort_col = fee_sort_columns.get(sort_by, RTIApplication.id)
-    if sort_order == 'asc':
-        fee_query = fee_query.order_by(fee_sort_col.asc())
+    if active_tab == 'fee':
+        fee_sort_col = fee_sort_columns.get(sort_by, RTIApplication.id)
+        if sort_order == 'asc':
+            fee_query = fee_query.order_by(nullslast(asc(fee_sort_col)))
+        else:
+            fee_query = fee_query.order_by(nullslast(desc(fee_sort_col)))
     else:
-        fee_query = fee_query.order_by(fee_sort_col.desc())
+        fee_query = fee_query.order_by(desc(RTIApplication.id))
     fee_entries = fee_query.all()
     
     return render_template('rti/index.html',
