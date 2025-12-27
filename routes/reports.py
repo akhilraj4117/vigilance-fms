@@ -780,7 +780,9 @@ def get_da_monthly_stats(selected_year):
     """Get month-wise DA statistics for the selected year using raw SQL matching desktop app.
     
     Uses PostgreSQL RIGHT() function instead of substr() for year extraction.
-    Handles 'None' string values in moc_issued_by and scn_issued_by fields.
+    Matches desktop app logic exactly:
+    - MOC DHS: only explicit 'DHS' or 'DMO' values (not including 'None'/empty)
+    - SCN DHS: includes NULL, empty, 'None', and 'DHS'
     """
     months = ['January', 'February', 'March', 'April', 'May', 'June',
               'July', 'August', 'September', 'October', 'November', 'December']
@@ -798,11 +800,11 @@ def get_da_monthly_stats(selected_year):
         
         try:
             # 1. MOC from DHS issued in this month (DD-MM-YYYY format)
-            # Include NULL/empty/'None' string moc_issued_by as DHS (default - most records don't have this field set)
+            # Desktop app: only explicit DHS or DMO values (NOT including 'None' or empty)
             result = db.session.execute(db.text("""
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
-                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'None' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
                 AND moc_issued = 'Issued'
                 AND LENGTH(moc_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -813,7 +815,7 @@ def get_da_monthly_stats(selected_year):
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE RIGHT(moc_date, 4) = :year AND SUBSTRING(moc_date, 4, 2) = :month
                 AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'None' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
                 AND moc_issued = 'Issued'
                 AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
                 AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
@@ -826,7 +828,7 @@ def get_da_monthly_stats(selected_year):
                 WHERE RIGHT(moc_date, 4) = :year
                 AND RIGHT(wsd_sent_to_dhs_date, 4) = :year AND SUBSTRING(wsd_sent_to_dhs_date, 4, 2) = :month
                 AND SUBSTRING(moc_date, 4, 2) != :month
-                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'None' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
                 AND moc_issued = 'Issued'
                 AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != '' AND wsd_sent_to_dhs_date != 'None'
                 AND LENGTH(moc_date) >= 10 AND LENGTH(wsd_sent_to_dhs_date) >= 10
@@ -866,7 +868,7 @@ def get_da_monthly_stats(selected_year):
             monthly_data[month_name]['wsd_prev_govt'] = result.scalar() or 0
             
             # 7. SCN from DHS issued in this month
-            # Include NULL/empty/'None' string scn_issued_by as DHS (default)
+            # Desktop app: includes NULL, empty, 'None' string, and 'DHS'
             result = db.session.execute(db.text("""
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE RIGHT(scn_issued_date, 4) = :year AND SUBSTRING(scn_issued_date, 4, 2) = :month
@@ -944,11 +946,11 @@ def get_da_monthly_stats(selected_year):
     }
     
     try:
-        # Previous MOC DHS (include NULL/empty/'None' as DHS)
+        # Previous MOC DHS - desktop: only explicit DHS or DMO
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE RIGHT(moc_date, 4) < :year
-            AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'None' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+            AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
             AND moc_issued = 'Issued'
             AND LENGTH(moc_date) >= 10
         """), {'year': selected_year})
@@ -963,7 +965,7 @@ def get_da_monthly_stats(selected_year):
         """), {'year': selected_year})
         previous_data['moc_govt'] = result.scalar() or 0
         
-        # Previous SCN DHS (include NULL/empty/'None' as DHS)
+        # Previous SCN DHS - desktop: includes NULL, empty, 'None', 'DHS'
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE RIGHT(scn_issued_date, 4) < :year
