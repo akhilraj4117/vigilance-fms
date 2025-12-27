@@ -794,10 +794,12 @@ def get_da_monthly_stats(selected_year):
         
         try:
             # 1. MOC from DHS issued in this month (DD-MM-YYYY format)
+            # Include NULL/empty moc_issued_by as DHS (default - most records don't have this field set)
             result = db.session.execute(db.text("""
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE substr(moc_date, -4) = :year AND substr(moc_date, 4, 2) = :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO') AND moc_issued = 'Issued'
+                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND moc_issued = 'Issued'
                 AND length(moc_date) >= 10
             """), {'year': selected_year, 'month': month_str})
             monthly_data[month_name]['moc_dhs'] = result.scalar() or 0
@@ -807,7 +809,8 @@ def get_da_monthly_stats(selected_year):
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE substr(moc_date, -4) = :year AND substr(moc_date, 4, 2) = :month
                 AND substr(wsd_sent_to_dhs_date, -4) = :year AND substr(wsd_sent_to_dhs_date, 4, 2) = :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO') AND moc_issued = 'Issued'
+                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND moc_issued = 'Issued'
                 AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != ''
                 AND length(moc_date) >= 10 AND length(wsd_sent_to_dhs_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -819,7 +822,8 @@ def get_da_monthly_stats(selected_year):
                 WHERE substr(moc_date, -4) = :year
                 AND substr(wsd_sent_to_dhs_date, -4) = :year AND substr(wsd_sent_to_dhs_date, 4, 2) = :month
                 AND substr(moc_date, 4, 2) != :month
-                AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO') AND moc_issued = 'Issued'
+                AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+                AND moc_issued = 'Issued'
                 AND wsd_sent_to_dhs_date IS NOT NULL AND wsd_sent_to_dhs_date != ''
                 AND length(moc_date) >= 10 AND length(wsd_sent_to_dhs_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -858,10 +862,11 @@ def get_da_monthly_stats(selected_year):
             monthly_data[month_name]['wsd_prev_govt'] = result.scalar() or 0
             
             # 7. SCN from DHS issued in this month
+            # Include NULL/empty scn_issued_by as DHS (default)
             result = db.session.execute(db.text("""
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE substr(scn_issued_date, -4) = :year AND substr(scn_issued_date, 4, 2) = :month
-                AND (scn_issued_by = 'DHS' OR scn_issued_by IS NULL OR scn_issued_by = '')
+                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'DHS')
                 AND scn_issued_date IS NOT NULL AND scn_issued_date != ''
                 AND length(scn_issued_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -872,7 +877,7 @@ def get_da_monthly_stats(selected_year):
                 SELECT COUNT(*) FROM disciplinary_action_details
                 WHERE substr(scn_issued_date, -4) = :year AND substr(scn_issued_date, 4, 2) = :month
                 AND substr(scn_reply_sent_to_dhs_date, -4) = :year AND substr(scn_reply_sent_to_dhs_date, 4, 2) = :month
-                AND (scn_issued_by = 'DHS' OR scn_issued_by IS NULL OR scn_issued_by = '')
+                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'DHS')
                 AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != ''
                 AND length(scn_issued_date) >= 10 AND length(scn_reply_sent_to_dhs_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -884,7 +889,7 @@ def get_da_monthly_stats(selected_year):
                 WHERE substr(scn_issued_date, -4) = :year
                 AND substr(scn_reply_sent_to_dhs_date, -4) = :year AND substr(scn_reply_sent_to_dhs_date, 4, 2) = :month
                 AND substr(scn_issued_date, 4, 2) != :month
-                AND (scn_issued_by = 'DHS' OR scn_issued_by IS NULL OR scn_issued_by = '')
+                AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'DHS')
                 AND scn_reply_sent_to_dhs_date IS NOT NULL AND scn_reply_sent_to_dhs_date != ''
                 AND length(scn_issued_date) >= 10 AND length(scn_reply_sent_to_dhs_date) >= 10
             """), {'year': selected_year, 'month': month_str})
@@ -935,11 +940,12 @@ def get_da_monthly_stats(selected_year):
     }
     
     try:
-        # Previous MOC DHS
+        # Previous MOC DHS (include NULL/empty as DHS)
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE substr(moc_date, -4) < :year
-            AND (moc_issued_by = 'DHS' OR moc_issued_by = 'DMO') AND moc_issued = 'Issued'
+            AND (moc_issued_by IS NULL OR moc_issued_by = '' OR moc_issued_by = 'DHS' OR moc_issued_by = 'DMO')
+            AND moc_issued = 'Issued'
             AND length(moc_date) >= 10
         """), {'year': selected_year})
         previous_data['moc_dhs'] = result.scalar() or 0
@@ -953,11 +959,11 @@ def get_da_monthly_stats(selected_year):
         """), {'year': selected_year})
         previous_data['moc_govt'] = result.scalar() or 0
         
-        # Previous SCN DHS
+        # Previous SCN DHS (include NULL/empty as DHS)
         result = db.session.execute(db.text("""
             SELECT COUNT(*) FROM disciplinary_action_details
             WHERE substr(scn_issued_date, -4) < :year
-            AND (scn_issued_by = 'DHS' OR scn_issued_by IS NULL OR scn_issued_by = '')
+            AND (scn_issued_by IS NULL OR scn_issued_by = '' OR scn_issued_by = 'DHS')
             AND scn_issued_date IS NOT NULL AND scn_issued_date != ''
             AND length(scn_issued_date) >= 10
         """), {'year': selected_year})
