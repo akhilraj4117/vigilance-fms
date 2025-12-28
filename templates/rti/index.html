@@ -42,9 +42,13 @@
     .sortable .sort-icon {
         margin-left: 5px;
         opacity: 0.5;
+        pointer-events: none;
     }
     .sortable.active .sort-icon {
         opacity: 1;
+    }
+    .sortable * {
+        pointer-events: none;
     }
 </style>
 {% endblock %}
@@ -56,25 +60,26 @@
     <!-- Inner Tab Navigation (matching desktop app) -->
     <ul class="nav nav-tabs mb-4" id="rtiTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'application' else '' }}" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" type="button" role="tab">
+            <a class="nav-link {{ 'active' if active_tab == 'application' else '' }}" href="{{ url_for('rti.rti_index', tab='application') }}">
                 <i class="bi bi-file-earmark-text"></i> RTI Application Register
-            </button>
+            </a>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'appeal' else '' }}" id="appeal-tab" data-bs-toggle="tab" data-bs-target="#appeal" type="button" role="tab">
+            <a class="nav-link {{ 'active' if active_tab == 'appeal' else '' }}" href="{{ url_for('rti.rti_index', tab='appeal') }}">
                 <i class="bi bi-file-earmark-arrow-up"></i> RTI Appeal Register
-            </button>
+            </a>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'fee' else '' }}" id="fee-tab" data-bs-toggle="tab" data-bs-target="#fee" type="button" role="tab">
+            <a class="nav-link {{ 'active' if active_tab == 'fee' else '' }}" href="{{ url_for('rti.rti_index', tab='fee') }}">
                 <i class="bi bi-currency-rupee"></i> RTI Fee Register
-            </button>
+            </a>
         </li>
     </ul>
     
     <div class="tab-content" id="rtiTabsContent">
         <!-- RTI Application Register Tab -->
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'application' else '' }}" id="application" role="tabpanel">
+        {% if active_tab == 'application' %}
+        <div class="tab-pane fade show active" id="application" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> RTI Application Register ({{ applications|length }} records)</h5>
@@ -111,32 +116,30 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('application', 'sl_no')">
-                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th>Sl.No.</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="rtiSortTable('application', 'application_no')">
+                                        Original Application No. <i class="bi {{ 'bi-sort-up' if sort_by == 'application_no' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'application_no' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('application', 'application_no')">
-                                        Original Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="rtiSortTable('application', 'date_receipt')">
+                                        Date of Receipt <i class="bi {{ 'bi-sort-up' if sort_by == 'date_receipt' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'date_receipt' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('application', 'date_receipt')">
-                                        Date of Receipt <i class="bi bi-arrow-down-up sort-icon"></i>
-                                    </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="sortTable('application', 'applicant')">
-                                        Applicant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="rtiSortTable('application', 'applicant')">
+                                        Applicant's Name <i class="bi {{ 'bi-sort-up' if sort_by == 'applicant' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'applicant' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Address</th>
                                     <th>Subject of Information</th>
                                     <th>Fee Paid (₹)</th>
                                     <th>Mode of Payment</th>
                                     <th>Date of Acknowledgment</th>
-                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="sortTable('application', 'date_disposal')">
-                                        Date of Disposal <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="rtiSortTable('application', 'date_disposal')">
+                                        Date of Disposal <i class="bi {{ 'bi-sort-up' if sort_by == 'date_disposal' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'date_disposal' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'status' else '' }}" onclick="sortTable('application', 'status')">
-                                        Status <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'status' else '' }}" onclick="rtiSortTable('application', 'status')">
+                                        Status <i class="bi {{ 'bi-sort-up' if sort_by == 'status' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'status' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Remarks</th>
-                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="sortTable('application', 'file_number')">
-                                        File Number <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="rtiSortTable('application', 'file_number')">
+                                        File Number <i class="bi {{ 'bi-sort-up' if sort_by == 'file_number' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'file_number' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Actions</th>
                                 </tr>
@@ -144,7 +147,7 @@
                             <tbody>
                                 {% for app in applications %}
                                 <tr>
-                                    <td>{{ app.sl_no or loop.index }}</td>
+                                    <td>{{ loop.index }}</td>
                                     <td>{{ app.original_application_no or '-' }}</td>
                                     <td>{{ app.date_of_receipt or '-' }}</td>
                                     <td>{{ app.applicant_prefix or '' }} {{ app.applicant_name or '-' }}</td>
@@ -202,9 +205,11 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         
         <!-- RTI Appeal Register Tab -->
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'appeal' else '' }}" id="appeal" role="tabpanel">
+        {% if active_tab == 'appeal' %}
+        <div class="tab-pane fade show active" id="appeal" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> RTI Appeal Register ({{ appeals|length }} records)</h5>
@@ -241,28 +246,26 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('appeal', 'sl_no')">
-                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th>Sl.No.</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'appeal_no' else '' }}" onclick="rtiSortTable('appeal', 'appeal_no')">
+                                        Appeal No. <i class="bi {{ 'bi-sort-up' if sort_by == 'appeal_no' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'appeal_no' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'appeal_no' else '' }}" onclick="sortTable('appeal', 'appeal_no')">
-                                        Appeal No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="rtiSortTable('appeal', 'application_no')">
+                                        Original Application No. <i class="bi {{ 'bi-sort-up' if sort_by == 'application_no' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'application_no' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('appeal', 'application_no')">
-                                        Original Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="rtiSortTable('appeal', 'date_receipt')">
+                                        Date of Receipt <i class="bi {{ 'bi-sort-up' if sort_by == 'date_receipt' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'date_receipt' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('appeal', 'date_receipt')">
-                                        Date of Receipt <i class="bi bi-arrow-down-up sort-icon"></i>
-                                    </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'appellant' else '' }}" onclick="sortTable('appeal', 'appellant')">
-                                        Appellant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'appellant' else '' }}" onclick="rtiSortTable('appeal', 'appellant')">
+                                        Appellant's Name <i class="bi {{ 'bi-sort-up' if sort_by == 'appellant' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'appellant' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Date of SPIO Response</th>
                                     <th>Date of Hearing</th>
-                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="sortTable('appeal', 'date_disposal')">
-                                        Date of Disposal <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_disposal' else '' }}" onclick="rtiSortTable('appeal', 'date_disposal')">
+                                        Date of Disposal <i class="bi {{ 'bi-sort-up' if sort_by == 'date_disposal' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'date_disposal' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'outcome' else '' }}" onclick="sortTable('appeal', 'outcome')">
-                                        Outcome <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'outcome' else '' }}" onclick="rtiSortTable('appeal', 'outcome')">
+                                        Outcome <i class="bi {{ 'bi-sort-up' if sort_by == 'outcome' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'outcome' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Remarks</th>
                                     <th>File Number</th>
@@ -272,7 +275,7 @@
                             <tbody>
                                 {% for appeal in appeals %}
                                 <tr>
-                                    <td>{{ appeal.sl_no or loop.index }}</td>
+                                    <td>{{ loop.index }}</td>
                                     <td>{{ appeal.appeal_no or '-' }}</td>
                                     <td>{{ appeal.original_application_no or '-' }}</td>
                                     <td>{{ appeal.date_of_receipt or '-' }}</td>
@@ -326,9 +329,11 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         
         <!-- RTI Fee Register Tab -->
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'fee' else '' }}" id="fee" role="tabpanel">
+        {% if active_tab == 'fee' %}
+        <div class="tab-pane fade show active" id="fee" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> RTI Fee Register ({{ fee_entries|length }} records)</h5>
@@ -365,30 +370,28 @@
                         <table class="table table-striped table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th class="sortable {{ 'active' if sort_by == 'sl_no' else '' }}" onclick="sortTable('fee', 'sl_no')">
-                                        Sl.No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th>Sl.No.</th>
+                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="rtiSortTable('fee', 'application_no')">
+                                        Application No. <i class="bi {{ 'bi-sort-up' if sort_by == 'application_no' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'application_no' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'application_no' else '' }}" onclick="sortTable('fee', 'application_no')">
-                                        Application No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="rtiSortTable('fee', 'applicant')">
+                                        Applicant's Name <i class="bi {{ 'bi-sort-up' if sort_by == 'applicant' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'applicant' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'applicant' else '' }}" onclick="sortTable('fee', 'applicant')">
-                                        Applicant's Name <i class="bi bi-arrow-down-up sort-icon"></i>
-                                    </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'fee_paid' else '' }}" onclick="sortTable('fee', 'fee_paid')">
-                                        Fee Paid (Rs.) <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'fee_paid' else '' }}" onclick="rtiSortTable('fee', 'fee_paid')">
+                                        Fee Paid (Rs.) <i class="bi {{ 'bi-sort-up' if sort_by == 'fee_paid' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'fee_paid' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Mode of Payment</th>
-                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="sortTable('fee', 'date_receipt')">
-                                        Date of Payment <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'date_receipt' else '' }}" onclick="rtiSortTable('fee', 'date_receipt')">
+                                        Date of Payment <i class="bi {{ 'bi-sort-up' if sort_by == 'date_receipt' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'date_receipt' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
-                                    <th class="sortable {{ 'active' if sort_by == 'receipt_no' else '' }}" onclick="sortTable('fee', 'receipt_no')">
-                                        Receipt No. <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'receipt_no' else '' }}" onclick="rtiSortTable('fee', 'receipt_no')">
+                                        Receipt No. <i class="bi {{ 'bi-sort-up' if sort_by == 'receipt_no' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'receipt_no' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Additional Fee (Rs.)</th>
                                     <th>Purpose</th>
                                     <th>Remarks</th>
-                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="sortTable('fee', 'file_number')">
-                                        File Number <i class="bi bi-arrow-down-up sort-icon"></i>
+                                    <th class="sortable {{ 'active' if sort_by == 'file_number' else '' }}" onclick="rtiSortTable('fee', 'file_number')">
+                                        File Number <i class="bi {{ 'bi-sort-up' if sort_by == 'file_number' and sort_order == 'asc' else 'bi-sort-down' if sort_by == 'file_number' else 'bi-arrow-down-up' }} sort-icon"></i>
                                     </th>
                                     <th>Actions</th>
                                 </tr>
@@ -396,7 +399,7 @@
                             <tbody>
                                 {% for fee in fee_entries %}
                                 <tr>
-                                    <td>{{ fee.sl_no or loop.index }}</td>
+                                    <td>{{ loop.index }}</td>
                                     <td>{{ fee.original_application_no or '-' }}</td>
                                     <td>{{ fee.applicant_prefix or '' }} {{ fee.applicant_name or '-' }}</td>
                                     <td>{{ fee.fee_paid or '-' }}</td>
@@ -442,11 +445,13 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
-function sortTable(tab, column) {
+function rtiSortTable(tab, column) {
+    console.log('rtiSortTable called:', tab, column);
     const currentUrl = new URL(window.location.href);
     const currentSort = currentUrl.searchParams.get('sort');
     const currentOrder = currentUrl.searchParams.get('order') || 'desc';
@@ -461,6 +466,7 @@ function sortTable(tab, column) {
     currentUrl.searchParams.set('sort', column);
     currentUrl.searchParams.set('order', newOrder);
     
+    console.log('Navigating to:', currentUrl.toString());
     window.location.href = currentUrl.toString();
 }
 </script>

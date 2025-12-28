@@ -3,9 +3,9 @@ Main routes for the Flask application.
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import File, DisciplinaryAction, RTIApplication, CourtCase, Employee, Institution, InquiryDetails
+from models import File, DisciplinaryAction, RTIApplication, CourtCase, Employee, Institution, InquiryDetails, ReportSoughtDetails
 from extensions import db
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 import json
 
 main_bp = Blueprint('main', __name__)
@@ -28,7 +28,13 @@ def dashboard():
         'total_files': File.query.count(),
         'active_files': File.query.filter(db.or_(File.is_closed == 0, File.is_closed == None)).count(),
         'closed_files': File.query.filter(File.is_closed == 1).count(),
-        'pending_files': File.query.filter(db.or_(File.status == 'Pending', File.status == None), db.or_(File.is_closed == 0, File.is_closed == None)).count(),
+        'pending_files': ReportSoughtDetails.query.filter(
+            and_(
+                or_(ReportSoughtDetails.submitted != 'Yes', ReportSoughtDetails.submitted == None),
+                ReportSoughtDetails.report_sought_date != None,
+                ReportSoughtDetails.report_sought_date != ''
+            )
+        ).count(),
         'physical_files': File.query.filter_by(file_type='Physical').count(),
         'eoffice_files': File.query.filter_by(file_type='E-Office').count(),
         'disciplinary_actions': DisciplinaryAction.query.count(),

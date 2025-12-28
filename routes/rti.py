@@ -24,7 +24,6 @@ def rti_index():
     # Define sortable columns for each register
     app_sort_columns = {
         'id': RTIApplication.id,
-        'sl_no': RTIApplication.sl_no,
         'application_no': RTIApplication.original_application_no,
         'date_receipt': RTIApplication.date_of_receipt,
         'applicant': RTIApplication.applicant_name,
@@ -35,7 +34,6 @@ def rti_index():
     
     appeal_sort_columns = {
         'id': RTIAppeal.id,
-        'sl_no': RTIAppeal.sl_no,
         'appeal_no': RTIAppeal.appeal_no,
         'application_no': RTIAppeal.original_application_no,
         'date_receipt': RTIAppeal.date_of_receipt,
@@ -46,7 +44,6 @@ def rti_index():
     
     fee_sort_columns = {
         'id': RTIApplication.id,
-        'sl_no': RTIApplication.sl_no,
         'application_no': RTIApplication.original_application_no,
         'applicant': RTIApplication.applicant_name,
         'fee_paid': RTIApplication.fee_paid,

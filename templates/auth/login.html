@@ -6,6 +6,8 @@
 <style>
     body {
         background-color: #ECF0F1;
+        margin: 0;
+        padding: 0;
     }
     .login-container {
         min-height: 100vh;
@@ -14,14 +16,31 @@
         justify-content: center;
         padding: 20px;
     }
+    /* Landscape layout card */
     .login-card {
         background: white;
         border-radius: 15px;
         box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        padding: 40px;
-        max-width: 500px;
+        padding: 0;
+        max-width: 900px;
         width: 100%;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+    }
+    /* Left side - Branding */
+    .login-branding {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #2C3E50;
+        padding: 40px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
+        min-width: 350px;
+        border-right: 1px solid #dee2e6;
     }
     .welcome-text {
         color: #2C3E50;
@@ -31,25 +50,25 @@
         margin-bottom: 10px;
     }
     .office-name {
-        color: #34495E;
+        color: #495057;
         font-family: 'Calibri', sans-serif;
         font-size: 1rem;
         line-height: 1.6;
         margin-bottom: 25px;
     }
     .logo-img {
-        width: 200px;
-        height: 200px;
+        width: 180px;
+        height: 180px;
         object-fit: contain;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     .logo-container {
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     .logo-placeholder {
         width: 150px;
         height: 150px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #28A745 0%, #1e7e34 100%);
         border-radius: 50%;
         margin: 0 auto;
         display: flex;
@@ -59,6 +78,28 @@
     .logo-placeholder i {
         font-size: 60px;
         color: white;
+    }
+    .app-title {
+        color: #28A745;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-top: 15px;
+    }
+    /* Right side - Login Form */
+    .login-form-section {
+        padding: 50px 40px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 350px;
+    }
+    .login-form-title {
+        color: #2C3E50;
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-align: center;
     }
     .form-group {
         margin-bottom: 20px;
@@ -71,8 +112,8 @@
         display: block;
     }
     .form-control {
-        height: 45px;
-        border: 1px solid #BDC3C7;
+        height: 50px;
+        border: 2px solid #BDC3C7;
         border-radius: 8px;
         padding: 10px 15px;
         font-size: 1rem;
@@ -87,12 +128,11 @@
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 12px 40px;
+        padding: 14px 40px;
         font-size: 1.1rem;
         font-weight: bold;
         width: 100%;
-        max-width: 300px;
-        margin-top: 10px;
+        margin-top: 15px;
         transition: background-color 0.3s, transform 0.2s;
     }
     .btn-login:hover {
@@ -107,6 +147,7 @@
         color: #dc3545;
         font-weight: bold;
         margin-top: 15px;
+        text-align: center;
     }
     .input-icon {
         position: relative;
@@ -117,9 +158,33 @@
         top: 50%;
         transform: translateY(-50%);
         color: #BDC3C7;
+        font-size: 1.2rem;
     }
     .input-icon input {
-        padding-right: 45px;
+        padding-right: 50px;
+    }
+    /* Responsive - Stack vertically on small screens */
+    @media (max-width: 768px) {
+        .login-card {
+            flex-direction: column;
+            max-width: 450px;
+        }
+        .login-branding, .login-form-section {
+            min-width: auto;
+        }
+        .login-branding {
+            padding: 30px;
+        }
+        .login-form-section {
+            padding: 30px;
+        }
+        .logo-img {
+            width: 120px;
+            height: 120px;
+        }
+        .welcome-text {
+            font-size: 2rem;
+        }
     }
 </style>
 {% endblock %}
@@ -127,60 +192,90 @@
 {% block content %}
 <div class="login-container">
     <div class="login-card">
-        <!-- Welcome Message -->
-        <h1 class="welcome-text">WELCOME</h1>
-        <div class="office-name">
-            Vigilance Section<br>
-            District Medical Office (Health)<br>
-            Thiruvananthapuram
-        </div>
-        
-        <!-- Logo/Image -->
-        <div class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-img" 
-                 onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
-            <div id="logo-fallback" class="logo-placeholder" style="display: none;">
-                <i class="bi bi-shield-check"></i>
-            </div>
-        </div>
-        
-        <!-- Login Form -->
-        <form method="POST" action="{{ url_for('auth.login') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="form-group">
-                <label for="username">User ID:</label>
-                <div class="input-icon">
-                    <input type="text" class="form-control" id="username" name="username" 
-                           required autofocus placeholder="User ID">
-                    <i class="bi bi-person"></i>
+        <!-- Left Side - Branding -->
+        <div class="login-branding">
+            <!-- Logo/Image -->
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-img" 
+                     onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+                <div id="logo-fallback" class="logo-placeholder" style="display: none;">
+                    <i class="bi bi-shield-check"></i>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <div class="input-icon">
-                    <input type="password" class="form-control" id="password" name="password" 
-                           required placeholder="Password">
-                    <i class="bi bi-key"></i>
-                </div>
+            <!-- Welcome Message -->
+            <h1 class="welcome-text">WELCOME</h1>
+            <div class="office-name">
+                Vigilance Section<br>
+                District Medical Office (Health)<br>
+                Thiruvananthapuram
             </div>
-            
-            <button type="submit" class="btn btn-login">
-                Login
-            </button>
-        </form>
+            <div class="app-title">
+                <i class="bi bi-folder2-open"></i> File Management System
+            </div>
+        </div>
         
-        <!-- Error Message -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <p class="error-message {% if category == 'success' %}text-success{% endif %}">
-                        {{ message }}
-                    </p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        <!-- Right Side - Login Form -->
+        <div class="login-form-section">
+            <h2 class="login-form-title">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </h2>
+            
+            <!-- Login Form -->
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label for="username"><i class="bi bi-person-fill"></i> User ID</label>
+                    <div class="input-icon">
+                        <input type="text" class="form-control" id="username" name="username" 
+                               required autofocus placeholder="Enter your User ID">
+                        <i class="bi bi-person"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="bi bi-key-fill"></i> Password</label>
+                    <div class="input-icon">
+                        <input type="password" class="form-control" id="password" name="password" 
+                               required placeholder="Enter your Password">
+                        <i class="bi bi-eye-slash" id="togglePassword" style="cursor: pointer;" onclick="togglePasswordVisibility()"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-login">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </button>
+            </form>
+            
+            <!-- Error Message -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="error-message {% if category == 'success' %}text-success{% endif %}">
+                            <i class="bi bi-exclamation-circle"></i> {{ message }}
+                        </p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('togglePassword');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    }
+}
+</script>
 {% endblock %}

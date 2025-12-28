@@ -22,36 +22,15 @@
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ url_for('reports.inquiries') }}" method="GET" class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Inquiry Type</label>
                 <select class="form-select" name="inquiry_type">
                     <option value="">All Types</option>
-                    <option value="Preliminary" {% if inquiry_type == 'Preliminary' %}selected{% endif %}>Preliminary</option>
-                    <option value="Departmental" {% if inquiry_type == 'Departmental' %}selected{% endif %}>Departmental</option>
-                    <option value="Vigilance" {% if inquiry_type == 'Vigilance' %}selected{% endif %}>Vigilance</option>
-                    <option value="Other" {% if inquiry_type == 'Other' %}selected{% endif %}>Other</option>
+                    <option value="prelim" {% if inquiry_type_filter == 'prelim' %}selected{% endif %}>Preliminary Enquiry</option>
+                    <option value="rule15" {% if inquiry_type_filter == 'rule15' %}selected{% endif %}>Rule 15(ii) Enquiry</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select class="form-select" name="status">
-                    <option value="">All Status</option>
-                    <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
-                    <option value="In Progress" {% if status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                    <option value="Completed" {% if status == 'Completed' %}selected{% endif %}>Completed</option>
-                    <option value="Report Submitted" {% if status == 'Report Submitted' %}selected{% endif %}>Report Submitted</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Year</label>
-                <select class="form-select" name="year">
-                    <option value="">All Years</option>
-                    {% for y in years %}
-                    <option value="{{ y }}" {% if year == y|string %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
@@ -65,35 +44,27 @@
 
 <!-- Summary Cards -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
         <div class="card bg-primary text-white h-100">
             <div class="card-body text-center">
-                <h3>{{ summary.total }}</h3>
+                <h3>{{ pagination.total }}</h3>
                 <p class="mb-0">Total Inquiries</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-warning text-dark h-100">
-            <div class="card-body text-center">
-                <h3>{{ summary.pending }}</h3>
-                <p class="mb-0">Pending</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
         <div class="card bg-info text-white h-100">
             <div class="card-body text-center">
-                <h3>{{ summary.in_progress }}</h3>
-                <p class="mb-0">In Progress</p>
+                <h3>{{ inquiries|selectattr('prelim_conducted')|list|length }}</h3>
+                <p class="mb-0">Preliminary</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-success text-white h-100">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-warning text-dark h-100">
             <div class="card-body text-center">
-                <h3>{{ summary.completed }}</h3>
-                <p class="mb-0">Completed</p>
+                <h3>{{ inquiries|selectattr('rule15_conducted')|list|length }}</h3>
+                <p class="mb-0">Rule 15(ii)</p>
             </div>
         </div>
     </div>
@@ -150,7 +121,7 @@
                         </td>
                         <td>{{ inquiry.prelim_report_to or inquiry.rule15_report_to or '-' }}</td>
                         <td>
-                            <a href="{{ url_for('reports.view_inquiry', id=inquiry.id) }}" 
+                            <a href="{{ url_for('files.view_file', file_number=inquiry.file_number) }}" 
                                class="btn btn-sm btn-info" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
@@ -172,14 +143,14 @@
             <ul class="pagination justify-content-center mb-0">
                 {% if pagination.has_prev %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('reports.inquiries', page=pagination.prev_num, inquiry_type=inquiry_type, status=status, year=year) }}">Previous</a>
+                    <a class="page-link" href="{{ url_for('reports.inquiries', page=pagination.prev_num, inquiry_type=inquiry_type_filter) }}">Previous</a>
                 </li>
                 {% endif %}
                 
                 {% for page_num in pagination.iter_pages() %}
                     {% if page_num %}
                     <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('reports.inquiries', page=page_num, inquiry_type=inquiry_type, status=status, year=year) }}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('reports.inquiries', page=page_num, inquiry_type=inquiry_type_filter) }}">{{ page_num }}</a>
                     </li>
                     {% else %}
                     <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -188,66 +159,13 @@
                 
                 {% if pagination.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('reports.inquiries', page=pagination.next_num, inquiry_type=inquiry_type, status=status, year=year) }}">Next</a>
+                    <a class="page-link" href="{{ url_for('reports.inquiries', page=pagination.next_num, inquiry_type=inquiry_type_filter) }}">Next</a>
                 </li>
                 {% endif %}
             </ul>
         </nav>
     </div>
     {% endif %}
-</div>
-
-<!-- Type-wise Summary -->
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Type-wise Summary</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for type_stat in type_summary %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ type_stat.type }}
-                        <div>
-                            <span class="badge bg-primary">{{ type_stat.total }}</span>
-                            <span class="badge bg-warning text-dark">{{ type_stat.pending }} pending</span>
-                        </div>
-                    </li>
-                    {% else %}
-                    <li class="list-group-item text-muted">No data available</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Age Analysis</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-success">Within 30 days</span>
-                        <span class="badge bg-success">{{ age_analysis.within_30 }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-info">30-90 days</span>
-                        <span class="badge bg-info">{{ age_analysis.within_90 }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-warning">90-180 days</span>
-                        <span class="badge bg-warning text-dark">{{ age_analysis.within_180 }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-danger">Over 180 days</span>
-                        <span class="badge bg-danger">{{ age_analysis.over_180 }}</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 

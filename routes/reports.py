@@ -1444,29 +1444,25 @@ def inquiries():
     page = request.args.get('page', 1, type=int)
     per_page = 50
     
-    status_filter = request.args.get('status', '')
+    inquiry_type_filter = request.args.get('inquiry_type', '')
     
     query = InquiryDetails.query
     
-    if status_filter:
-        query = query.filter(InquiryDetails.inquiry_status == status_filter)
+    # Filter by inquiry type
+    if inquiry_type_filter == 'prelim':
+        query = query.filter(InquiryDetails.prelim_conducted == 1)
+    elif inquiry_type_filter == 'rule15':
+        query = query.filter(InquiryDetails.rule15_conducted == 1)
     
     query = query.order_by(InquiryDetails.id.desc())
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     inquiries_list = pagination.items
     
-    # Get unique statuses
-    statuses = db.session.query(InquiryDetails.inquiry_status).distinct().filter(
-        InquiryDetails.inquiry_status != None, InquiryDetails.inquiry_status != ''
-    ).all()
-    statuses = [s[0] for s in statuses]
-    
     return render_template('reports/inquiries.html',
                           inquiries=inquiries_list,
                           pagination=pagination,
-                          statuses=statuses,
-                          status_filter=status_filter)
+                          inquiry_type_filter=inquiry_type_filter)
 
 
 @reports_bp.route('/women-harassment')
