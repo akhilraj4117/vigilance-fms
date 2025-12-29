@@ -1604,6 +1604,13 @@
                                 <input type="text" class="form-control" id="plaintiffDesignation" name="plaintiff_designation" readonly>
                             </div>
                         </div>
+                        <div class="row" id="plaintiffInstitutionDiv">
+                            <div class="col-md-12 mb-3">
+                                <label for="plaintiffInstitution" class="form-label">Institution</label>
+                                <input type="text" class="form-control" id="plaintiffInstitution" name="plaintiff_institution" list="plaintiffInstitutionList" placeholder="Type to search institutions">
+                                <datalist id="plaintiffInstitutionList"></datalist>
+                            </div>
+                        </div>
                         <div class="mb-3" id="plaintiffAddressDiv" style="display: none;">
                             <label for="plaintiffAddress" class="form-label">Address</label>
                             <textarea class="form-control" id="plaintiffAddress" name="plaintiff_address" rows="2"></textarea>
@@ -1651,6 +1658,13 @@
                             <div class="col-md-6 mb-3" id="respondentDesignationDiv">
                                 <label for="respondentDesignation" class="form-label">Designation</label>
                                 <input type="text" class="form-control" id="respondentDesignation" name="respondent_designation" readonly>
+                            </div>
+                        </div>
+                        <div class="row" id="respondentInstitutionDiv">
+                            <div class="col-md-12 mb-3">
+                                <label for="respondentInstitution" class="form-label">Institution</label>
+                                <input type="text" class="form-control" id="respondentInstitution" name="respondent_institution" list="respondentInstitutionList" placeholder="Type to search institutions">
+                                <datalist id="respondentInstitutionList"></datalist>
                             </div>
                         </div>
                         <div class="mb-3" id="respondentAddressDiv" style="display: none;">
@@ -3882,6 +3896,8 @@
                     // Set plaintiff fields
                     document.getElementById('plaintiffName').value = data.data.plaintiff_name || '';
                     document.getElementById('plaintiffPen').value = data.data.plaintiff_pen || '';
+                    document.getElementById('plaintiffDesignation').value = data.data.plaintiff_designation || '';
+                    document.getElementById('plaintiffInstitution').value = data.data.plaintiff_institution || '';
                     document.getElementById('plaintiffAddress').value = data.data.plaintiff_address || '';
                     document.getElementById('plaintiffContact').value = data.data.plaintiff_contact_number || '';
                     document.getElementById('plaintiffEmail').value = data.data.plaintiff_email || '';
@@ -3889,6 +3905,8 @@
                     // Set respondent fields
                     document.getElementById('respondentName').value = data.data.respondent_name || '';
                     document.getElementById('respondentPen').value = data.data.respondent_pen || '';
+                    document.getElementById('respondentDesignation').value = data.data.respondent_designation || '';
+                    document.getElementById('respondentInstitution').value = data.data.respondent_institution || '';
                     document.getElementById('respondentAddress').value = data.data.respondent_address || '';
                     document.getElementById('respondentContact').value = data.data.respondent_contact_number || '';
                     document.getElementById('respondentEmail').value = data.data.respondent_email || '';
@@ -3911,12 +3929,16 @@
                 plaintiff_type: plaintiffType,
                 plaintiff_name: document.getElementById('plaintiffName').value,
                 plaintiff_pen: document.getElementById('plaintiffPen').value,
+                plaintiff_designation: document.getElementById('plaintiffDesignation').value,
+                plaintiff_institution: document.getElementById('plaintiffInstitution').value,
                 plaintiff_address: document.getElementById('plaintiffAddress').value,
                 plaintiff_contact_number: document.getElementById('plaintiffContact').value,
                 plaintiff_email: document.getElementById('plaintiffEmail').value,
                 respondent_type: respondentType,
                 respondent_name: document.getElementById('respondentName').value,
                 respondent_pen: document.getElementById('respondentPen').value,
+                respondent_designation: document.getElementById('respondentDesignation').value,
+                respondent_institution: document.getElementById('respondentInstitution').value,
                 respondent_address: document.getElementById('respondentAddress').value,
                 respondent_contact_number: document.getElementById('respondentContact').value,
                 respondent_email: document.getElementById('respondentEmail').value
@@ -3931,6 +3953,101 @@
         if (!currentFileNumber || !confirm('Delete Complaint details?')) return;
         fetch('/files/complaint/delete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({file_number: currentFileNumber})})
             .then(r => r.json()).then(result => { if (result.success) bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide(); });
+    });
+    
+    // =====================================================
+    // COMPLAINT PEN AUTOPOPULATION AND INSTITUTION AUTOCOMPLETE
+    // =====================================================
+    // Plaintiff PEN autopopulation
+    document.getElementById('plaintiffPen')?.addEventListener('blur', function() {
+        const pen = this.value.trim();
+        if (!pen || pen.length < 4) return;
+        
+        fetch('/employees/api/get/' + encodeURIComponent(pen))
+            .then(r => r.json())
+            .then(data => {
+                if (data.found) {
+                    document.getElementById('plaintiffName').value = data.name || '';
+                    document.getElementById('plaintiffDesignation').value = data.designation || '';
+                    document.getElementById('plaintiffInstitution').value = data.institution_name || '';
+                } else {
+                    alert('Employee not found with PEN: ' + pen);
+                }
+            })
+            .catch(err => console.error('Error fetching employee:', err));
+    });
+    
+    // Respondent PEN autopopulation
+    document.getElementById('respondentPen')?.addEventListener('blur', function() {
+        const pen = this.value.trim();
+        if (!pen || pen.length < 4) return;
+        
+        fetch('/employees/api/get/' + encodeURIComponent(pen))
+            .then(r => r.json())
+            .then(data => {
+                if (data.found) {
+                    document.getElementById('respondentName').value = data.name || '';
+                    document.getElementById('respondentDesignation').value = data.designation || '';
+                    document.getElementById('respondentInstitution').value = data.institution_name || '';
+                } else {
+                    alert('Employee not found with PEN: ' + pen);
+                }
+            })
+            .catch(err => console.error('Error fetching employee:', err));
+    });
+    
+    // Institution autocomplete for plaintiff
+    let plaintiffInstitutionTimeout;
+    document.getElementById('plaintiffInstitution')?.addEventListener('input', function() {
+        clearTimeout(plaintiffInstitutionTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            document.getElementById('plaintiffInstitutionList').innerHTML = '';
+            return;
+        }
+        
+        plaintiffInstitutionTimeout = setTimeout(() => {
+            fetch('/institutions/api/search?q=' + encodeURIComponent(query) + '&limit=20')
+                .then(r => r.json())
+                .then(results => {
+                    const datalist = document.getElementById('plaintiffInstitutionList');
+                    datalist.innerHTML = '';
+                    results.forEach(inst => {
+                        const option = document.createElement('option');
+                        option.value = inst.name;
+                        datalist.appendChild(option);
+                    });
+                })
+                .catch(err => console.error('Error searching institutions:', err));
+        }, 300);
+    });
+    
+    // Institution autocomplete for respondent
+    let respondentInstitutionTimeout;
+    document.getElementById('respondentInstitution')?.addEventListener('input', function() {
+        clearTimeout(respondentInstitutionTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            document.getElementById('respondentInstitutionList').innerHTML = '';
+            return;
+        }
+        
+        respondentInstitutionTimeout = setTimeout(() => {
+            fetch('/institutions/api/search?q=' + encodeURIComponent(query) + '&limit=20')
+                .then(r => r.json())
+                .then(results => {
+                    const datalist = document.getElementById('respondentInstitutionList');
+                    datalist.innerHTML = '';
+                    results.forEach(inst => {
+                        const option = document.createElement('option');
+                        option.value = inst.name;
+                        datalist.appendChild(option);
+                    });
+                })
+                .catch(err => console.error('Error searching institutions:', err));
+        }, 300);
     });
     
     // =====================================================
@@ -4464,15 +4581,18 @@
         const employeeRadio = document.getElementById('plaintiffEmployee');
         const penDiv = document.getElementById('plaintiffPenDiv');
         const designationDiv = document.getElementById('plaintiffDesignationDiv');
+        const institutionDiv = document.getElementById('plaintiffInstitutionDiv');
         const addressDiv = document.getElementById('plaintiffAddressDiv');
         
         if (employeeRadio.checked) {
             penDiv.style.display = 'block';
             if (designationDiv) designationDiv.style.display = 'block';
+            if (institutionDiv) institutionDiv.style.display = 'block';
             if (addressDiv) addressDiv.style.display = 'none';
         } else {
             penDiv.style.display = 'none';
             if (designationDiv) designationDiv.style.display = 'none';
+            if (institutionDiv) institutionDiv.style.display = 'none';
             if (addressDiv) addressDiv.style.display = 'block';
         }
     }
@@ -4481,15 +4601,18 @@
         const employeeRadio = document.getElementById('respondentEmployee');
         const penDiv = document.getElementById('respondentPenDiv');
         const designationDiv = document.getElementById('respondentDesignationDiv');
+        const institutionDiv = document.getElementById('respondentInstitutionDiv');
         const addressDiv = document.getElementById('respondentAddressDiv');
         
         if (employeeRadio.checked) {
             penDiv.style.display = 'block';
             if (designationDiv) designationDiv.style.display = 'block';
+            if (institutionDiv) institutionDiv.style.display = 'block';
             if (addressDiv) addressDiv.style.display = 'none';
         } else {
             penDiv.style.display = 'none';
             if (designationDiv) designationDiv.style.display = 'none';
+            if (institutionDiv) institutionDiv.style.display = 'none';
             if (addressDiv) addressDiv.style.display = 'block';
         }
     }

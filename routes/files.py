@@ -2124,12 +2124,16 @@ def save_complaint():
         details.plaintiff_type = data.get('plaintiff_type', '')
         details.plaintiff_pen = data.get('plaintiff_pen', '')
         details.plaintiff_name = data.get('plaintiff_name', '')
+        details.plaintiff_designation = data.get('plaintiff_designation', '')
+        details.plaintiff_institution = data.get('plaintiff_institution', '')
         details.plaintiff_address = data.get('plaintiff_address', '')
         details.plaintiff_contact_number = data.get('plaintiff_contact_number', '')
         details.plaintiff_email = data.get('plaintiff_email', '')
         details.respondent_type = data.get('respondent_type', '')
         details.respondent_pen = data.get('respondent_pen', '')
         details.respondent_name = data.get('respondent_name', '')
+        details.respondent_designation = data.get('respondent_designation', '')
+        details.respondent_institution = data.get('respondent_institution', '')
         details.respondent_address = data.get('respondent_address', '')
         details.respondent_contact_number = data.get('respondent_contact_number', '')
         details.respondent_email = data.get('respondent_email', '')
@@ -2153,12 +2157,16 @@ def get_complaint(file_number):
             'plaintiff_type': details.plaintiff_type or '',
             'plaintiff_pen': details.plaintiff_pen or '',
             'plaintiff_name': details.plaintiff_name or '',
+            'plaintiff_designation': details.plaintiff_designation or '',
+            'plaintiff_institution': details.plaintiff_institution or '',
             'plaintiff_address': details.plaintiff_address or '',
             'plaintiff_contact_number': details.plaintiff_contact_number or '',
             'plaintiff_email': details.plaintiff_email or '',
             'respondent_type': details.respondent_type or '',
             'respondent_pen': details.respondent_pen or '',
             'respondent_name': details.respondent_name or '',
+            'respondent_designation': details.respondent_designation or '',
+            'respondent_institution': details.respondent_institution or '',
             'respondent_address': details.respondent_address or '',
             'respondent_contact_number': details.respondent_contact_number or '',
             'respondent_email': details.respondent_email or ''
