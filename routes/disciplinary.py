@@ -1647,23 +1647,28 @@ def api_check_pen_status(pen):
 @login_required
 def create_remarks_entry():
     """Create a new remarks entry."""
-    entry = RemarksEntry(
-        section=request.form.get('section', ''),
-        remarks_file_no=request.form.get('remarks_file_no', ''),
-        pen=request.form.get('pen', ''),
-        prefix=request.form.get('prefix', ''),
-        name=request.form.get('name', ''),
-        designation=request.form.get('designation', ''),
-        institution=request.form.get('institution', ''),
-        status=request.form.get('status', 'Clear'),
-        created_at=datetime.now().isoformat()
-    )
-    
-    db.session.add(entry)
-    db.session.commit()
-    
-    flash('Remarks entry created successfully.', 'success')
-    return redirect(url_for('disciplinary.index', tab='remarks'))
+    try:
+        entry = RemarksEntry(
+            section=request.form.get('section', ''),
+            remarks_file_no=request.form.get('remarks_file_no', ''),
+            pen=request.form.get('pen', ''),
+            prefix=request.form.get('prefix', ''),
+            name=request.form.get('name', ''),
+            designation=request.form.get('designation', ''),
+            institution=request.form.get('institution', ''),
+            status=request.form.get('status', 'Clear'),
+            created_at=datetime.now().isoformat()
+        )
+        
+        db.session.add(entry)
+        db.session.commit()
+        
+        flash('Remarks entry created successfully.', 'success')
+        return redirect(url_for('disciplinary.index', tab='remarks'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating remarks entry: {str(e)}', 'danger')
+        return redirect(url_for('disciplinary.index', tab='remarks'))
 
 
 @disciplinary_bp.route('/remarks/<int:id>/json')
@@ -1692,21 +1697,26 @@ def get_remarks_json(id):
 @login_required
 def edit_remarks_entry(id):
     """Edit an existing remarks entry."""
-    entry = RemarksEntry.query.get_or_404(id)
-    
-    entry.section = request.form.get('section', '')
-    entry.remarks_file_no = request.form.get('remarks_file_no', '')
-    entry.pen = request.form.get('pen', '')
-    entry.prefix = request.form.get('prefix', '')
-    entry.name = request.form.get('name', '')
-    entry.designation = request.form.get('designation', '')
-    entry.institution = request.form.get('institution', '')
-    entry.status = request.form.get('status', 'Clear')
-    
-    db.session.commit()
-    
-    flash('Remarks entry updated successfully.', 'success')
-    return redirect(url_for('disciplinary.index', tab='remarks'))
+    try:
+        entry = RemarksEntry.query.get_or_404(id)
+        
+        entry.section = request.form.get('section', '')
+        entry.remarks_file_no = request.form.get('remarks_file_no', '')
+        entry.pen = request.form.get('pen', '')
+        entry.prefix = request.form.get('prefix', '')
+        entry.name = request.form.get('name', '')
+        entry.designation = request.form.get('designation', '')
+        entry.institution = request.form.get('institution', '')
+        entry.status = request.form.get('status', 'Clear')
+        
+        db.session.commit()
+        
+        flash('Remarks entry updated successfully.', 'success')
+        return redirect(url_for('disciplinary.index', tab='remarks'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating remarks entry: {str(e)}', 'danger')
+        return redirect(url_for('disciplinary.index', tab='remarks'))
 
 
 @disciplinary_bp.route('/remarks/<int:id>/delete', methods=['POST'])
