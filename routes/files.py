@@ -111,8 +111,20 @@ def file_management_action():
     action = request.form.get('action', 'create')
     file_number = request.form.get('file_number', '').strip()
     
+    # Validate file number
     if not file_number:
         flash('File number is required.', 'danger')
+        return redirect(url_for('files.file_management'))
+    
+    # Check for consecutive slashes
+    if '//' in file_number:
+        flash('File number cannot contain consecutive slashes (//).', 'danger')
+        return redirect(url_for('files.file_management'))
+    
+    # Check if file number has empty parts between slashes
+    parts = file_number.split('/')
+    if any(part.strip() == '' for part in parts):
+        flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
         return redirect(url_for('files.file_management'))
     
     if action == 'create':
@@ -496,8 +508,26 @@ def create_file():
     if request.method == 'POST':
         file_number = request.form.get('file_number', '').strip()
         
+        # Validate file number
         if not file_number:
             flash('File number is required.', 'danger')
+            return render_template('files/create.html', 
+                                  file_types=FILE_TYPES,
+                                  categories=CATEGORIES,
+                                  statuses=FILE_STATUSES)
+        
+        # Check for consecutive slashes
+        if '//' in file_number:
+            flash('File number cannot contain consecutive slashes (//).', 'danger')
+            return render_template('files/create.html', 
+                                  file_types=FILE_TYPES,
+                                  categories=CATEGORIES,
+                                  statuses=FILE_STATUSES)
+        
+        # Check if file number has empty parts between slashes
+        parts = file_number.split('/')
+        if any(part.strip() == '' for part in parts):
+            flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
             return render_template('files/create.html', 
                                   file_types=FILE_TYPES,
                                   categories=CATEGORIES,
