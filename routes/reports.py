@@ -738,6 +738,46 @@ def get_related_employees():
         except Exception:
             pass  # Table may not exist
         
+        # 6. From complaint_details table - Plaintiff
+        try:
+            cp_query = db.session.execute(db.text("""
+                SELECT cd.plaintiff_name, cd.plaintiff_designation, cd.plaintiff_pen, cd.file_number, f.subject
+                FROM complaint_details cd
+                LEFT JOIN files f ON cd.file_number = f.file_number
+                WHERE cd.plaintiff_name IS NOT NULL AND cd.plaintiff_name != ''
+            """))
+            for row in cp_query.fetchall():
+                employees.append({
+                    'name': row[0] or '',
+                    'designation': row[1] or '',
+                    'pen': row[2] or '',
+                    'file_number': row[3] or '',
+                    'subject': row[4] or '',
+                    'source': 'Complaint (Plaintiff)'
+                })
+        except Exception:
+            pass  # Table may not exist
+        
+        # 7. From complaint_details table - Respondent
+        try:
+            cr_query = db.session.execute(db.text("""
+                SELECT cd.respondent_name, cd.respondent_designation, cd.respondent_pen, cd.file_number, f.subject
+                FROM complaint_details cd
+                LEFT JOIN files f ON cd.file_number = f.file_number
+                WHERE cd.respondent_name IS NOT NULL AND cd.respondent_name != ''
+            """))
+            for row in cr_query.fetchall():
+                employees.append({
+                    'name': row[0] or '',
+                    'designation': row[1] or '',
+                    'pen': row[2] or '',
+                    'file_number': row[3] or '',
+                    'subject': row[4] or '',
+                    'source': 'Complaint (Respondent)'
+                })
+        except Exception:
+            pass  # Table may not exist
+        
         # Sort by name
         employees.sort(key=lambda x: x['name'].lower() if x['name'] else '')
         
