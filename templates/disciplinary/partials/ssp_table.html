@@ -74,6 +74,10 @@
                     data-sort="file_number" data-server-sort="true">
                     File Number <i class="bi bi-arrow-down-up sort-icon"></i>
                 </th>
+                <th class="sortable {% if sort_by == 'institution_name' %}sort-{{ sort_order }}{% endif %}" 
+                    data-sort="institution_name" data-server-sort="true">
+                    Institution <i class="bi bi-arrow-down-up sort-icon"></i>
+                </th>
                 <th>Sevana ID</th>
                 <th>Aadhar No</th>
                 <th class="sortable {% if sort_by == 'amount' %}sort-{{ sort_order }}{% endif %}" 
@@ -102,6 +106,7 @@
                         {{ ssp.file_number }}
                     </a>
                 </td>
+                <td>{{ ssp.institution_name or '-' }}</td>
                 <td>{{ ssp.sevana_pensioner_id or '-' }}</td>
                 <td>{{ ssp.aadhar_no or '-' }}</td>
                 <td>{{ ssp.amount if ssp.amount else '-' }}</td>
@@ -124,7 +129,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="10" class="text-center text-muted">No SSP records found</td>
+                <td colspan="11" class="text-center text-muted">No SSP records found</td>
             </tr>
             {% endfor %}
         </tbody>

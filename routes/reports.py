@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, Response, redirect, url_f
 from flask_login import login_required
 from models import (
     File, DisciplinaryAction, UnauthorisedAbsentee, RTIApplication, 
-    CourtCase, InquiryDetails, WomenHarassmentCase, SocialSecurityPension, Employee
+    CourtCase, InquiryDetails, WomenHarassmentCase, SocialSecurityPension, Employee, Institution
 )
 from extensions import db
 from sqlalchemy import func, or_, and_, case, distinct
@@ -1544,29 +1544,75 @@ def social_security():
     page = request.args.get('page', 1, type=int)
     per_page = 50
     
+    search = request.args.get('search', '')
+    pension_type_filter = request.args.get('pension_type', '')
     status_filter = request.args.get('status', '')
+    block_filter = request.args.get('block', '')
+    institution_filter = request.args.get('institution', '')
     
-    query = SocialSecurityPension.query
+    # Join with Files table to get institution_name
+    query = db.session.query(
+        SocialSecurityPension,
+        File.institution_name
+    ).outerjoin(File, SocialSecurityPension.file_number == File.file_number)
+    
+    # Apply filters
+    if search:
+        search_filter = or_(
+            SocialSecurityPension.name.ilike(f'%{search}%'),
+            SocialSecurityPension.pen.ilike(f'%{search}%'),
+            SocialSecurityPension.sevana_pensioner_id.ilike(f'%{search}%'),
+            SocialSecurityPension.aadhar_no.ilike(f'%{search}%')
+        )
+        query = query.filter(search_filter)
     
     if status_filter:
-        query = query.filter(SocialSecurityPension.status == status_filter)
+        query = query.filter(SocialSecurityPension.finalised == status_filter)
+    
+    if institution_filter:
+        query = query.filter(File.institution_name.ilike(f'%{institution_filter}%'))
     
     query = query.order_by(SocialSecurityPension.id.desc())
     
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    records = pagination.items
     
-    # Get unique statuses
-    statuses = db.session.query(SocialSecurityPension.status).distinct().filter(
-        SocialSecurityPension.status != None, SocialSecurityPension.status != ''
-    ).all()
-    statuses = [s[0] for s in statuses]
+    # Create list of pension records with institution names
+    pensions = []
+    for pension, institution_name in pagination.items:
+        pension.institution_name = institution_name
+        pensions.append(pension)
+    
+    # Get statistics
+    total_count = SocialSecurityPension.query.count()
+    active_count = SocialSecurityPension.query.filter(SocialSecurityPension.finalised == 'Yes').count()
+    pending_count = SocialSecurityPension.query.filter(
+        or_(SocialSecurityPension.finalised == 'No', SocialSecurityPension.finalised == None)
+    ).count()
+    total_amount = db.session.query(db.func.sum(SocialSecurityPension.amount)).scalar() or 0
+    
+    statistics = {
+        'total': total_count,
+        'active': active_count,
+        'pending': pending_count,
+        'suspended': 0,  # Not tracked currently
+        'stopped': 0,  # Not tracked currently
+        'total_amount': total_amount
+    }
+    
+    # Get unique blocks and institutions for filters
+    blocks = []
+    institutions = db.session.query(Institution).order_by(Institution.name).all()
+    
+    # Get pension type summary (if needed)
+    type_summary = []
     
     return render_template('reports/social_security.html',
-                          records=records,
+                          pensions=pensions,
                           pagination=pagination,
-                          statuses=statuses,
-                          status_filter=status_filter)
+                          statistics=statistics,
+                          blocks=blocks,
+                          institutions=institutions,
+                          type_summary=type_summary)
 
 
 @reports_bp.route('/export/<report_type>')

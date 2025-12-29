@@ -543,8 +543,11 @@ def index():
         results = pagination.items
         
     elif tab == 'ssp':
-        # Social Security Pension tab - query SSP table directly
-        query = SocialSecurityPension.query
+        # Social Security Pension tab - query SSP table with institution from Files
+        query = db.session.query(
+            SocialSecurityPension,
+            File.institution_name
+        ).outerjoin(File, SocialSecurityPension.file_number == File.file_number)
         
         if search_query:
             query = query.filter(
@@ -576,6 +579,8 @@ def index():
                 sort_column = SocialSecurityPension.refunded_status
             elif sort_by == 'finalised':
                 sort_column = SocialSecurityPension.finalised
+            elif sort_by == 'institution_name':
+                sort_column = File.institution_name
             
             if sort_column is not None:
                 if sort_order == 'desc':
@@ -588,7 +593,12 @@ def index():
             query = query.order_by(SocialSecurityPension.id.desc())
         
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        results = pagination.items
+        
+        # Create list with institution names attached
+        results = []
+        for ssp, institution_name in pagination.items:
+            ssp.institution_name = institution_name
+            results.append(ssp)
     
     elif tab == 'superannuation':
         # Superannuation tab - calculate superannuation dates and filter by periods
