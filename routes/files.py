@@ -5,6 +5,7 @@ import json
 from datetime import datetime  # Import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
+from utils import convert_date_format
 from models import (File, PREntry, InquiryDetails, TraceDetails, DisciplinaryAction, Institution, 
                     ReportSoughtDetails, ReportAskedDetails, PreliminaryStatement, Rule15Statement,
                     RTIApplication, CourtCase, WomenHarassmentCase, ComplaintDetails, CMOPortalDetails,
@@ -170,7 +171,7 @@ def file_management_action():
         file.disciplinary_action = request.form.get('disciplinary_action', 'No')
         file.institution_type = request.form.get('institution_type', '')
         file.institution_name = request.form.get('institution_name', '')
-        file.follow_up_date = request.form.get('follow_up_date', '')
+        file.follow_up_date = convert_date_format(request.form.get('follow_up_date', ''))
         file.remarks = request.form.get('remarks', '')
         file.almirah = request.form.get('almirah', '')
         file.rack = request.form.get('rack', '')
@@ -526,7 +527,7 @@ def create_file():
             disciplinary_action=request.form.get('disciplinary_action', 'No'),
             institution_type=request.form.get('institution_type', ''),
             institution_name=request.form.get('institution_name', ''),
-            follow_up_date=request.form.get('follow_up_date', ''),
+            follow_up_date=convert_date_format(request.form.get('follow_up_date', '')),
             remarks=request.form.get('remarks', ''),
             almirah=request.form.get('almirah', ''),
             rack=request.form.get('rack', ''),
@@ -600,7 +601,7 @@ def edit_file(file_number):
         file.disciplinary_action = request.form.get('disciplinary_action', '')
         file.institution_type = request.form.get('institution_type', '')
         file.institution_name = request.form.get('institution_name', '')
-        file.follow_up_date = request.form.get('follow_up_date', '')
+        file.follow_up_date = convert_date_format(request.form.get('follow_up_date', ''))
         file.remarks = request.form.get('remarks', '')
         file.almirah = request.form.get('almirah', '')
         file.rack = request.form.get('rack', '')
@@ -629,7 +630,7 @@ def close_file_by_number(file_number):
     file = File.query.filter_by(file_number=file_number).first_or_404()
     
     file.is_closed = True
-    file.closed_date = request.form.get('closed_date', '')
+    file.closed_date = convert_date_format(request.form.get('closed_date', ''))
     file.closing_remarks = request.form.get('closing_remarks', '')
     file.status = 'Closed'
     file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -708,17 +709,17 @@ def manage_pr_entries(file_number):
                 pr_entry.title = title
                 pr_entry.from_whom_outside_name = from_whom_outside_name
                 pr_entry.from_whom_outside_number = request.form.get('from_whom_outside_number', '')
-                pr_entry.from_whom_outside_date = request.form.get('from_whom_outside_date', '')
-                pr_entry.submitted_by_clerk_date = request.form.get('submitted_by_clerk_date', '')
-                pr_entry.return_to_clerk_date = request.form.get('return_to_clerk_date', '')
+                pr_entry.from_whom_outside_date = convert_date_format(request.form.get('from_whom_outside_date', ''))
+                pr_entry.submitted_by_clerk_date = convert_date_format(request.form.get('submitted_by_clerk_date', ''))
+                pr_entry.return_to_clerk_date = convert_date_format(request.form.get('return_to_clerk_date', ''))
                 pr_entry.reference_issued_to_whom = request.form.get('reference_issued_to_whom', '')
-                pr_entry.reference_issued_date = request.form.get('reference_issued_date', '')
+                pr_entry.reference_issued_date = convert_date_format(request.form.get('reference_issued_date', ''))
                 pr_entry.reply_fresh_current_from_whom = request.form.get('reply_fresh_current_from_whom', '')
                 pr_entry.reply_fresh_current_number = request.form.get('reply_fresh_current_number', '')
-                pr_entry.reply_fresh_current_date = request.form.get('reply_fresh_current_date', '')
-                pr_entry.date_receipt_clerk_fresh = request.form.get('date_receipt_clerk_fresh', '')
+                pr_entry.reply_fresh_current_date = convert_date_format(request.form.get('reply_fresh_current_date', ''))
+                pr_entry.date_receipt_clerk_fresh = convert_date_format(request.form.get('date_receipt_clerk_fresh', ''))
                 pr_entry.disposal_nature = request.form.get('disposal_nature', '')
-                pr_entry.disposal_date = request.form.get('disposal_date', '')
+                pr_entry.disposal_date = convert_date_format(request.form.get('disposal_date', ''))
                 
                 # Update file's last_modified
                 file.last_modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -735,17 +736,17 @@ def manage_pr_entries(file_number):
                     title=title,
                     from_whom_outside_name=from_whom_outside_name,
                     from_whom_outside_number=request.form.get('from_whom_outside_number', ''),
-                    from_whom_outside_date=request.form.get('from_whom_outside_date', ''),
-                    submitted_by_clerk_date=request.form.get('submitted_by_clerk_date', ''),
-                    return_to_clerk_date=request.form.get('return_to_clerk_date', ''),
+                    from_whom_outside_date=convert_date_format(request.form.get('from_whom_outside_date', '')),
+                    submitted_by_clerk_date=convert_date_format(request.form.get('submitted_by_clerk_date', '')),
+                    return_to_clerk_date=convert_date_format(request.form.get('return_to_clerk_date', '')),
                     reference_issued_to_whom=request.form.get('reference_issued_to_whom', ''),
-                    reference_issued_date=request.form.get('reference_issued_date', ''),
+                    reference_issued_date=convert_date_format(request.form.get('reference_issued_date', '')),
                     reply_fresh_current_from_whom=request.form.get('reply_fresh_current_from_whom', ''),
                     reply_fresh_current_number=request.form.get('reply_fresh_current_number', ''),
-                    reply_fresh_current_date=request.form.get('reply_fresh_current_date', ''),
-                    date_receipt_clerk_fresh=request.form.get('date_receipt_clerk_fresh', ''),
+                    reply_fresh_current_date=convert_date_format(request.form.get('reply_fresh_current_date', '')),
+                    date_receipt_clerk_fresh=convert_date_format(request.form.get('date_receipt_clerk_fresh', '')),
                     disposal_nature=request.form.get('disposal_nature', ''),
-                    disposal_date=request.form.get('disposal_date', '')
+                    disposal_date=convert_date_format(request.form.get('disposal_date', ''))
                 )
                 
                 db.session.add(pr_entry)
@@ -956,20 +957,20 @@ def save_inquiry_details():
         # Update preliminary inquiry fields (use 1/0 for PostgreSQL integer columns)
         inquiry.prelim_conducted = 1 if 'prelim_conducted' in request.form else 0
         inquiry.prelim_io_name = request.form.get('prelim_io_name', '').strip()
-        inquiry.prelim_inquiry_date = request.form.get('prelim_inquiry_date', '')
+        inquiry.prelim_inquiry_date = convert_date_format(request.form.get('prelim_inquiry_date', ''))
         inquiry.prelim_venue = request.form.get('prelim_venue', '').strip()
         inquiry.prelim_report_submitted = 1 if 'prelim_report_submitted' in request.form else 0
         inquiry.prelim_report_to = request.form.get('prelim_report_to', '').strip()
-        inquiry.prelim_report_date = request.form.get('prelim_report_date', '')
+        inquiry.prelim_report_date = convert_date_format(request.form.get('prelim_report_date', ''))
         
         # Update Rule 15(ii) inquiry fields (use 1/0 for PostgreSQL integer columns)
         inquiry.rule15_conducted = 1 if 'rule15_conducted' in request.form else 0
         inquiry.rule15_io_name = request.form.get('rule15_io_name', '').strip()
-        inquiry.rule15_inquiry_date = request.form.get('rule15_inquiry_date', '')
+        inquiry.rule15_inquiry_date = convert_date_format(request.form.get('rule15_inquiry_date', ''))
         inquiry.rule15_venue = request.form.get('rule15_venue', '').strip()
         inquiry.rule15_report_submitted = 1 if 'rule15_report_submitted' in request.form else 0
         inquiry.rule15_report_to = request.form.get('rule15_report_to', '').strip()
-        inquiry.rule15_report_date = request.form.get('rule15_report_date', '')
+        inquiry.rule15_report_date = convert_date_format(request.form.get('rule15_report_date', ''))
         
         # Update file's last_modified
         file = File.query.filter_by(file_number=file_number).first()
@@ -1043,12 +1044,12 @@ def save_report_sought():
                 file_number=file_number,
                 subject=subject,
                 body=request.form.get('body', '').strip(),
-                report_sought_date=request.form.get('report_sought_date', ''),
+                report_sought_date=convert_date_format(request.form.get('report_sought_date', '')),
                 status=request.form.get('status', '').strip(),
                 institution=institution,
                 details=details_json,
                 submitted=request.form.get('submitted', 'No'),
-                submitted_date=request.form.get('submitted_date', '')
+                submitted_date=convert_date_format(request.form.get('submitted_date', ''))
             )
             db.session.add(report_sought)
             # Update file's last_modified
@@ -1072,12 +1073,12 @@ def edit_report_sought(id):
     
     if request.method == 'POST':
         record.body = request.form.get('body', '').strip()
-        record.report_sought_date = request.form.get('report_sought_date', '')
+        record.report_sought_date = convert_date_format(request.form.get('report_sought_date', ''))
         record.status = request.form.get('status', '').strip()
         record.institution = request.form.get('institution', '').strip()
         record.details = request.form.get('details', '').strip()
         record.submitted = request.form.get('submitted', 'No')
-        record.submitted_date = request.form.get('submitted_date', '')
+        record.submitted_date = convert_date_format(request.form.get('submitted_date', ''))
         
         try:
             # Update file's last_modified

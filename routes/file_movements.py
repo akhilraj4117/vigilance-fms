@@ -11,6 +11,7 @@ from models import (File, PREntry, TraceDetails, ReportSoughtDetails, ReportAske
                     InquiryDetails, DisciplinaryAction, Institution, PreliminaryStatement,
                     Rule15Statement)
 from extensions import db, csrf
+from utils import convert_date_format
 from sqlalchemy import or_, and_, func
 import csv
 from io import StringIO
@@ -1192,7 +1193,7 @@ def mark_follow_up_completed():
             file.remarks = f"{existing_remarks}\n[{datetime.now().strftime('%d-%m-%Y')}] Follow-up completed: {remarks}".strip()
     elif next_follow_up_date:
         # Set new follow-up date
-        file.follow_up_date = next_follow_up_date
+        file.follow_up_date = convert_date_format(next_follow_up_date)
         if remarks:
             existing_remarks = file.remarks or ''
             file.remarks = f"{existing_remarks}\n[{datetime.now().strftime('%d-%m-%Y')}] {remarks}".strip()

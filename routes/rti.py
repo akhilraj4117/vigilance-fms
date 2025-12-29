@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import RTIApplication, RTIAppeal, File
 from extensions import db
+from utils import convert_date_format
 from sqlalchemy import or_, asc, desc, nullslast
 import csv
 import io
@@ -226,7 +227,7 @@ def create_rti():
             file_number=file_number if file_number else None,
             sl_no=request.form.get('sl_no', ''),
             original_application_no=original_application_no,
-            date_of_receipt=request.form.get('date_of_receipt', ''),
+            date_of_receipt=convert_date_format(request.form.get('date_of_receipt', '')),
             applicant_prefix=request.form.get('applicant_prefix', 'Sri.'),
             applicant_name=request.form.get('applicant_name', ''),
             address=request.form.get('address', ''),
@@ -235,8 +236,8 @@ def create_rti():
             mode_of_payment=request.form.get('mode_of_payment', 'Cash'),
             additional_amount_paid=additional_amount,
             receipt_no=request.form.get('receipt_no', ''),
-            date_of_acknowledgment=request.form.get('date_of_acknowledgment', ''),
-            date_of_disposal=request.form.get('date_of_disposal', ''),
+            date_of_acknowledgment=convert_date_format(request.form.get('date_of_acknowledgment', '')),
+            date_of_disposal=convert_date_format(request.form.get('date_of_disposal', '')),
             status=request.form.get('status', 'Not replied'),
             remarks=request.form.get('remarks', ''),
             appeal_submitted='appeal_submitted' in request.form
@@ -312,7 +313,7 @@ def edit_rti(id):
     if request.method == 'POST':
         application.sl_no = request.form.get('sl_no', '')
         application.original_application_no = request.form.get('original_application_no', '')
-        application.date_of_receipt = request.form.get('date_of_receipt', '')
+        application.date_of_receipt = convert_date_format(request.form.get('date_of_receipt', ''))
         application.applicant_prefix = request.form.get('applicant_prefix', 'Sri.')
         application.applicant_name = request.form.get('applicant_name', '')
         application.address = request.form.get('address', '')
@@ -331,8 +332,8 @@ def edit_rti(id):
             application.additional_amount_paid = 0
         
         application.receipt_no = request.form.get('receipt_no', '')
-        application.date_of_acknowledgment = request.form.get('date_of_acknowledgment', '')
-        application.date_of_disposal = request.form.get('date_of_disposal', '')
+        application.date_of_acknowledgment = convert_date_format(request.form.get('date_of_acknowledgment', ''))
+        application.date_of_disposal = convert_date_format(request.form.get('date_of_disposal', ''))
         application.status = request.form.get('status', 'Not replied')
         application.remarks = request.form.get('remarks', '')
         application.appeal_submitted = 'appeal_submitted' in request.form
@@ -384,12 +385,12 @@ def create_appeal(rti_id):
             sl_no=request.form.get('sl_no', ''),
             appeal_no=request.form.get('appeal_no', ''),
             original_application_no=application.original_application_no,
-            date_of_receipt=request.form.get('date_of_receipt', ''),
+            date_of_receipt=convert_date_format(request.form.get('date_of_receipt', '')),
             appellant_prefix=request.form.get('appellant_prefix', 'Sri.'),
             appellant_name=request.form.get('appellant_name', '') or application.applicant_name,
-            date_of_spio_response=request.form.get('date_of_spio_response', '') if request.form.get('spio_response_checkbox') else '',
-            date_of_hearing=request.form.get('date_of_hearing', '') if request.form.get('hearing_checkbox') else '',
-            date_of_disposal=request.form.get('date_of_disposal', '') if request.form.get('disposal_checkbox') else '',
+            date_of_spio_response=convert_date_format(request.form.get('date_of_spio_response', '')) if request.form.get('spio_response_checkbox') else '',
+            date_of_hearing=convert_date_format(request.form.get('date_of_hearing', '')) if request.form.get('hearing_checkbox') else '',
+            date_of_disposal=convert_date_format(request.form.get('date_of_disposal', '')) if request.form.get('disposal_checkbox') else '',
             outcome=request.form.get('outcome', ''),
             remarks=request.form.get('remarks', '')
         )
@@ -423,12 +424,12 @@ def edit_appeal(id):
     if request.method == 'POST':
         appeal.sl_no = request.form.get('sl_no', '')
         appeal.appeal_no = request.form.get('appeal_no', '')
-        appeal.date_of_receipt = request.form.get('date_of_receipt', '')
+        appeal.date_of_receipt = convert_date_format(request.form.get('date_of_receipt', ''))
         appeal.appellant_prefix = request.form.get('appellant_prefix', 'Sri.')
         appeal.appellant_name = request.form.get('appellant_name', '')
-        appeal.date_of_spio_response = request.form.get('date_of_spio_response', '') if request.form.get('spio_response_checkbox') else ''
-        appeal.date_of_hearing = request.form.get('date_of_hearing', '') if request.form.get('hearing_checkbox') else ''
-        appeal.date_of_disposal = request.form.get('date_of_disposal', '') if request.form.get('disposal_checkbox') else ''
+        appeal.date_of_spio_response = convert_date_format(request.form.get('date_of_spio_response', '')) if request.form.get('spio_response_checkbox') else ''
+        appeal.date_of_hearing = convert_date_format(request.form.get('date_of_hearing', '')) if request.form.get('hearing_checkbox') else ''
+        appeal.date_of_disposal = convert_date_format(request.form.get('date_of_disposal', '')) if request.form.get('disposal_checkbox') else ''
         appeal.outcome = request.form.get('outcome', '')
         appeal.remarks = request.form.get('remarks', '')
         

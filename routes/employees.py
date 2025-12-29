@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import Employee, Institution, DisciplinaryAction
 from extensions import db
+from utils import convert_date_format
 from sqlalchemy import or_
 import csv
 import io
@@ -118,8 +119,8 @@ def create_employee():
             pen=pen,
             designation=request.form.get('designation', ''),
             institution_name=request.form.get('institution_name', ''),
-            date_of_birth=request.form.get('date_of_birth', ''),
-            joining_date=request.form.get('joining_date', ''),
+            date_of_birth=convert_date_format(request.form.get('date_of_birth', '')),
+            joining_date=convert_date_format(request.form.get('joining_date', '')),
             permanent_address=request.form.get('permanent_address', ''),
             communication_address=request.form.get('communication_address', '')
         )
@@ -180,8 +181,8 @@ def edit_employee(id):
         employee.pen = new_pen
         employee.designation = request.form.get('designation', '')
         employee.institution_name = request.form.get('institution_name', '')
-        employee.date_of_birth = request.form.get('date_of_birth', '')
-        employee.joining_date = request.form.get('joining_date', '')
+        employee.date_of_birth = convert_date_format(request.form.get('date_of_birth', ''))
+        employee.joining_date = convert_date_format(request.form.get('joining_date', ''))
         employee.permanent_address = request.form.get('permanent_address', '')
         employee.communication_address = request.form.get('communication_address', '')
         
@@ -414,8 +415,8 @@ def import_employees():
                     name=name,
                     designation=row.get('designation', '') or row.get('Designation', ''),
                     institution_name=row.get('institution_name', '') or row.get('Institution', ''),
-                    date_of_birth=row.get('date_of_birth', '') or row.get('Date of Birth', ''),
-                    joining_date=row.get('joining_date', '') or row.get('Joining Date', ''),
+                    date_of_birth=convert_date_format(row.get('date_of_birth', '') or row.get('Date of Birth', '')),
+                    joining_date=convert_date_format(row.get('joining_date', '') or row.get('Joining Date', '')),
                     permanent_address=row.get('permanent_address', '') or row.get('Permanent Address', ''),
                     communication_address=row.get('communication_address', '') or row.get('Communication Address', '')
                 )
