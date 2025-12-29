@@ -121,11 +121,12 @@ def file_management_action():
         flash('File number cannot contain consecutive slashes (//).', 'danger')
         return redirect(url_for('files.file_management'))
     
-    # Check if file number has empty parts between slashes
-    parts = file_number.split('/')
-    if any(part.strip() == '' for part in parts):
-        flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
-        return redirect(url_for('files.file_management'))
+    # Check if file number has empty parts between slashes (only if slashes exist)
+    if '/' in file_number:
+        parts = file_number.split('/')
+        if any(part.strip() == '' for part in parts):
+            flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
+            return redirect(url_for('files.file_management'))
     
     if action == 'create':
         # Check if file already exists
@@ -524,14 +525,15 @@ def create_file():
                                   categories=CATEGORIES,
                                   statuses=FILE_STATUSES)
         
-        # Check if file number has empty parts between slashes
-        parts = file_number.split('/')
-        if any(part.strip() == '' for part in parts):
-            flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
-            return render_template('files/create.html', 
-                                  file_types=FILE_TYPES,
-                                  categories=CATEGORIES,
-                                  statuses=FILE_STATUSES)
+        # Check if file number has empty parts between slashes (only if slashes exist)
+        if '/' in file_number:
+            parts = file_number.split('/')
+            if any(part.strip() == '' for part in parts):
+                flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
+                return render_template('files/create.html', 
+                                      file_types=FILE_TYPES,
+                                      categories=CATEGORIES,
+                                      statuses=FILE_STATUSES)
         
         # Check if file already exists
         existing = File.query.filter_by(file_number=file_number).first()
