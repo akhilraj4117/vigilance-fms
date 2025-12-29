@@ -3863,15 +3863,34 @@
         fetch('/files/complaint/get/' + encodeURIComponent(currentFileNumber))
             .then(r => r.json()).then(data => {
                 if (data.success && data.data) {
+                    // Set plaintiff type radio buttons
+                    if (data.data.plaintiff_type === 'Public') {
+                        document.getElementById('plaintiffPublic').checked = true;
+                    } else {
+                        document.getElementById('plaintiffEmployee').checked = true;
+                    }
+                    togglePlaintiffFields();
+                    
+                    // Set respondent type radio buttons
+                    if (data.data.respondent_type === 'Public') {
+                        document.getElementById('respondentPublic').checked = true;
+                    } else {
+                        document.getElementById('respondentEmployee').checked = true;
+                    }
+                    toggleRespondentFields();
+                    
+                    // Set plaintiff fields
                     document.getElementById('plaintiffName').value = data.data.plaintiff_name || '';
                     document.getElementById('plaintiffPen').value = data.data.plaintiff_pen || '';
                     document.getElementById('plaintiffAddress').value = data.data.plaintiff_address || '';
-                    document.getElementById('plaintiffPhone').value = data.data.plaintiff_contact_number || '';
+                    document.getElementById('plaintiffContact').value = data.data.plaintiff_contact_number || '';
                     document.getElementById('plaintiffEmail').value = data.data.plaintiff_email || '';
+                    
+                    // Set respondent fields
                     document.getElementById('respondentName').value = data.data.respondent_name || '';
                     document.getElementById('respondentPen').value = data.data.respondent_pen || '';
                     document.getElementById('respondentAddress').value = data.data.respondent_address || '';
-                    document.getElementById('respondentPhone').value = data.data.respondent_contact_number || '';
+                    document.getElementById('respondentContact').value = data.data.respondent_contact_number || '';
                     document.getElementById('respondentEmail').value = data.data.respondent_email || '';
                 }
             }).catch(err => console.error('Error loading complaint:', err));
@@ -3879,19 +3898,27 @@
     
     document.getElementById('complaintSaveBtn')?.addEventListener('click', function() {
         if (!currentFileNumber) { alert('No file selected.'); return; }
+        
+        // Get plaintiff type (Employee or Public)
+        const plaintiffType = document.getElementById('plaintiffEmployee').checked ? 'Employee' : 'Public';
+        // Get respondent type (Employee or Public)
+        const respondentType = document.getElementById('respondentEmployee').checked ? 'Employee' : 'Public';
+        
         fetch('/files/complaint/save', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 file_number: currentFileNumber,
+                plaintiff_type: plaintiffType,
                 plaintiff_name: document.getElementById('plaintiffName').value,
                 plaintiff_pen: document.getElementById('plaintiffPen').value,
                 plaintiff_address: document.getElementById('plaintiffAddress').value,
-                plaintiff_contact_number: document.getElementById('plaintiffPhone').value,
+                plaintiff_contact_number: document.getElementById('plaintiffContact').value,
                 plaintiff_email: document.getElementById('plaintiffEmail').value,
+                respondent_type: respondentType,
                 respondent_name: document.getElementById('respondentName').value,
                 respondent_pen: document.getElementById('respondentPen').value,
                 respondent_address: document.getElementById('respondentAddress').value,
-                respondent_contact_number: document.getElementById('respondentPhone').value,
+                respondent_contact_number: document.getElementById('respondentContact').value,
                 respondent_email: document.getElementById('respondentEmail').value
             })
         }).then(r => r.json()).then(result => {
