@@ -5237,6 +5237,20 @@
                 handleTypeChange(checkbox.value, true);
             }
         });
+        
+        // Add Ctrl+S keyboard shortcut to save/update file
+        document.addEventListener('keydown', function(event) {
+            // Check if Ctrl+S (or Cmd+S on Mac) is pressed
+            if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                event.preventDefault(); // Prevent browser's default save dialog
+                
+                // Only trigger if a file is currently loaded (Update button is enabled)
+                {% if current_file %}
+                setAction('update');
+                document.getElementById('fileForm').submit();
+                {% endif %}
+            }
+        });
     });
     
     // Automatically set follow-up date to 10 days from today
