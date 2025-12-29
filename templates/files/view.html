@@ -92,7 +92,7 @@
                     </tr>
                     <tr>
                         <th>Follow Up Date</th>
-                        <td>{{ file.follow_up_date or '-' }}</td>
+                        <td>{{ file.follow_up_date|format_date }}</td>
                     </tr>
                     <tr>
                         <th>File Year</th>
@@ -133,7 +133,7 @@
                     {% if file.is_closed %}
                     <tr>
                         <th>Closed Date</th>
-                        <td>{{ file.closed_date or '-' }}</td>
+                        <td>{{ file.closed_date|format_date }}</td>
                     </tr>
                     <tr>
                         <th>Closing Remarks</th>

@@ -38,7 +38,7 @@
                     </tr>
                     <tr>
                         <th>Date of Birth:</th>
-                        <td>{{ employee.date_of_birth or '-' }}</td>
+                        <td>{{ employee.date_of_birth|format_date }}</td>
                     </tr>
                     <tr>
                         <th>Status:</th>
@@ -77,11 +77,11 @@
                     </tr>
                     <tr>
                         <th>Date of Joining:</th>
-                        <td>{{ employee.date_of_joining or '-' }}</td>
+                        <td>{{ employee.date_of_joining|format_date }}</td>
                     </tr>
                     <tr>
                         <th>Date of Retirement:</th>
-                        <td>{{ employee.date_of_retirement or '-' }}</td>
+                        <td>{{ employee.date_of_retirement|format_date }}</td>
                     </tr>
                 </table>
             </div>

@@ -310,9 +310,9 @@
                             data-communication="{{ emp.communication_address or '' }}">
                             <td>{{ emp.pen or '-' }}</td>
                             <td>{{ emp.name }}</td>
-                            <td>{{ emp.date_of_birth or '-' }}</td>
+                            <td>{{ emp.date_of_birth|format_date }}</td>
                             <td>{{ emp.designation or '-' }}</td>
-                            <td>{{ emp.joining_date or '-' }}</td>
+                            <td>{{ emp.joining_date|format_date }}</td>
                             <td>{{ emp.institution_name[:40] + '...' if emp.institution_name and emp.institution_name|length > 40 else emp.institution_name or '-' }}</td>
                             <td>{{ emp.permanent_address[:30] + '...' if emp.permanent_address and emp.permanent_address|length > 30 else emp.permanent_address or '-' }}</td>
                             <td>{{ emp.communication_address[:30] + '...' if emp.communication_address and emp.communication_address|length > 30 else emp.communication_address or '-' }}</td>

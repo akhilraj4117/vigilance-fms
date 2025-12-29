@@ -70,6 +70,9 @@ def create_app(config_name=None):
     # Register error handlers
     register_error_handlers(app)
     
+    # Register custom filters
+    register_custom_filters(app)
+    
     # Register context processors
     @app.context_processor
     def inject_globals():
@@ -79,6 +82,47 @@ def create_app(config_name=None):
         }
     
     return app
+
+
+def register_custom_filters(app):
+    """Register custom Jinja2 filters."""
+    from datetime import datetime
+    
+    @app.template_filter('format_date')
+    def format_date_filter(date_str):
+        """Format date string to DD-MM-YYYY format.
+        Handles multiple input formats: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, etc.
+        """
+        if not date_str or date_str == '-' or not str(date_str).strip():
+            return '-'
+        
+        date_str = str(date_str).strip()
+        
+        # Try different date formats
+        formats_to_try = [
+            '%Y-%m-%d',  # YYYY-MM-DD (HTML date input format)
+            '%d/%m/%Y',  # DD/MM/YYYY
+            '%d-%m-%Y',  # DD-MM-YYYY (already in target format)
+            '%Y/%m/%d',  # YYYY/MM/DD
+            '%d.%m.%Y',  # DD.MM.YYYY
+            '%Y.%m.%d',  # YYYY.MM.DD
+            '%d %m %Y',  # DD MM YYYY
+            '%Y %m %d',  # YYYY MM DD
+        ]
+        
+        for fmt in formats_to_try:
+            try:
+                date_obj = datetime.strptime(date_str, fmt)
+                return date_obj.strftime('%d-%m-%Y')
+            except ValueError:
+                continue
+        
+        # If no format matched, check if it's already in DD-MM-YYYY format
+        if len(date_str) >= 8 and len(date_str) <= 10:
+            # Might already be in desired format, return as-is
+            return date_str
+        
+        return date_str
 
 
 def register_error_handlers(app):

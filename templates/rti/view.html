@@ -45,7 +45,7 @@
                     </tr>
                     <tr>
                         <th>Date of Receipt:</th>
-                        <td>{{ application.date_of_receipt or '-' }}</td>
+                        <td>{{ application.date_of_receipt|format_date }}</td>
                     </tr>
                     <tr>
                         <th>File Number:</th>
@@ -148,11 +148,11 @@
                 <table class="table table-borderless">
                     <tr>
                         <th width="50%">Acknowledgment Date:</th>
-                        <td>{{ application.date_of_acknowledgment or '-' }}</td>
+                        <td>{{ application.date_of_acknowledgment|format_date }}</td>
                     </tr>
                     <tr>
                         <th>Disposal Date:</th>
-                        <td>{{ application.date_of_disposal or '-' }}</td>
+                        <td>{{ application.date_of_disposal|format_date }}</td>
                     </tr>
                 </table>
             </div>
@@ -200,7 +200,7 @@
                     <tr>
                         <td>{{ appeal.sl_no or '-' }}</td>
                         <td>{{ appeal.appeal_no }}</td>
-                        <td>{{ appeal.date_of_receipt or '-' }}</td>
+                        <td>{{ appeal.date_of_receipt|format_date }}</td>
                         <td>{{ appeal.appellant_prefix }} {{ appeal.appellant_name }}</td>
                         <td>{{ appeal.outcome or '-' }}</td>
                         <td>

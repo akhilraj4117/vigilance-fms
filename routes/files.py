@@ -2097,14 +2097,30 @@ def delete_court_case():
 @login_required
 def save_complaint():
     try:
-        data = request.get_json(force=True, silent=True)
+        # Try to get JSON data - handle both JSON and form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received.'})
+        
         file_number = data.get('file_number', '').strip()
         if not file_number:
-            return jsonify({'success': False, 'message': 'File number required.'})
+            return jsonify({'success': False, 'message': 'File number is required.'})
+        
+        # Verify file exists
+        file_obj = File.query.filter_by(file_number=file_number).first()
+        if not file_obj:
+            return jsonify({'success': False, 'message': f'File {file_number} does not exist.'})
+        
         details = ComplaintDetails.query.filter_by(file_number=file_number).first()
         if not details:
             details = ComplaintDetails(file_number=file_number)
             db.session.add(details)
+        
+        # Update all fields
         details.plaintiff_type = data.get('plaintiff_type', '')
         details.plaintiff_pen = data.get('plaintiff_pen', '')
         details.plaintiff_name = data.get('plaintiff_name', '')
@@ -2117,11 +2133,16 @@ def save_complaint():
         details.respondent_address = data.get('respondent_address', '')
         details.respondent_contact_number = data.get('respondent_contact_number', '')
         details.respondent_email = data.get('respondent_email', '')
+        
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Complaint details saved.'})
+        return jsonify({'success': True, 'message': 'Complaint details saved successfully.'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        import traceback
+        error_msg = str(e)
+        tb = traceback.format_exc()
+        print(f"Error saving complaint: {error_msg}\n{tb}")  # Log for debugging
+        return jsonify({'success': False, 'message': f'Error: {error_msg}'})
 
 @files_bp.route('/complaint/get/<path:file_number>')
 @login_required
