@@ -3025,69 +3025,14 @@
     
     // Create new file - clears all fields first then submits
     function createNewFile() {
-        // Reset all form fields to default/empty values
-        const form = document.getElementById('fileForm');
-        
-        // Reset file type to E-Office (default)
-        document.getElementById('eOfficeRadio').checked = true;
-        document.getElementById('physicalRadio').checked = false;
-        
-        // Clear file number fields
-        document.getElementById('fileNumberMain').value = '';
-        document.getElementById('fileYear').value = '';
-        document.getElementById('fileSection').value = '';
-        document.getElementById('fileSectionPhys').value = '';
-        document.getElementById('fileNumberMainPhys').value = '';
-        document.getElementById('fileYearPhys').value = '';
-        document.getElementById('fullFileNumber').value = '';
-        
-        // Clear subject
-        document.getElementById('subject').value = '';
-        
-        // Clear details of file
-        document.getElementById('detailsOfFile').value = '';
-        
-        // Reset status
-        document.getElementById('status').value = '';
-        
-        // Clear follow-up date
-        document.getElementById('followUpDate').value = '';
-        
-        // Uncheck all category checkboxes
-        document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = false);
-        
-        // Uncheck all type checkboxes
-        document.querySelectorAll('.type-checkbox').forEach(cb => cb.checked = false);
-        
-        // Reset disciplinary action
-        document.getElementById('disciplinaryAction').value = 'No';
-        
-        // Clear institution fields
-        document.getElementById('institutionType').value = '';
-        document.getElementById('institutionName').value = '';
-        
-        // Clear physical location fields
-        const almirahField = document.getElementById('almirah');
-        const rackField = document.getElementById('rack');
-        const rowField = document.getElementById('row');
-        if (almirahField) almirahField.value = '';
-        if (rackField) rackField.value = '';
-        if (rowField) rowField.value = '';
-        
-        // Clear remarks
-        document.getElementById('remarks').value = '';
-        
-        // Update file number format display
-        updateFileNumberFormat();
+        // Build the file number from current field values before submitting
+        buildFileNumber();
         
         // Set action to create
         document.getElementById('formAction').value = 'create';
         
-        // Build the file number (will be empty/default)
-        buildFileNumber();
-        
-        // Submit the form
-        form.submit();
+        // Submit the form with entered data
+        document.getElementById('fileForm').submit();
     }
     
     // Store the original file type when page loads
