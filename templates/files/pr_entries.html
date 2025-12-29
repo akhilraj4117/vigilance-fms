@@ -201,45 +201,45 @@
                 <table class="table table-sm table-striped table-hover mb-0" id="prTable">
                     <thead class="table-dark sticky-top">
                         <tr>
-                            <th>Sl No.</th>
-                            <th>Current No.</th>
-                            <th>Date Receipt</th>
+                            <th>Serial Number</th>
+                            <th>Current Number</th>
+                            <th>Date of Receipt by Clerk</th>
                             <th>Title</th>
-                            <th>From (Name)</th>
-                            <th>From (No.)</th>
-                            <th>From (Date)</th>
-                            <th>Submitted</th>
-                            <th>Return</th>
-                            <th>Ref. To</th>
-                            <th>Ref. Date</th>
-                            <th>Reply From</th>
-                            <th>Reply No.</th>
-                            <th>Reply Date</th>
-                            <th>Fresh Receipt</th>
-                            <th>Disposal</th>
-                            <th>Disp. Date</th>
+                            <th>From Whom Outside (Name)</th>
+                            <th>From Whom Outside (Number)</th>
+                            <th>From Whom Outside (Date)</th>
+                            <th>Submitted by Clerk (Date)</th>
+                            <th>Return to the Clerk (Date)</th>
+                            <th>Reference Issued (To Whom)</th>
+                            <th>Reference Issued (Date)</th>
+                            <th>Reply or Fresh Current Received (From Whom)</th>
+                            <th>Reply or Fresh Current Received (Number)</th>
+                            <th>Reply or Fresh Current Received (Date)</th>
+                            <th>Date of Receipt by Clerk(Fresh)</th>
+                            <th>Disposal (Nature)</th>
+                            <th>Disposal (Date)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for entry in pr_entries %}
                         <tr data-id="{{ entry.id }}" ondblclick="loadEntry({{ entry.id }})">
-                            <td>{{ entry.serial_number or '-' }}</td>
-                            <td>{{ entry.current_number or '-' }}</td>
-                            <td>{{ entry.date_receipt_clerk or '-' }}</td>
-                            <td title="{{ entry.title or '' }}">{{ (entry.title or '-')[:20] }}{{ '...' if entry.title and entry.title|length > 20 else '' }}</td>
-                            <td>{{ entry.from_whom_outside_name or '-' }}</td>
-                            <td>{{ entry.from_whom_outside_number or '-' }}</td>
-                            <td>{{ entry.from_whom_outside_date or '-' }}</td>
-                            <td>{{ entry.submitted_by_clerk_date or '-' }}</td>
-                            <td>{{ entry.return_to_clerk_date or '-' }}</td>
-                            <td>{{ entry.reference_issued_to_whom or '-' }}</td>
-                            <td>{{ entry.reference_issued_date or '-' }}</td>
-                            <td>{{ entry.reply_fresh_current_from_whom or '-' }}</td>
-                            <td title="{{ entry.reply_fresh_current_number or '' }}">{{ (entry.reply_fresh_current_number or '-')[:30] }}{{ '...' if entry.reply_fresh_current_number and entry.reply_fresh_current_number|length > 30 else '' }}</td>
-                            <td>{{ entry.reply_fresh_current_date or '-' }}</td>
-                            <td>{{ entry.date_receipt_clerk_fresh or '-' }}</td>
-                            <td>{{ entry.disposal_nature or '-' }}</td>
-                            <td>{{ entry.disposal_date or '-' }}</td>
+                            <td>{{ entry.serial_number or '' }}</td>
+                            <td>{{ entry.current_number or '' }}</td>
+                            <td>{{ entry.date_receipt_clerk or '' }}</td>
+                            <td>{{ entry.title or '' }}</td>
+                            <td>{{ entry.from_whom_outside_name or '' }}</td>
+                            <td>{{ entry.from_whom_outside_number or '' }}</td>
+                            <td>{{ entry.from_whom_outside_date or '' }}</td>
+                            <td>{{ entry.submitted_by_clerk_date or '' }}</td>
+                            <td>{{ entry.return_to_clerk_date or '' }}</td>
+                            <td>{{ entry.reference_issued_to_whom or '' }}</td>
+                            <td>{{ entry.reference_issued_date or '' }}</td>
+                            <td>{{ entry.reply_fresh_current_from_whom or '' }}</td>
+                            <td>{{ entry.reply_fresh_current_number or '' }}</td>
+                            <td>{{ entry.reply_fresh_current_date or '' }}</td>
+                            <td>{{ entry.date_receipt_clerk_fresh or '' }}</td>
+                            <td>{{ entry.disposal_nature or '' }}</td>
+                            <td>{{ entry.disposal_date or '' }}</td>
                         </tr>
                         {% else %}
                         <tr>
