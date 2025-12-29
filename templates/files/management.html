@@ -3224,18 +3224,38 @@
         
         if (isEOffice) {
             // E-Office Format: DMOH-TVM/[Number]/[Year]-[Section]
-            const number = document.getElementById('fileNumberMain').value || '';
-            const year = document.getElementById('fileYear').value || currentYear;
-            const section = document.getElementById('fileSection').value || '';
+            const number = document.getElementById('fileNumberMain').value.trim();
+            const year = document.getElementById('fileYear').value.trim() || currentYear;
+            const section = document.getElementById('fileSection').value.trim();
             
-            fullNumber = 'DMOH-TVM/' + number + '/' + year + '-' + section;
+            // Build file number dynamically to prevent consecutive slashes
+            let parts = ['DMOH-TVM'];
+            if (number) parts.push(number);
+            parts.push(String(year));
+            
+            fullNumber = parts.join('/');
+            if (section) {
+                fullNumber += '-' + section;
+            }
         } else {
             // Physical Format: [Section]-[Number]/[Year]/DMO(H)T
-            const section = document.getElementById('fileSectionPhys').value || '';
-            const number = document.getElementById('fileNumberMainPhys').value || '';
-            const year = document.getElementById('fileYearPhys').value || currentYear;
+            const section = document.getElementById('fileSectionPhys').value.trim();
+            const number = document.getElementById('fileNumberMainPhys').value.trim();
+            const year = document.getElementById('fileYearPhys').value.trim() || currentYear;
             
-            fullNumber = section + '-' + number + '/' + year + '/DMO(H)T';
+            // Build file number dynamically to prevent consecutive slashes
+            let parts = [];
+            if (section && number) {
+                parts.push(section + '-' + number);
+            } else if (section) {
+                parts.push(section);
+            } else if (number) {
+                parts.push(number);
+            }
+            parts.push(String(year));
+            parts.push('DMO(H)T');
+            
+            fullNumber = parts.join('/');
         }
         
         document.getElementById('fullFileNumber').value = fullNumber;
@@ -5244,10 +5264,13 @@
             if ((event.ctrlKey || event.metaKey) && event.key === 's') {
                 event.preventDefault(); // Prevent browser's default save dialog
                 
-                // Only trigger if a file is currently loaded (Update button is enabled)
                 {% if current_file %}
+                // If a file is loaded, update it
                 setAction('update');
                 document.getElementById('fileForm').submit();
+                {% else %}
+                // If no file is loaded, create new file
+                createNewFile();
                 {% endif %}
             }
         });
