@@ -770,6 +770,34 @@ def manage_pr_entries(file_number):
 @login_required
 def get_pr_entry_json(entry_id):
     """Get PR entry data as JSON for AJAX editing."""
+    from datetime import datetime
+    
+    def convert_date_to_input_format(date_str):
+        """Convert date string to YYYY-MM-DD format for HTML input."""
+        if not date_str or date_str.strip() == '':
+            return ''
+        
+        # Try various date formats
+        date_formats = [
+            '%d-%m-%Y',  # DD-MM-YYYY
+            '%d/%m/%Y',  # DD/MM/YYYY
+            '%Y-%m-%d',  # YYYY-MM-DD (already correct)
+            '%d.%m.%Y',  # DD.MM.YYYY
+            '%d %m %Y',  # DD MM YYYY
+            '%d-%b-%Y',  # DD-MMM-YYYY
+            '%d %b %Y',  # DD MMM YYYY
+        ]
+        
+        for fmt in date_formats:
+            try:
+                date_obj = datetime.strptime(date_str.strip(), fmt)
+                return date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        
+        # If no format matches, return as is
+        return date_str
+    
     entry = PREntry.query.get_or_404(entry_id)
     return jsonify({
         'success': True,
@@ -778,21 +806,21 @@ def get_pr_entry_json(entry_id):
             'file_number': entry.file_number,
             'serial_number': entry.serial_number or '',
             'current_number': entry.current_number or '',
-            'date_receipt_clerk': entry.date_receipt_clerk or '',
+            'date_receipt_clerk': convert_date_to_input_format(entry.date_receipt_clerk or ''),
             'title': entry.title or '',
             'from_whom_outside_name': entry.from_whom_outside_name or '',
             'from_whom_outside_number': entry.from_whom_outside_number or '',
-            'from_whom_outside_date': entry.from_whom_outside_date or '',
-            'submitted_by_clerk_date': entry.submitted_by_clerk_date or '',
-            'return_to_clerk_date': entry.return_to_clerk_date or '',
+            'from_whom_outside_date': convert_date_to_input_format(entry.from_whom_outside_date or ''),
+            'submitted_by_clerk_date': convert_date_to_input_format(entry.submitted_by_clerk_date or ''),
+            'return_to_clerk_date': convert_date_to_input_format(entry.return_to_clerk_date or ''),
             'reference_issued_to_whom': entry.reference_issued_to_whom or '',
-            'reference_issued_date': entry.reference_issued_date or '',
+            'reference_issued_date': convert_date_to_input_format(entry.reference_issued_date or ''),
             'reply_fresh_current_from_whom': entry.reply_fresh_current_from_whom or '',
             'reply_fresh_current_number': entry.reply_fresh_current_number or '',
-            'reply_fresh_current_date': entry.reply_fresh_current_date or '',
-            'date_receipt_clerk_fresh': entry.date_receipt_clerk_fresh or '',
+            'reply_fresh_current_date': convert_date_to_input_format(entry.reply_fresh_current_date or ''),
+            'date_receipt_clerk_fresh': convert_date_to_input_format(entry.date_receipt_clerk_fresh or ''),
             'disposal_nature': entry.disposal_nature or '',
-            'disposal_date': entry.disposal_date or ''
+            'disposal_date': convert_date_to_input_format(entry.disposal_date or '')
         }
     })
 
