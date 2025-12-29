@@ -1129,14 +1129,31 @@ def save_report_asked():
         flash('File number is required.', 'danger')
         return redirect(url_for('files.file_management'))
     
+    # Convert dates from YYYY-MM-DD to dd-MM-yyyy format (desktop app format)
+    asked_date = request.form.get('asked_date', '').strip()
+    if asked_date:
+        try:
+            date_obj = datetime.strptime(asked_date, '%Y-%m-%d')
+            asked_date = date_obj.strftime('%d-%m-%Y')
+        except:
+            asked_date = ''
+    
+    received_date = request.form.get('received_date', '').strip()
+    if received_date:
+        try:
+            date_obj = datetime.strptime(received_date, '%Y-%m-%d')
+            received_date = date_obj.strftime('%d-%m-%Y')
+        except:
+            received_date = ''
+    
     # Create new report asked record
     report_asked = ReportAskedDetails(
         file_number=file_number,
         whether_report_asked=request.form.get('whether_report_asked', 'No'),
-        asked_date=request.form.get('asked_date', ''),
+        asked_date=asked_date,
         institution_name=request.form.get('institution_name', '').strip(),
         report_submitted=request.form.get('report_submitted', 'No'),
-        received_date=request.form.get('received_date', '')
+        received_date=received_date
     )
     
     db.session.add(report_asked)
@@ -1162,11 +1179,28 @@ def edit_report_asked(id):
     record = ReportAskedDetails.query.get_or_404(id)
     
     if request.method == 'POST':
+        # Convert dates from YYYY-MM-DD to dd-MM-yyyy format (desktop app format)
+        asked_date = request.form.get('asked_date', '').strip()
+        if asked_date:
+            try:
+                date_obj = datetime.strptime(asked_date, '%Y-%m-%d')
+                asked_date = date_obj.strftime('%d-%m-%Y')
+            except:
+                asked_date = ''
+        
+        received_date = request.form.get('received_date', '').strip()
+        if received_date:
+            try:
+                date_obj = datetime.strptime(received_date, '%Y-%m-%d')
+                received_date = date_obj.strftime('%d-%m-%Y')
+            except:
+                received_date = ''
+        
         record.whether_report_asked = request.form.get('whether_report_asked', 'No')
-        record.asked_date = request.form.get('asked_date', '')
+        record.asked_date = asked_date
         record.institution_name = request.form.get('institution_name', '').strip()
         record.report_submitted = request.form.get('report_submitted', 'No')
-        record.received_date = request.form.get('received_date', '')
+        record.received_date = received_date
         
         try:
             # Update file's last_modified
