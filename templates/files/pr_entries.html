@@ -395,9 +395,14 @@
     
     // Keyboard shortcut for save (Ctrl+S)
     document.addEventListener('keydown', function(e) {
+        // Ctrl+S to save
         if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             document.getElementById('prEntryForm').submit();
+        }
+        // Escape to close and go back to file
+        if (e.key === 'Escape') {
+            window.location.href = "{{ url_for('files.view_file', file_number=file.file_number) }}";
         }
     });
 </script>
