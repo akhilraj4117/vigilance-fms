@@ -235,7 +235,7 @@
                             <td>{{ entry.reference_issued_to_whom or '-' }}</td>
                             <td>{{ entry.reference_issued_date or '-' }}</td>
                             <td>{{ entry.reply_fresh_current_from_whom or '-' }}</td>
-                            <td>{{ entry.reply_fresh_current_number or '-' }}</td>
+                            <td title="{{ entry.reply_fresh_current_number or '' }}">{{ (entry.reply_fresh_current_number or '-')[:30] }}{{ '...' if entry.reply_fresh_current_number and entry.reply_fresh_current_number|length > 30 else '' }}</td>
                             <td>{{ entry.reply_fresh_current_date or '-' }}</td>
                             <td>{{ entry.date_receipt_clerk_fresh or '-' }}</td>
                             <td>{{ entry.disposal_nature or '-' }}</td>
