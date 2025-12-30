@@ -1249,7 +1249,6 @@ def create_disciplinary_action():
             date_superannuation=convert_date_format(request.form.get('date_superannuation', '')),
             unauthorised_others=request.form.get('unauthorised_others', ''),
             subject=request.form.get('subject', ''),
-            concerned=request.form.get('concerned', ''),
             probation_termination_notice=request.form.get('probation_termination_notice', ''),
             action_taking_office=request.form.get('action_taking_office', ''),
             moc_issued=request.form.get('moc_issued', ''),
@@ -1499,7 +1498,6 @@ def edit_disciplinary_action(id):
     action.date_superannuation = convert_date_format(request.form.get('date_superannuation', ''))
     action.unauthorised_others = request.form.get('unauthorised_others', '')
     action.subject = request.form.get('subject', '')
-    action.concerned = request.form.get('concerned', '')
     action.probation_termination_notice = request.form.get('probation_termination_notice', '')
     action.action_taking_office = request.form.get('action_taking_office', '')
     action.moc_issued = request.form.get('moc_issued', '')

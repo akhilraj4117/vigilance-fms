@@ -130,15 +130,6 @@
                         <textarea class="form-control form-control-sm" id="subject" name="subject" rows="2" disabled></textarea>
                     </div>
                     
-                    <!-- Concerned -->
-                    <div class="mb-2">
-                        <label class="form-label small">
-                            <input type="checkbox" class="form-check-input me-1" id="concerned_check" onchange="toggleField('concerned')">
-                            Concerned
-                        </label>
-                        <input type="text" class="form-control form-control-sm" id="concerned" name="concerned" disabled>
-                    </div>
-                    
                     <!-- PEN -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -858,7 +849,7 @@
                     
                     // For each field, check if it has a value and enable it
                     const fields = [
-                        'unauthorised_others', 'subject', 'concerned', 'pen', 'employee_name', 'designation', 'institution',
+                        'unauthorised_others', 'subject', 'pen', 'employee_name', 'designation', 'institution',
                         'entry_cadre', 'joining_date', 'service_regularised', 'date_regularisation',
                         'probation', 'date_probation_declared', 'date_superannuation',
                         'probation_termination_notice', 'action_taking_office',
