@@ -93,14 +93,19 @@
                 </div>
             </div>
             
-            <!-- Three Column Layout with Grouped Sections -->
-            <div class="row">
-                <!-- Column 1 -->
-                <div class="col-md-4">
-                    <!-- Basic Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-primary">
-                        <h6 class="text-primary mb-2"><i class="bi bi-person-badge"></i> Basic Details</h6>
-                    </div>
+            <!-- Accordion Layout with Expandable Sections -->
+            <div class="accordion" id="daFormAccordion">
+                <!-- Basic Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#basicDetails" aria-expanded="true">
+                            <i class="bi bi-person-badge me-2"></i> Basic Details
+                        </button>
+                    </h2>
+                    <div id="basicDetails" class="accordion-collapse collapse show" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-4">
                     
                     <!-- Unauthorised/Others -->
                     <div class="mb-2">
@@ -236,14 +241,23 @@
                         </label>
                         <input type="date" class="form-control form-control-sm" id="date_superannuation" name="date_superannuation" disabled>
                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Column 2 -->
-                <div class="col-md-4">
-                    <!-- Notice Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-success">
-                        <h6 class="text-success mb-2"><i class="bi bi-file-earmark-text"></i> Notice Details</h6>
-                    </div>
+                <!-- Notice Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#noticeDetails" aria-expanded="false">
+                            <i class="bi bi-file-earmark-text me-2"></i> Notice Details
+                        </button>
+                    </h2>
+                    <div id="noticeDetails" class="accordion-collapse collapse" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
                     
                     <!-- Probation Termination Notice -->
                     <div class="mb-2">
@@ -268,11 +282,23 @@
                             <option value="DHS">DHS</option>
                         </select>
                     </div>
-                    
-                    <!-- MOC Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-warning mt-3">
-                        <h6 class="text-warning mb-2"><i class="bi bi-file-earmark-check"></i> MOC Details</h6>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                    
+                <!-- MOC Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mocDetails" aria-expanded="false">
+                            <i class="bi bi-file-earmark-check me-2"></i> MOC Details
+                        </button>
+                    </h2>
+                    <div id="mocDetails" class="accordion-collapse collapse" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-4">
                     
                     <!-- MOC Issued -->
                     <div class="mb-2">
@@ -364,11 +390,23 @@
                         </label>
                         <input type="date" class="form-control form-control-sm" id="moc_sent_to_dhs_date" name="moc_sent_to_dhs_date" disabled>
                     </div>
-                    
-                    <!-- WSD Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-info mt-3">
-                        <h6 class="text-info mb-2"><i class="bi bi-file-earmark-post"></i> WSD Details</h6>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                    
+                <!-- WSD Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#wsdDetails" aria-expanded="false">
+                            <i class="bi bi-file-earmark-post me-2"></i> WSD Details
+                        </button>
+                    </h2>
+                    <div id="wsdDetails" class="accordion-collapse collapse" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
                     
                     <!-- WSD Received Date -->
                     <div class="mb-2">
@@ -378,14 +416,8 @@
                         </label>
                         <input type="date" class="form-control form-control-sm" id="wsd_received_date" name="wsd_received_date" disabled>
                     </div>
-                </div>
-                
-                <!-- Column 3 -->
-                <div class="col-md-4">
-                    <!-- WSD Details continuation -->
-                    <div class="mb-3 pb-2 border-bottom border-info">
-                        <h6 class="text-info mb-2"><i class="bi bi-file-earmark-post"></i> WSD Details (cont.)</h6>
-                    </div>
+                                </div>
+                                <div class="col-md-6">
                     <!-- WSD Letter No. -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -413,10 +445,31 @@
                         <input type="text" class="form-control form-control-sm" id="wsd_sent_letter_no" name="wsd_sent_letter_no" disabled>
                     </div>
                     
-                    <!-- SCN Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-danger mt-3">
-                        <h6 class="text-danger mb-2"><i class="bi bi-file-earmark-x"></i> SCN Details</h6>
+                    <!-- WSD Reply Date -->
+                    <div class="mb-2">
+                        <label class="form-label small">
+                            <input type="checkbox" class="form-check-input me-1" id="wsd_reply_date_check" onchange="toggleField('wsd_reply_date')">
+                            WSD Reply Date
+                        </label>
+                        <input type="date" class="form-control form-control-sm" id="wsd_reply_date" name="wsd_reply_date" disabled>
                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    
+                <!-- SCN Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#scnDetails" aria-expanded="false">
+                            <i class="bi bi-file-earmark-x me-2"></i> SCN Details
+                        </button>
+                    </h2>
+                    <div id="scnDetails" class="accordion-collapse collapse" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
                     
                     <!-- SCN Issued Date -->
                     <div class="mb-2">
@@ -484,11 +537,23 @@
                         </label>
                         <input type="date" class="form-control form-control-sm" id="scn_reply_sent_to_dhs_date" name="scn_reply_sent_to_dhs_date" disabled>
                     </div>
-                    
-                    <!-- DHS/Final Details Group -->
-                    <div class="mb-3 pb-2 border-bottom border-secondary mt-3">
-                        <h6 class="text-secondary mb-2"><i class="bi bi-file-earmark-ruled"></i> DHS / Final Details</h6>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                    
+                <!-- DHS/Final Details Section -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dhsDetails" aria-expanded="false">
+                            <i class="bi bi-file-earmark-ruled me-2"></i> DHS / Final Details
+                        </button>
+                    </h2>
+                    <div id="dhsDetails" class="accordion-collapse collapse" data-bs-parent="#daFormAccordion">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
                     
                     <!-- DHS File Number -->
                     <div class="mb-2">
@@ -507,8 +572,13 @@
                         </label>
                         <input type="date" class="form-control form-control-sm" id="finalised_date" name="finalised_date" disabled>
                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            <!-- End of Accordion -->
             
             <!-- Unauthorised Absentees Details Section (shown only when Unauthorised is selected) -->
             <div class="card border-primary mt-3" id="unauthorisedSection" style="display: none;">
