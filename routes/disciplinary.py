@@ -1251,8 +1251,6 @@ def create_disciplinary_action():
             subject=request.form.get('subject', ''),
             concerned=request.form.get('concerned', ''),
             probation_termination_notice=request.form.get('probation_termination_notice', ''),
-            ptn_reply_received=request.form.get('ptn_reply_received', ''),
-            ptn_reply_date=convert_date_format(request.form.get('ptn_reply_date', '')),
             action_taking_office=request.form.get('action_taking_office', ''),
             moc_issued=request.form.get('moc_issued', ''),
             moc_issued_by=request.form.get('moc_issued_by', ''),
@@ -1503,8 +1501,6 @@ def edit_disciplinary_action(id):
     action.subject = request.form.get('subject', '')
     action.concerned = request.form.get('concerned', '')
     action.probation_termination_notice = request.form.get('probation_termination_notice', '')
-    action.ptn_reply_received = request.form.get('ptn_reply_received', '')
-    action.ptn_reply_date = convert_date_format(request.form.get('ptn_reply_date', ''))
     action.action_taking_office = request.form.get('action_taking_office', '')
     action.moc_issued = request.form.get('moc_issued', '')
     action.moc_issued_by = request.form.get('moc_issued_by', '')
