@@ -912,6 +912,18 @@
         modal.show();
     }
     
+    // Helper function to convert DD-MM-YYYY to YYYY-MM-DD for date inputs
+    function convertDateFormat(dateStr) {
+        if (!dateStr) return '';
+        // Handle DD-MM-YYYY format
+        const parts = dateStr.split('-');
+        if (parts.length === 3 && parts[0].length <= 2) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        // Handle YYYY-MM-DD format (already correct)
+        return dateStr;
+    }
+    
     function autoPopulateEmployee() {
         const pen = document.getElementById('pen').value.trim();
         if (pen) {
@@ -938,7 +950,8 @@
                         if (data.employee.joining_date) {
                             document.getElementById('joining_date_check').checked = true;
                             document.getElementById('joining_date').disabled = false;
-                            document.getElementById('joining_date').value = data.employee.joining_date;
+                            // Convert date format for HTML date input (requires YYYY-MM-DD)
+                            document.getElementById('joining_date').value = convertDateFormat(data.employee.joining_date);
                         }
                         // Auto-populate communication address for UA section if present
                         if (data.employee.communication_address) {
