@@ -93,10 +93,15 @@
                 </div>
             </div>
             
-            <!-- Three Column Layout like desktop -->
+            <!-- Three Column Layout with Grouped Sections -->
             <div class="row">
                 <!-- Column 1 -->
                 <div class="col-md-4">
+                    <!-- Basic Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-primary">
+                        <h6 class="text-primary mb-2"><i class="bi bi-person-badge"></i> Basic Details</h6>
+                    </div>
+                    
                     <!-- Unauthorised/Others -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -235,6 +240,11 @@
                 
                 <!-- Column 2 -->
                 <div class="col-md-4">
+                    <!-- Notice Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-success">
+                        <h6 class="text-success mb-2"><i class="bi bi-file-earmark-text"></i> Notice Details</h6>
+                    </div>
+                    
                     <!-- Probation Termination Notice -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -257,6 +267,11 @@
                             <option value="DMO">DMO</option>
                             <option value="DHS">DHS</option>
                         </select>
+                    </div>
+                    
+                    <!-- MOC Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-warning mt-3">
+                        <h6 class="text-warning mb-2"><i class="bi bi-file-earmark-check"></i> MOC Details</h6>
                     </div>
                     
                     <!-- MOC Issued -->
@@ -350,6 +365,11 @@
                         <input type="date" class="form-control form-control-sm" id="moc_sent_to_dhs_date" name="moc_sent_to_dhs_date" disabled>
                     </div>
                     
+                    <!-- WSD Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-info mt-3">
+                        <h6 class="text-info mb-2"><i class="bi bi-file-earmark-post"></i> WSD Details</h6>
+                    </div>
+                    
                     <!-- WSD Received Date -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -362,6 +382,10 @@
                 
                 <!-- Column 3 -->
                 <div class="col-md-4">
+                    <!-- WSD Details continuation -->
+                    <div class="mb-3 pb-2 border-bottom border-info">
+                        <h6 class="text-info mb-2"><i class="bi bi-file-earmark-post"></i> WSD Details (cont.)</h6>
+                    </div>
                     <!-- WSD Letter No. -->
                     <div class="mb-2">
                         <label class="form-label small">
@@ -387,6 +411,11 @@
                             WSD Sent Letter No.
                         </label>
                         <input type="text" class="form-control form-control-sm" id="wsd_sent_letter_no" name="wsd_sent_letter_no" disabled>
+                    </div>
+                    
+                    <!-- SCN Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-danger mt-3">
+                        <h6 class="text-danger mb-2"><i class="bi bi-file-earmark-x"></i> SCN Details</h6>
                     </div>
                     
                     <!-- SCN Issued Date -->
@@ -454,6 +483,11 @@
                             SCN Reply sent to DHS Date
                         </label>
                         <input type="date" class="form-control form-control-sm" id="scn_reply_sent_to_dhs_date" name="scn_reply_sent_to_dhs_date" disabled>
+                    </div>
+                    
+                    <!-- DHS/Final Details Group -->
+                    <div class="mb-3 pb-2 border-bottom border-secondary mt-3">
+                        <h6 class="text-secondary mb-2"><i class="bi bi-file-earmark-ruled"></i> DHS / Final Details</h6>
                     </div>
                     
                     <!-- DHS File Number -->
