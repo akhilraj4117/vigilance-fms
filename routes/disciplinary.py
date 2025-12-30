@@ -1620,7 +1620,8 @@ def api_get_employee(pen):
                 'designation': employee.designation or '',
                 'institution': employee.institution_name or '',
                 'joining_date': employee.joining_date or '',
-                'date_of_birth': employee.date_of_birth or ''
+                'date_of_birth': employee.date_of_birth or '',
+                'communication_address': employee.communication_address or ''
             }
         })
     else:

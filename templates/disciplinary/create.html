@@ -919,7 +919,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.employee) {
-                        // Enable and populate fields
+                        // Enable and populate fields - matching desktop app behavior
                         if (data.employee.name) {
                             document.getElementById('employee_name_check').checked = true;
                             document.getElementById('employee_name').disabled = false;
@@ -940,6 +940,18 @@
                             document.getElementById('joining_date').disabled = false;
                             document.getElementById('joining_date').value = data.employee.joining_date;
                         }
+                        // Auto-populate communication address for UA section if present
+                        if (data.employee.communication_address) {
+                            const commAddrField = document.getElementById('communication_address');
+                            if (commAddrField && !commAddrField.value) {
+                                document.getElementById('communication_address_check').checked = true;
+                                commAddrField.disabled = false;
+                                commAddrField.value = data.employee.communication_address;
+                            }
+                        }
+                    } else {
+                        // Show message if employee not found (matching desktop behavior)
+                        alert('No employee found with PEN: ' + pen + '. Please enter details manually or add employee data in the Employee Details tab.');
                     }
                 })
                 .catch(error => console.log('Employee lookup failed:', error));
