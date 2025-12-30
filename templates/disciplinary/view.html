@@ -18,17 +18,19 @@
     </div>
 </div>
 
-<div class="row">
-    <!-- Employee Information -->
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 border-primary">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person"></i> Employee Information</h5>
-            </div>
-            <div class="card-body">
+<!-- Basic Details Section -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Basic Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Employee Information -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-person"></i> Employee Information</h6>
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="45%">Name:</th>
+                        <th width="50%">Name:</th>
                         <td>{{ action.employee_name or '-' }}</td>
                     </tr>
                     <tr>
@@ -48,7 +50,22 @@
                         <td>{{ action.entry_cadre or '-' }}</td>
                     </tr>
                     <tr>
-                        <th>Joining Date:</th>
+                        <th>Subject:</th>
+                        <td>{{ action.subject or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Concerned:</th>
+                        <td>{{ action.concerned or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Service Details -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-calendar-check"></i> Service Details</h6>
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="50%">Joining Date:</th>
                         <td>{{ action.joining_date|format_date }}</td>
                     </tr>
                     <tr>
@@ -71,8 +88,15 @@
                         <th>Superannuation Date:</th>
                         <td>{{ action.date_superannuation|format_date }}</td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- Action Type & File -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-file-text"></i> Action Type & File</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>Unauthorised/Others:</th>
+                        <th width="50%">Unauthorised/Others:</th>
                         <td>
                             {% if action.unauthorised_others == 'Unauthorised' %}
                             <span class="badge bg-danger">{{ action.unauthorised_others }}</span>
@@ -81,34 +105,59 @@
                             {% endif %}
                         </td>
                     </tr>
+                    <tr>
+                        <th>File Number:</th>
+                        <td>
+                            <a href="{{ url_for('files.view_file', file_number=action.file_number) }}">
+                                {{ action.file_number }}
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>DHS File Number:</th>
+                        <td>{{ action.dhs_file_number or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Finalised Date:</th>
+                        <td>
+                            {% if action.finalised_date %}
+                            <span class="badge bg-success">{{ action.finalised_date|format_date }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                 </table>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Action Details -->
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-file-text"></i> Action Details</h5>
-            </div>
-            <div class="card-body">
+<!-- Probation Termination & MOC Details Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Probation Termination & MOC Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Probation Termination Notice -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-text"></i> Probation Termination</h6>
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="55%">Action Taking Office:</th>
-                        <td>{{ action.action_taking_office or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>PTN:</th>
+                        <th width="50%">PTN:</th>
                         <td>{{ action.probation_termination_notice or '-' }}</td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- MOC Details -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-check"></i> MOC Details</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>PTN Reply Received:</th>
-                        <td>{{ action.ptn_reply_received or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>PTN Reply Date:</th>
-                        <td>{{ action.ptn_reply_date|format_date }}</td>
+                        <th width="50%">Action Taking Office:</th>
+                        <td>{{ action.action_taking_office or '-' }}</td>
                     </tr>
                     <tr>
                         <th>MOC Issued:</th>
@@ -146,43 +195,15 @@
                         <th>MOC Receipt Date:</th>
                         <td>{{ action.moc_receipt_date|format_date }}</td>
                     </tr>
-                    <tr>
-                        <th>Finalised Date:</th>
-                        <td>
-                            {% if action.finalised_date %}
-                            <span class="badge bg-success">{{ action.finalised_date|format_date }}</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                    </tr>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- File & Communication Details -->
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 border-success">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-folder"></i> File & Communication</h5>
-            </div>
-            <div class="card-body">
+            <!-- MOC Communication -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-envelope"></i> MOC Communication</h6>
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="55%">File Number:</th>
-                        <td>
-                            <a href="{{ url_for('files.view_file', file_number=action.file_number) }}">
-                                {{ action.file_number }}
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>DHS File Number:</th>
-                        <td>{{ action.dhs_file_number or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>MOC at DMO Date:</th>
+                        <th width="50%">MOC at DMO Date:</th>
                         <td>{{ action.moc_received_at_dmo_date|format_date }}</td>
                     </tr>
                     <tr>
@@ -193,8 +214,25 @@
                         <th>MOC to DHS Date:</th>
                         <td>{{ action.moc_sent_to_dhs_date|format_date }}</td>
                     </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WSD & SCN Details Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-post"></i> WSD & SCN Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- WSD Details -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-post"></i> WSD Details</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>WSD Received Date:</th>
+                        <th width="50%">WSD Received Date:</th>
                         <td>{{ action.wsd_received_date|format_date }}</td>
                     </tr>
                     <tr>
@@ -209,33 +247,38 @@
                         <th>WSD Sent Letter No.:</th>
                         <td>{{ action.wsd_sent_letter_no or '-' }}</td>
                     </tr>
+                    <tr>
+                        <th>WSD Reply Date:</th>
+                        <td>{{ action.wsd_reply_date|format_date }}</td>
+                    </tr>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- SCN Details -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-envelope"></i> SCN Details</h5>
-            </div>
-            <div class="card-body">
+            <!-- SCN Issuance -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-x"></i> SCN Issuance</h6>
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="45%">SCN Issued Date:</th>
-                        <td>{{ action.scn_issued_date or '-' }}</td>
+                        <th width="50%">SCN Issued Date:</th>
+                        <td>{{ action.scn_issued_date|format_date }}</td>
                     </tr>
                     <tr>
                         <th>SCN Issued By:</th>
-                        <td>{{ action.scn_issued_date|format_date }}</td>
+                        <td>{{ action.scn_issued_by or '-' }}</td>
                     </tr>
                     <tr>
                         <th>SCN Receipt Date:</th>
                         <td>{{ action.scn_receipt_date|format_date }}</td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- SCN Communication -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-envelope-check"></i> SCN Communication</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>SCN Receipt to DHS Date:</th>
+                        <th width="50%">SCN Receipt to DHS:</th>
                         <td>{{ action.scn_receipt_sent_to_dhs_date|format_date }}</td>
                     </tr>
                     <tr>
@@ -247,25 +290,29 @@
                         <td>{{ action.scn_reply_date|format_date }}</td>
                     </tr>
                     <tr>
-                        <th>SCN Reply to DHS Date:</th>
+                        <th>SCN Reply to DHS:</th>
                         <td>{{ action.scn_reply_sent_to_dhs_date|format_date }}</td>
                     </tr>
                 </table>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Unauthorised Absentee Details (if applicable) -->
-    {% if ua_details %}
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0"><i class="bi bi-person-x"></i> Unauthorised Absentee Details</h5>
-            </div>
-            <div class="card-body">
+<!-- Unauthorised Absentee Details Section -->
+{% if ua_details %}
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-person-x"></i> Unauthorised Absentee Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- UA Basic Info -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-danger border-bottom pb-2 mb-3"><i class="bi bi-calendar-x"></i> UA Period & Status</h6>
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="45%">Date from (UA):</th>
+                        <th width="50%">Date from (UA):</th>
                         <td>{{ ua_details.date_from_ua|format_date }}</td>
                     </tr>
                     <tr>
@@ -286,16 +333,30 @@
                         <th>Communication Address:</th>
                         <td>{{ ua_details.communication_address or '-' }}</td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- Reporting to DMO -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-danger border-bottom pb-2 mb-3"><i class="bi bi-building"></i> Reporting to DMO</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>Reported to DMO Date:</th>
+                        <th width="50%">Reported to DMO Date:</th>
                         <td>{{ ua_details.date_reported_to_dmo|format_date }}</td>
                     </tr>
                     <tr>
                         <th>Letter No. (DMO):</th>
                         <td>{{ ua_details.letter_no_reported_to_dmo or '-' }}</td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- Reporting to DHS & Status -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-danger border-bottom pb-2 mb-3"><i class="bi bi-hospital"></i> Reporting to DHS & Status</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>Reported to DHS Date:</th>
+                        <th width="50%">Reported to DHS Date:</th>
                         <td>{{ ua_details.date_reported_to_dhs|format_date }}</td>
                     </tr>
                     <tr>
@@ -324,8 +385,8 @@
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
+{% endif %}
 
 <!-- Actions -->
 <div class="card">

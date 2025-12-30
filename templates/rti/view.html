@@ -26,17 +26,19 @@
     </div>
 </div>
 
-<div class="row">
-    <!-- Application Details -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 border-primary">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-file-text"></i> Application Details</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
+<!-- Basic Information Section -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Basic Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Application Details -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-file-text"></i> Application Details</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="40%">Sl. No.:</th>
+                        <th width="45%">Sl. No.:</th>
                         <td>{{ application.sl_no or '-' }}</td>
                     </tr>
                     <tr>
@@ -57,8 +59,30 @@
                             {% endif %}
                         </td>
                     </tr>
+                </table>
+            </div>
+
+            <!-- Applicant Information -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-person"></i> Applicant Information</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th>Status:</th>
+                        <th width="45%">Name:</th>
+                        <td>{{ application.applicant_prefix }} {{ application.applicant_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Address:</th>
+                        <td>{{ application.address or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-check-circle"></i> Status</h6>
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="45%">Current Status:</th>
                         <td>
                             {% if application.status == 'Not replied' %}
                             <span class="badge bg-warning text-dark">{{ application.status }}</span>
@@ -75,50 +99,31 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Applicant Information -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-person"></i> Applicant Information</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
-                    <tr>
-                        <th width="40%">Name:</th>
-                        <td>{{ application.applicant_prefix }} {{ application.applicant_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Address:</th>
-                        <td>{{ application.address or '-' }}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+<!-- Subject Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-question-circle"></i> Subject of Information</h5>
     </div>
-
-    <!-- Subject -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Subject of Information</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ application.subject_of_information or 'Not specified.' }}</p>
-            </div>
-        </div>
+    <div class="card-body">
+        <p class="mb-0">{{ application.subject_of_information or 'Not specified.' }}</p>
     </div>
+</div>
 
-    <!-- Fee Details -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Fee Details</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
+<!-- Processing Details Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Processing Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Fee Details -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-currency-rupee"></i> Fee Details</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="40%">Fee Paid:</th>
+                        <th width="50%">Fee Paid:</th>
                         <td>₹{{ application.fee_paid or '0' }}</td>
                     </tr>
                     <tr>
@@ -135,38 +140,26 @@
                     </tr>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- Dates and Status -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-calendar"></i> Dates</h5>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless">
+            <!-- Important Dates -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-calendar"></i> Important Dates</h6>
+                <table class="table table-sm table-borderless">
                     <tr>
-                        <th width="50%">Acknowledgment Date:</th>
+                        <th width="50%">Acknowledgment:</th>
                         <td>{{ application.date_of_acknowledgment|format_date }}</td>
                     </tr>
                     <tr>
-                        <th>Disposal Date:</th>
+                        <th>Disposal:</th>
                         <td>{{ application.date_of_disposal|format_date }}</td>
                     </tr>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- Remarks -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-chat-text"></i> Remarks</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ application.remarks or 'No remarks.' }}</p>
+            <!-- Remarks -->
+            <div class="col-md-4 mb-3">
+                <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-chat-text"></i> Remarks</h6>
+                <p class="mb-0">{{ application.remarks or 'No remarks.' }}</p>
             </div>
         </div>
     </div>
