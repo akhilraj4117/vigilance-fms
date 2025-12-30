@@ -1248,6 +1248,8 @@ def create_disciplinary_action():
             date_probation_declared=convert_date_format(request.form.get('date_probation_declared', '')),
             date_superannuation=convert_date_format(request.form.get('date_superannuation', '')),
             unauthorised_others=request.form.get('unauthorised_others', ''),
+            subject=request.form.get('subject', ''),
+            concerned=request.form.get('concerned', ''),
             probation_termination_notice=request.form.get('probation_termination_notice', ''),
             ptn_reply_received=request.form.get('ptn_reply_received', ''),
             ptn_reply_date=convert_date_format(request.form.get('ptn_reply_date', '')),
@@ -1498,6 +1500,8 @@ def edit_disciplinary_action(id):
     action.date_probation_declared = convert_date_format(request.form.get('date_probation_declared', ''))
     action.date_superannuation = convert_date_format(request.form.get('date_superannuation', ''))
     action.unauthorised_others = request.form.get('unauthorised_others', '')
+    action.subject = request.form.get('subject', '')
+    action.concerned = request.form.get('concerned', '')
     action.probation_termination_notice = request.form.get('probation_termination_notice', '')
     action.ptn_reply_received = request.form.get('ptn_reply_received', '')
     action.ptn_reply_date = convert_date_format(request.form.get('ptn_reply_date', ''))

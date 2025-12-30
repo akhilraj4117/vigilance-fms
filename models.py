@@ -161,6 +161,8 @@ class DisciplinaryAction(db.Model):
     date_probation_declared = db.Column(db.String(20))
     date_superannuation = db.Column(db.String(20))
     unauthorised_others = db.Column(db.String(50))
+    subject = db.Column(db.Text)
+    concerned = db.Column(db.String(200))
     probation_termination_notice = db.Column(db.String(50))
     ptn_reply_received = db.Column(db.String(10))
     ptn_reply_date = db.Column(db.String(20))
