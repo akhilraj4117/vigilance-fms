@@ -872,7 +872,12 @@
                             if (entry[field]) {
                                 checkbox.checked = true;
                                 input.disabled = false;
-                                input.value = entry[field];
+                                // Convert date format for date inputs
+                                if (input.type === 'date') {
+                                    input.value = convertDateFormat(entry[field]);
+                                } else {
+                                    input.value = entry[field];
+                                }
                             }
                         }
                     });
