@@ -2613,6 +2613,28 @@ def delete_social_security():
 # Category and File Type Management Routes
 # =============================================================================
 
+@files_bp.route('/categories/list', methods=['GET'])
+@login_required
+def list_categories():
+    """Get list of all categories."""
+    try:
+        categories = get_categories()
+        return jsonify({'success': True, 'categories': categories})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/file-types/list', methods=['GET'])
+@login_required
+def list_file_types():
+    """Get list of all file types."""
+    try:
+        file_types = get_file_types()
+        return jsonify({'success': True, 'file_types': file_types})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
 @files_bp.route('/categories/add', methods=['POST'])
 @csrf.exempt
 @login_required
