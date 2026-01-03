@@ -134,6 +134,9 @@
                 <a href="{{ url_for('file_movements.pending_report_sought') }}" class="btn btn-secondary" title="Refresh">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </a>
+                <a href="{{ url_for('file_movements.export_report_sought', q=search) }}" class="btn btn-success" title="Export to Excel">
+                    <i class="bi bi-download"></i> Export to Excel
+                </a>
             </form>
         </div>
     </div>

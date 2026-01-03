@@ -495,6 +495,61 @@ def pending_report_sought():
                           search=search)
 
 
+@file_movements_bp.route('/pending/report-sought/export')
+@login_required
+def export_report_sought():
+    """Export Report Sought pending reports to Excel."""
+    search = request.args.get('q', '').strip()
+    
+    # Get pending reports (submitted != 'Yes' and has report_sought_date)
+    query = ReportSoughtDetails.query.filter(
+        and_(
+            or_(ReportSoughtDetails.submitted != 'Yes', ReportSoughtDetails.submitted == None),
+            ReportSoughtDetails.report_sought_date != None,
+            ReportSoughtDetails.report_sought_date != ''
+        )
+    )
+    
+    if search:
+        query = query.filter(
+            or_(
+                ReportSoughtDetails.file_number.ilike(f'%{search}%'),
+                ReportSoughtDetails.subject.ilike(f'%{search}%')
+            )
+        )
+    
+    reports = query.all()
+    
+    output = StringIO()
+    # Add UTF-8 BOM for Excel to recognize Unicode characters
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    writer.writerow([
+        'Sl. No.', 'File Number', 'Subject', 'Body', 'Report Sought Date',
+        'Status', 'Institution', 'Details'
+    ])
+    
+    for idx, report in enumerate(reports, 1):
+        writer.writerow([
+            idx,
+            report.file_number or '',
+            report.subject or '',
+            report.body or '',
+            report.report_sought_date or '',
+            report.status or '',
+            report.institution or '',
+            report.details or ''
+        ])
+    
+    output.seek(0)
+    filename = f'pending_report_sought_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv; charset=utf-8-sig',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
 @file_movements_bp.route('/pending/report-asked')
 @login_required
 def pending_report_asked():
@@ -522,6 +577,58 @@ def pending_report_asked():
     return render_template('file_movements/pending_report_asked.html',
                           reports=reports,
                           search=search)
+
+
+@file_movements_bp.route('/pending/report-asked/export')
+@login_required
+def export_report_asked():
+    """Export Report Asked pending reports to Excel."""
+    search = request.args.get('q', '').strip()
+    
+    # Get pending reports (report_submitted != 'Yes' and whether_report_asked == 'Yes')
+    query = ReportAskedDetails.query.filter(
+        and_(
+            or_(ReportAskedDetails.report_submitted != 'Yes', ReportAskedDetails.report_submitted == None),
+            ReportAskedDetails.whether_report_asked == 'Yes'
+        )
+    )
+    
+    if search:
+        query = query.filter(
+            or_(
+                ReportAskedDetails.file_number.ilike(f'%{search}%'),
+                ReportAskedDetails.institution_name.ilike(f'%{search}%')
+            )
+        )
+    
+    reports = query.all()
+    
+    output = StringIO()
+    # Add UTF-8 BOM for Excel to recognize Unicode characters
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    writer.writerow([
+        'Sl. No.', 'File Number', 'Asked Date', 'Institution Name',
+        'Report Submitted', 'Received Date'
+    ])
+    
+    for idx, report in enumerate(reports, 1):
+        writer.writerow([
+            idx,
+            report.file_number or '',
+            report.asked_date or '',
+            report.institution_name or '',
+            report.report_submitted or 'No',
+            report.received_date or ''
+        ])
+    
+    output.seek(0)
+    filename = f'pending_report_asked_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv; charset=utf-8-sig',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 
 @file_movements_bp.route('/pending/cmo-portal')
