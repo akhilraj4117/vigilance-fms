@@ -63,6 +63,52 @@ def create_app(config_name=None):
             from models import User
             User.__table__.create(db.engine)
         
+        # Create categories and file_types tables if they don't exist
+        if 'categories' not in existing_tables:
+            from models import Category
+            Category.__table__.create(db.engine)
+            print("Created categories table")
+        
+        if 'file_types' not in existing_tables:
+            from models import FileType
+            FileType.__table__.create(db.engine)
+            print("Created file_types table")
+        
+        # Initialize default categories and file types
+        from models import Category, FileType
+        
+        # Default file types
+        default_file_types = [
+            "Women Harassment", "Police Case", "Medical Negligence",
+            "Attack on Doctors", "Attack on Staffs", "Unauthorised Absence",
+            "RTI", "Duty Lapse", "Private Practice", "Denial of Treatment",
+            "Social Security Pension", "Others"
+        ]
+        
+        # Default categories
+        default_categories = [
+            "CMO Portal", "RVU", "KeSCPCR", "KHRC", "NKS",
+            "SC/ST", "KWC", "Court Case", "Rajya/Lok/Niyamasabha",
+            "Vig & Anti Corruption", "Complaint", "Others"
+        ]
+        
+        # Add file types if they don't exist
+        for ft_name in default_file_types:
+            if not FileType.query.filter_by(name=ft_name).first():
+                ft = FileType(name=ft_name)
+                db.session.add(ft)
+        
+        # Add categories if they don't exist
+        for cat_name in default_categories:
+            if not Category.query.filter_by(name=cat_name).first():
+                cat = Category(name=cat_name)
+                db.session.add(cat)
+        
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
+        
         # Initialize default users
         from routes.auth import init_default_users
         init_default_users()
