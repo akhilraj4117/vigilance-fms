@@ -22,12 +22,29 @@ file_movements_bp = Blueprint('file_movements', __name__)
 
 def get_file_types():
     """Get all file types from database."""
-    return [ft.name for ft in FileType.query.order_by(FileType.name).all()]
+    try:
+        return [ft.name for ft in FileType.query.order_by(FileType.name).all()]
+    except:
+        # Return defaults if table doesn't exist yet
+        return [
+            "Women Harassment", "Police Case", "Medical Negligence",
+            "Attack on Doctors", "Attack on Staffs", "Unauthorised Absence",
+            "RTI", "Duty Lapse", "Private Practice", "Denial of Treatment",
+            "Social Security Pension", "Others"
+        ]
 
 
 def get_categories():
     """Get all categories from database."""
-    return [c.name for c in Category.query.order_by(Category.name).all()]
+    try:
+        return [c.name for c in Category.query.order_by(Category.name).all()]
+    except:
+        # Return defaults if table doesn't exist yet
+        return [
+            "CMO Portal", "RVU", "KeSCPCR", "KHRC", "NKS",
+            "SC/ST", "KWC", "Court Case", "Rajya/Lok/Niyamasabha",
+            "Vig & Anti Corruption", "Complaint", "Others"
+        ]
 
 
 # Constants
