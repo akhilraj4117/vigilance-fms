@@ -556,8 +556,10 @@ def pending_report_asked():
     """Report Asked - Pending Reports."""
     search = request.args.get('q', '').strip()
     
-    # Get pending reports (report_submitted != 'Yes' and whether_report_asked == 'Yes')
-    query = ReportAskedDetails.query.filter(
+    # Get pending reports with file subject (join with File table)
+    query = db.session.query(ReportAskedDetails, File.subject).outerjoin(
+        File, ReportAskedDetails.file_number == File.file_number
+    ).filter(
         and_(
             or_(ReportAskedDetails.report_submitted != 'Yes', ReportAskedDetails.report_submitted == None),
             ReportAskedDetails.whether_report_asked == 'Yes'
@@ -568,14 +570,15 @@ def pending_report_asked():
         query = query.filter(
             or_(
                 ReportAskedDetails.file_number.ilike(f'%{search}%'),
-                ReportAskedDetails.institution_name.ilike(f'%{search}%')
+                ReportAskedDetails.institution_name.ilike(f'%{search}%'),
+                File.subject.ilike(f'%{search}%')
             )
         )
     
-    reports = query.all()
+    results = query.all()
     
     return render_template('file_movements/pending_report_asked.html',
-                          reports=reports,
+                          reports=results,
                           search=search)
 
 
@@ -585,8 +588,10 @@ def export_report_asked():
     """Export Report Asked pending reports to Excel."""
     search = request.args.get('q', '').strip()
     
-    # Get pending reports (report_submitted != 'Yes' and whether_report_asked == 'Yes')
-    query = ReportAskedDetails.query.filter(
+    # Get pending reports with file subject (join with File table)
+    query = db.session.query(ReportAskedDetails, File.subject).outerjoin(
+        File, ReportAskedDetails.file_number == File.file_number
+    ).filter(
         and_(
             or_(ReportAskedDetails.report_submitted != 'Yes', ReportAskedDetails.report_submitted == None),
             ReportAskedDetails.whether_report_asked == 'Yes'
@@ -597,25 +602,27 @@ def export_report_asked():
         query = query.filter(
             or_(
                 ReportAskedDetails.file_number.ilike(f'%{search}%'),
-                ReportAskedDetails.institution_name.ilike(f'%{search}%')
+                ReportAskedDetails.institution_name.ilike(f'%{search}%'),
+                File.subject.ilike(f'%{search}%')
             )
         )
     
-    reports = query.all()
+    results = query.all()
     
     output = StringIO()
     # Add UTF-8 BOM for Excel to recognize Unicode characters
     output.write('\ufeff')
     writer = csv.writer(output)
     writer.writerow([
-        'Sl. No.', 'File Number', 'Asked Date', 'Institution Name',
+        'Sl. No.', 'File Number', 'Subject', 'Asked Date', 'Institution Name',
         'Report Submitted', 'Received Date'
     ])
     
-    for idx, report in enumerate(reports, 1):
+    for idx, (report, subject) in enumerate(results, 1):
         writer.writerow([
             idx,
             report.file_number or '',
+            subject or '',
             report.asked_date or '',
             report.institution_name or '',
             report.report_submitted or 'No',

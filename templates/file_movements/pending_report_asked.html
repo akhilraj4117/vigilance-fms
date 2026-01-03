@@ -153,6 +153,7 @@
                         <tr>
                             <th>Sl. No.</th>
                             <th>File Number</th>
+                            <th>Subject</th>
                             <th>Asked Date</th>
                             <th>Institution Name</th>
                             <th>Report Submitted</th>
@@ -160,7 +161,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for report in reports %}
+                        {% for report, subject in reports %}
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>
@@ -169,6 +170,7 @@
                                     {{ report.file_number }}
                                 </a>
                             </td>
+                            <td title="{{ subject or '' }}">{{ (subject or '-')[:50] }}{{ '...' if subject and subject|length > 50 else '' }}</td>
                             <td>{{ report.asked_date or '-' }}</td>
                             <td>{{ report.institution_name or '-' }}</td>
                             <td>
@@ -182,7 +184,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No pending reports found.</td>
+                            <td colspan="7" class="text-center text-muted">No pending reports found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
