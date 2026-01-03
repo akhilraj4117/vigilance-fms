@@ -176,3 +176,70 @@ def api_stats():
         'court_cases': CourtCase.query.count()
     }
     return jsonify(stats)
+
+
+@main_bp.route('/admin/fix-sequences')
+@login_required
+def fix_sequences():
+    """Fix PostgreSQL sequences that are out of sync after data import."""
+    if not current_user.is_admin():
+        flash('Admin access required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # List of tables with auto-increment IDs that need sequence fixing
+        tables_to_fix = [
+            'report_asked_details',
+            'report_sought_details',
+            'trace_details',
+            'preliminary_statements',
+            'rule15_statements',
+            'rti_applications',
+            'court_cases',
+            'women_harassment_cases',
+            'complaint_details',
+            'cmo_portal_details',
+            'rvu_details',
+            'social_security_pension_details',
+            'kescpcr_details',
+            'khrc_details',
+            'scst_details',
+            'kwc_details',
+            'vigilance_ac_details',
+            'rajya_lok_niyamasabha_details',
+            'police_case_details',
+            'attack_on_doctors_cases',
+            'attack_on_staffs_cases',
+            'pr_entries',
+            'inquiry_details',
+            'disciplinary_actions',
+            'employees',
+            'institutions',
+            'file_migrations',
+            'communications'
+        ]
+        
+        fixed_tables = []
+        for table in tables_to_fix:
+            try:
+                # Reset the sequence to the max ID + 1
+                sql = f"""
+                    SELECT setval(
+                        pg_get_serial_sequence('{table}', 'id'),
+                        COALESCE((SELECT MAX(id) FROM {table}), 1),
+                        true
+                    );
+                """
+                db.session.execute(db.text(sql))
+                fixed_tables.append(table)
+            except Exception as e:
+                # Skip tables that don't exist or don't have sequences
+                pass
+        
+        db.session.commit()
+        flash(f'Successfully fixed sequences for {len(fixed_tables)} tables.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error fixing sequences: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))

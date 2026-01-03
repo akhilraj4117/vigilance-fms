@@ -68,7 +68,15 @@
         <!-- Welcome Message -->
         <div class="row mb-3">
             <div class="col-12">
-                <p class="text-muted">Welcome, <strong>{{ current_user.username }}</strong>! Here's an overview of your system.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <p class="text-muted mb-0">Welcome, <strong>{{ current_user.username }}</strong>! Here's an overview of your system.</p>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('main.fix_sequences') }}" class="btn btn-sm btn-outline-secondary" 
+                       onclick="return confirm('This will reset all database sequences. Continue?')">
+                        <i class="bi bi-wrench"></i> Fix DB Sequences
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
