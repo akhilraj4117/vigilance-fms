@@ -902,3 +902,27 @@ class Rule15Statement(db.Model):
     
     def __repr__(self):
         return f'<Rule15Statement {self.file_number}>'
+
+
+class FileType(db.Model):
+    """File type model for global file type management."""
+    __tablename__ = 'file_types'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<FileType {self.name}>'
+
+
+class Category(db.Model):
+    """Category model for global category management."""
+    __tablename__ = 'categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Category {self.name}>'

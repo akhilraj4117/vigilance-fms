@@ -11,26 +11,13 @@ from models import (File, PREntry, InquiryDetails, TraceDetails, DisciplinaryAct
                     RTIApplication, CourtCase, WomenHarassmentCase, ComplaintDetails, CMOPortalDetails,
                     RVUDetails, SocialSecurityPension, KESCPCRDetails, KHRCDetails, SCSTDetails,
                     KWCDetails, VigilanceACDetails, RajyaLokNiyamasabhaDetails, PoliceCaseDetails,
-                    AttackOnDoctorsCase, AttackOnStaffsCase)
+                    AttackOnDoctorsCase, AttackOnStaffsCase, FileType, Category)
 from extensions import db, csrf
 from sqlalchemy import or_
 
 files_bp = Blueprint('files', __name__)
 
-# Constants
-FILE_TYPES = [
-    "Women Harassment", "Police Case", "Medical Negligence",
-    "Attack on Doctors", "Attack on Staffs", "Unauthorised Absence",
-    "RTI", "Duty Lapse", "Private Practice", "Denial of Treatment",
-    "Social Security Pension", "Others"
-]
-
-CATEGORIES = [
-    "CMO Portal", "RVU", "KeSCPCR", "KHRC", "NKS",
-    "SC/ST", "KWC", "Court Case", "Rajya/Lok/Niyamasabha",
-    "Vig & Anti Corruption", "Complaint", "Others"
-]
-
+# Constants (kept for backward compatibility in templates)
 FILE_STATUSES = [
     "With Clerk", "Submitted", "Despatched", "Closed", "Mailed & Despatched",
     "Parked", "Stock File", "Attached", "Speak", "Handed Over"
@@ -39,6 +26,16 @@ FILE_STATUSES = [
 INSTITUTION_TYPES = [
     "CHC", "GH", "FHC", "PHC", "DH", "THQH", "TH", "DMO", "Other Units", "Others"
 ]
+
+
+def get_file_types():
+    """Get all file types from database."""
+    return [ft.name for ft in FileType.query.order_by(FileType.name).all()]
+
+
+def get_categories():
+    """Get all categories from database."""
+    return [c.name for c in Category.query.order_by(Category.name).all()]
 
 
 @files_bp.route('/management')
@@ -94,8 +91,8 @@ def file_management():
                           report_sought_list=report_sought_list,
                           report_asked_list=report_asked_list,
                           trace_details=trace_details,
-                          file_types=FILE_TYPES,
-                          categories=CATEGORIES,
+                          file_types=get_file_types(),
+                          categories=get_categories(),
                           statuses=FILE_STATUSES,
                           institution_types=INSTITUTION_TYPES,
                           institutions=institutions,
@@ -495,8 +492,8 @@ def list_files():
                           category_filter=category_filter,
                           is_closed_filter=is_closed_filter,
                           file_format=file_format,
-                          file_types=FILE_TYPES,
-                          categories=CATEGORIES,
+                          file_types=get_file_types(),
+                          categories=get_categories(),
                           statuses=FILE_STATUSES,
                           sort_by=sort_by,
                           sort_order=sort_order)
@@ -513,16 +510,16 @@ def create_file():
         if not file_number:
             flash('File number is required.', 'danger')
             return render_template('files/create.html', 
-                                  file_types=FILE_TYPES,
-                                  categories=CATEGORIES,
+                                  file_types=get_file_types(),
+                                  categories=get_categories(),
                                   statuses=FILE_STATUSES)
         
         # Check for consecutive slashes
         if '//' in file_number:
             flash('File number cannot contain consecutive slashes (//).', 'danger')
             return render_template('files/create.html', 
-                                  file_types=FILE_TYPES,
-                                  categories=CATEGORIES,
+                                  file_types=get_file_types(),
+                                  categories=get_categories(),
                                   statuses=FILE_STATUSES)
         
         # Check if file number has empty parts between slashes (only if slashes exist)
@@ -531,8 +528,8 @@ def create_file():
             if any(part.strip() == '' for part in parts):
                 flash('File number cannot have empty parts. Please check for extra slashes.', 'danger')
                 return render_template('files/create.html', 
-                                      file_types=FILE_TYPES,
-                                      categories=CATEGORIES,
+                                      file_types=get_file_types(),
+                                      categories=get_categories(),
                                       statuses=FILE_STATUSES)
         
         # Check if file already exists
@@ -540,8 +537,8 @@ def create_file():
         if existing:
             flash(f'File number "{file_number}" already exists.', 'danger')
             return render_template('files/create.html', 
-                                  file_types=FILE_TYPES,
-                                  categories=CATEGORIES,
+                                  file_types=get_file_types(),
+                                  categories=get_categories(),
                                   statuses=FILE_STATUSES)
         
         # Get form data
@@ -575,8 +572,8 @@ def create_file():
         return redirect(url_for('files.view_file', file_number=file_number))
     
     return render_template('files/create.html', 
-                          file_types=FILE_TYPES,
-                          categories=CATEGORIES,
+                          file_types=get_file_types(),
+                          categories=get_categories(),
                           statuses=FILE_STATUSES)
 
 
@@ -608,7 +605,7 @@ def view_file(file_number):
     
     return render_template('files/view.html', 
                           file=file,
-                          categories=categories,
+                          categories=get_categories(),
                           types=types,
                           pr_entries=pr_entries,
                           inquiry=inquiry,
@@ -650,8 +647,8 @@ def edit_file(file_number):
     
     return render_template('files/edit.html', 
                           file=file,
-                          file_types=FILE_TYPES,
-                          categories=CATEGORIES,
+                          file_types=get_file_types(),
+                          categories=get_categories(),
                           statuses=FILE_STATUSES)
 
 
@@ -2603,7 +2600,7 @@ def delete_social_security():
 @csrf.exempt
 @login_required
 def add_category():
-    """Add a new category to the global CATEGORIES list."""
+    """Add a new category to the database."""
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -2611,13 +2608,15 @@ def add_category():
         if not name:
             return jsonify({'success': False, 'message': 'Category name is required'})
         
-        if name in CATEGORIES:
+        if Category.query.filter_by(name=name).first():
             return jsonify({'success': False, 'message': 'Category already exists'})
         
-        # Add to list (this is temporary - would need persistent storage in production)
-        CATEGORIES.append(name)
+        category = Category(name=name)
+        db.session.add(category)
+        db.session.commit()
         return jsonify({'success': True, 'message': 'Category added successfully'})
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
 
 
@@ -2625,7 +2624,7 @@ def add_category():
 @csrf.exempt
 @login_required
 def update_category():
-    """Update/rename a category."""
+    """Update/rename a category and update all files."""
     try:
         data = request.get_json()
         old_name = data.get('old_name', '').strip()
@@ -2634,10 +2633,11 @@ def update_category():
         if not old_name or not new_name:
             return jsonify({'success': False, 'message': 'Both old and new names are required'})
         
-        if old_name not in CATEGORIES:
+        category = Category.query.filter_by(name=old_name).first()
+        if not category:
             return jsonify({'success': False, 'message': 'Category not found'})
         
-        if new_name in CATEGORIES and new_name != old_name:
+        if new_name != old_name and Category.query.filter_by(name=new_name).first():
             return jsonify({'success': False, 'message': 'New category name already exists'})
         
         # Update in all files that have this category
@@ -2652,9 +2652,8 @@ def update_category():
                 except:
                     pass
         
-        # Update in CATEGORIES list
-        idx = CATEGORIES.index(old_name)
-        CATEGORIES[idx] = new_name
+        # Update category name in database
+        category.name = new_name
         
         db.session.commit()
         return jsonify({'success': True, 'message': 'Category updated successfully'})
@@ -2667,7 +2666,7 @@ def update_category():
 @csrf.exempt
 @login_required
 def delete_category():
-    """Delete a category."""
+    """Delete a category and remove from all files."""
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -2675,7 +2674,8 @@ def delete_category():
         if not name:
             return jsonify({'success': False, 'message': 'Category name is required'})
         
-        if name not in CATEGORIES:
+        category = Category.query.filter_by(name=name).first()
+        if not category:
             return jsonify({'success': False, 'message': 'Category not found'})
         
         # Remove from all files that have this category
@@ -2690,8 +2690,8 @@ def delete_category():
                 except:
                     pass
         
-        # Remove from CATEGORIES list
-        CATEGORIES.remove(name)
+        # Delete from database
+        db.session.delete(category)
         
         db.session.commit()
         return jsonify({'success': True, 'message': 'Category deleted successfully'})
@@ -2704,7 +2704,7 @@ def delete_category():
 @csrf.exempt
 @login_required
 def add_file_type():
-    """Add a new file type to the global FILE_TYPES list."""
+    """Add a new file type to the database."""
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -2712,13 +2712,15 @@ def add_file_type():
         if not name:
             return jsonify({'success': False, 'message': 'File type name is required'})
         
-        if name in FILE_TYPES:
+        if FileType.query.filter_by(name=name).first():
             return jsonify({'success': False, 'message': 'File type already exists'})
         
-        # Add to list
-        FILE_TYPES.append(name)
+        file_type = FileType(name=name)
+        db.session.add(file_type)
+        db.session.commit()
         return jsonify({'success': True, 'message': 'File type added successfully'})
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
 
 
@@ -2726,7 +2728,7 @@ def add_file_type():
 @csrf.exempt
 @login_required
 def update_file_type():
-    """Update/rename a file type."""
+    """Update/rename a file type and update all files."""
     try:
         data = request.get_json()
         old_name = data.get('old_name', '').strip()
@@ -2735,10 +2737,11 @@ def update_file_type():
         if not old_name or not new_name:
             return jsonify({'success': False, 'message': 'Both old and new names are required'})
         
-        if old_name not in FILE_TYPES:
+        file_type = FileType.query.filter_by(name=old_name).first()
+        if not file_type:
             return jsonify({'success': False, 'message': 'File type not found'})
         
-        if new_name in FILE_TYPES and new_name != old_name:
+        if new_name != old_name and FileType.query.filter_by(name=new_name).first():
             return jsonify({'success': False, 'message': 'New file type name already exists'})
         
         # Update in all files that have this type
@@ -2760,9 +2763,8 @@ def update_file_type():
                 except:
                     pass
         
-        # Update in FILE_TYPES list
-        idx = FILE_TYPES.index(old_name)
-        FILE_TYPES[idx] = new_name
+        # Update file type name in database
+        file_type.name = new_name
         
         db.session.commit()
         return jsonify({'success': True, 'message': 'File type updated successfully'})
@@ -2775,7 +2777,7 @@ def update_file_type():
 @csrf.exempt
 @login_required
 def delete_file_type():
-    """Delete a file type."""
+    """Delete a file type and remove from all files."""
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -2783,7 +2785,8 @@ def delete_file_type():
         if not name:
             return jsonify({'success': False, 'message': 'File type name is required'})
         
-        if name not in FILE_TYPES:
+        file_type = FileType.query.filter_by(name=name).first()
+        if not file_type:
             return jsonify({'success': False, 'message': 'File type not found'})
         
         # Remove from all files that have this type
@@ -2804,8 +2807,8 @@ def delete_file_type():
                 except:
                     pass
         
-        # Remove from FILE_TYPES list
-        FILE_TYPES.remove(name)
+        # Delete from database
+        db.session.delete(file_type)
         
         db.session.commit()
         return jsonify({'success': True, 'message': 'File type deleted successfully'})

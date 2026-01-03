@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 from models import (File, PREntry, TraceDetails, ReportSoughtDetails, ReportAskedDetails,
                     CMOPortalDetails, RTIApplication, FileMigration, Communication,
                     InquiryDetails, DisciplinaryAction, Institution, PreliminaryStatement,
-                    Rule15Statement)
+                    Rule15Statement, FileType, Category)
 from extensions import db, csrf
 from utils import convert_date_format
 from sqlalchemy import or_, and_, func
@@ -19,14 +19,18 @@ from datetime import datetime, timedelta
 
 file_movements_bp = Blueprint('file_movements', __name__)
 
-# Constants
-FILE_TYPES = [
-    "Women Harassment", "Police Case", "Medical Negligence",
-    "Attack on Doctors", "Attack on Staffs", "Unauthorised Absence",
-    "RTI", "Duty Lapse", "Private Practice", "Denial of Treatment",
-    "Social Security Pension", "Others"
-]
 
+def get_file_types():
+    """Get all file types from database."""
+    return [ft.name for ft in FileType.query.order_by(FileType.name).all()]
+
+
+def get_categories():
+    """Get all categories from database."""
+    return [c.name for c in Category.query.order_by(Category.name).all()]
+
+
+# Constants
 FILE_STATUSES = [
     "With Clerk", "Submitted", "Despatched", "Closed", "Mailed & Despatched",
     "Parked", "Stock File", "Attached", "Speak", "Handed Over"
@@ -115,9 +119,6 @@ def search_files():
     # Get institutions for dropdown
     institutions = Institution.query.order_by(Institution.name.asc()).all()
     
-    # Get unique categories from database
-    from routes.files import CATEGORIES
-    
     return render_template('file_movements/search_files.html',
                           files=files,
                           pagination=pagination,
@@ -129,8 +130,8 @@ def search_files():
                           institution=institution,
                           from_year=from_year,
                           to_year=to_year,
-                          file_types=FILE_TYPES,
-                          categories=CATEGORIES,
+                          file_types=get_file_types(),
+                          categories=get_categories(),
                           statuses=FILE_STATUSES,
                           institutions=institutions)
 
