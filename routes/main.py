@@ -243,3 +243,56 @@ def fix_sequences():
         flash(f'Error fixing sequences: {str(e)}', 'danger')
     
     return redirect(url_for('main.dashboard'))
+
+
+@main_bp.route('/admin/init-categories-and-types')
+@login_required
+def init_categories_and_types():
+    """Initialize categories and file types tables with default values."""
+    if not current_user.is_admin():
+        flash('Admin access required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from models import FileType, Category
+        
+        # Default file types
+        default_file_types = [
+            "Women Harassment", "Police Case", "Medical Negligence",
+            "Attack on Doctors", "Attack on Staffs", "Unauthorised Absence",
+            "RTI", "Duty Lapse", "Private Practice", "Denial of Treatment",
+            "Social Security Pension", "Others"
+        ]
+        
+        # Default categories
+        default_categories = [
+            "CMO Portal", "RVU", "KeSCPCR", "KHRC", "NKS",
+            "SC/ST", "KWC", "Court Case", "Rajya/Lok/Niyamasabha",
+            "Vig & Anti Corruption", "Complaint", "Others"
+        ]
+        
+        added_types = 0
+        added_cats = 0
+        
+        # Add file types if they don't exist
+        for ft_name in default_file_types:
+            if not FileType.query.filter_by(name=ft_name).first():
+                ft = FileType(name=ft_name)
+                db.session.add(ft)
+                added_types += 1
+        
+        # Add categories if they don't exist
+        for cat_name in default_categories:
+            if not Category.query.filter_by(name=cat_name).first():
+                cat = Category(name=cat_name)
+                db.session.add(cat)
+                added_cats += 1
+        
+        db.session.commit()
+        flash(f'Successfully initialized! Added {added_types} file types and {added_cats} categories.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error initializing: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
