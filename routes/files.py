@@ -2593,3 +2593,222 @@ def delete_social_security():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
+
+
+# =============================================================================
+# Category and File Type Management Routes
+# =============================================================================
+
+@files_bp.route('/categories/add', methods=['POST'])
+@csrf.exempt
+@login_required
+def add_category():
+    """Add a new category to the global CATEGORIES list."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'Category name is required'})
+        
+        if name in CATEGORIES:
+            return jsonify({'success': False, 'message': 'Category already exists'})
+        
+        # Add to list (this is temporary - would need persistent storage in production)
+        CATEGORIES.append(name)
+        return jsonify({'success': True, 'message': 'Category added successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/categories/update', methods=['POST'])
+@csrf.exempt
+@login_required
+def update_category():
+    """Update/rename a category."""
+    try:
+        data = request.get_json()
+        old_name = data.get('old_name', '').strip()
+        new_name = data.get('new_name', '').strip()
+        
+        if not old_name or not new_name:
+            return jsonify({'success': False, 'message': 'Both old and new names are required'})
+        
+        if old_name not in CATEGORIES:
+            return jsonify({'success': False, 'message': 'Category not found'})
+        
+        if new_name in CATEGORIES and new_name != old_name:
+            return jsonify({'success': False, 'message': 'New category name already exists'})
+        
+        # Update in all files that have this category
+        files = File.query.all()
+        for file in files:
+            if file.category:
+                try:
+                    categories = json.loads(file.category) if isinstance(file.category, str) else []
+                    if old_name in categories:
+                        categories = [new_name if c == old_name else c for c in categories]
+                        file.category = json.dumps(categories)
+                except:
+                    pass
+        
+        # Update in CATEGORIES list
+        idx = CATEGORIES.index(old_name)
+        CATEGORIES[idx] = new_name
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Category updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/categories/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_category():
+    """Delete a category."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'Category name is required'})
+        
+        if name not in CATEGORIES:
+            return jsonify({'success': False, 'message': 'Category not found'})
+        
+        # Remove from all files that have this category
+        files = File.query.all()
+        for file in files:
+            if file.category:
+                try:
+                    categories = json.loads(file.category) if isinstance(file.category, str) else []
+                    if name in categories:
+                        categories = [c for c in categories if c != name]
+                        file.category = json.dumps(categories) if categories else None
+                except:
+                    pass
+        
+        # Remove from CATEGORIES list
+        CATEGORIES.remove(name)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Category deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/file-types/add', methods=['POST'])
+@csrf.exempt
+@login_required
+def add_file_type():
+    """Add a new file type to the global FILE_TYPES list."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'File type name is required'})
+        
+        if name in FILE_TYPES:
+            return jsonify({'success': False, 'message': 'File type already exists'})
+        
+        # Add to list
+        FILE_TYPES.append(name)
+        return jsonify({'success': True, 'message': 'File type added successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/file-types/update', methods=['POST'])
+@csrf.exempt
+@login_required
+def update_file_type():
+    """Update/rename a file type."""
+    try:
+        data = request.get_json()
+        old_name = data.get('old_name', '').strip()
+        new_name = data.get('new_name', '').strip()
+        
+        if not old_name or not new_name:
+            return jsonify({'success': False, 'message': 'Both old and new names are required'})
+        
+        if old_name not in FILE_TYPES:
+            return jsonify({'success': False, 'message': 'File type not found'})
+        
+        if new_name in FILE_TYPES and new_name != old_name:
+            return jsonify({'success': False, 'message': 'New file type name already exists'})
+        
+        # Update in all files that have this type
+        files = File.query.all()
+        for file in files:
+            if file.type_of_file:
+                # type_of_file can be a comma-separated string or JSON
+                try:
+                    if file.type_of_file.startswith('['):
+                        types = json.loads(file.type_of_file)
+                        if old_name in types:
+                            types = [new_name if t == old_name else t for t in types]
+                            file.type_of_file = json.dumps(types)
+                    else:
+                        types = [t.strip() for t in file.type_of_file.split(',')]
+                        if old_name in types:
+                            types = [new_name if t == old_name else t for t in types]
+                            file.type_of_file = ', '.join(types)
+                except:
+                    pass
+        
+        # Update in FILE_TYPES list
+        idx = FILE_TYPES.index(old_name)
+        FILE_TYPES[idx] = new_name
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'File type updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/file-types/delete', methods=['POST'])
+@csrf.exempt
+@login_required
+def delete_file_type():
+    """Delete a file type."""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'File type name is required'})
+        
+        if name not in FILE_TYPES:
+            return jsonify({'success': False, 'message': 'File type not found'})
+        
+        # Remove from all files that have this type
+        files = File.query.all()
+        for file in files:
+            if file.type_of_file:
+                try:
+                    if file.type_of_file.startswith('['):
+                        types = json.loads(file.type_of_file)
+                        if name in types:
+                            types = [t for t in types if t != name]
+                            file.type_of_file = json.dumps(types) if types else None
+                    else:
+                        types = [t.strip() for t in file.type_of_file.split(',')]
+                        if name in types:
+                            types = [t for t in types if t != name]
+                            file.type_of_file = ', '.join(types) if types else None
+                except:
+                    pass
+        
+        # Remove from FILE_TYPES list
+        FILE_TYPES.remove(name)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'File type deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})

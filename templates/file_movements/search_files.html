@@ -86,13 +86,22 @@
                                placeholder="File No., Subject, Details, Institution...">
                     </div>
                     
-                    <!-- Type of File and Status -->
+                    <!-- Type of File, Category and Status -->
                     <div class="col-md-3">
                         <label class="form-label">Type of File:</label>
                         <select class="form-select" name="file_type">
                             <option value="">All</option>
                             {% for ft in file_types %}
                             <option value="{{ ft }}" {{ 'selected' if file_type == ft else '' }}>{{ ft }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Category:</label>
+                        <select class="form-select" name="category">
+                            <option value="">All</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {{ 'selected' if category == cat else '' }}>{{ cat }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -156,7 +165,7 @@
                         <a href="{{ url_for('file_movements.search_files') }}" class="btn btn-secondary" title="Clear Filters">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
-                        <a href="{{ url_for('file_movements.export_search_results', q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution) }}" 
+                        <a href="{{ url_for('file_movements.export_search_results', q=general_search, file_type=file_type, category=category, status=status, file_status=file_status, institution=institution) }}" 
                            class="btn btn-success" title="Export to CSV">
                             <i class="bi bi-download"></i> Export CSV
                         </a>
@@ -245,14 +254,14 @@
                 <ul class="pagination justify-content-center">
                     {% if pagination.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.prev_num, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Previous</a>
+                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.prev_num, q=general_search, file_type=file_type, category=category, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Previous</a>
                     </li>
                     {% endif %}
                     
                     {% for p in pagination.iter_pages() %}
                         {% if p %}
                         <li class="page-item {{ 'active' if p == pagination.page else '' }}">
-                            <a class="page-link" href="{{ url_for('file_movements.search_files', page=p, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">{{ p }}</a>
+                            <a class="page-link" href="{{ url_for('file_movements.search_files', page=p, q=general_search, file_type=file_type, category=category, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">{{ p }}</a>
                         </li>
                         {% else %}
                         <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -261,7 +270,7 @@
                     
                     {% if pagination.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.next_num, q=general_search, file_type=file_type, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Next</a>
+                        <a class="page-link" href="{{ url_for('file_movements.search_files', page=pagination.next_num, q=general_search, file_type=file_type, category=category, status=status, file_status=file_status, institution=institution, from_year=from_year, to_year=to_year) }}">Next</a>
                     </li>
                     {% endif %}
                 </ul>

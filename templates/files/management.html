@@ -622,7 +622,17 @@
                         
                         <!-- Categories -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Category</label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">Category</label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal" title="Add New Category">
+                                        <i class="bi bi-plus-circle"></i> Add
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal" title="Manage Categories">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
                             <div class="category-checkboxes">
                                 <div class="checkbox-grid">
                                     {% for cat in categories %}
@@ -640,7 +650,17 @@
                         
                         <!-- Type of File -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Type of File</label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">Type of File</label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addFileTypeModal" title="Add New File Type">
+                                        <i class="bi bi-plus-circle"></i> Add
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#manageFileTypesModal" title="Manage File Types">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
                             <div class="type-checkboxes">
                                 <div class="checkbox-grid">
                                     {% for ft in file_types %}
@@ -5664,5 +5684,347 @@
             }
         }
     });
+</script>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newCategoryName" class="form-label">Category Name</label>
+                    <input type="text" class="form-control" id="newCategoryName" placeholder="Enter category name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addNewCategory()">Add Category</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Categories Modal -->
+<div class="modal fade" id="manageCategoriesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Categories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Category Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            {% for cat in categories %}
+                            <tr data-category="{{ cat }}">
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm category-name-input" value="{{ cat }}" data-original="{{ cat }}" readonly>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-warning edit-category-btn" onclick="editCategory(this, '{{ cat }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success save-category-btn d-none" onclick="saveCategory(this, '{{ cat }}')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCategory('{{ cat }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add File Type Modal -->
+<div class="modal fade" id="addFileTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New File Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newFileTypeName" class="form-label">File Type Name</label>
+                    <input type="text" class="form-control" id="newFileTypeName" placeholder="Enter file type name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addNewFileType()">Add File Type</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage File Types Modal -->
+<div class="modal fade" id="manageFileTypesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage File Types</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>File Type Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fileTypesTableBody">
+                            {% for ft in file_types %}
+                            <tr data-filetype="{{ ft }}">
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm filetype-name-input" value="{{ ft }}" data-original="{{ ft }}" readonly>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-warning edit-filetype-btn" onclick="editFileType(this, '{{ ft }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success save-filetype-btn d-none" onclick="saveFileType(this, '{{ ft }}')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFileType('{{ ft }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Category Management Functions
+function addNewCategory() {
+    const categoryName = document.getElementById('newCategoryName').value.trim();
+    if (!categoryName) {
+        alert('Please enter a category name');
+        return;
+    }
+    
+    fetch('{{ url_for("files.add_category") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: categoryName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Category added successfully! Please reload the page.');
+            bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error adding category: ' + error);
+    });
+}
+
+function editCategory(btn, oldName) {
+    const row = btn.closest('tr');
+    const input = row.querySelector('.category-name-input');
+    const editBtn = row.querySelector('.edit-category-btn');
+    const saveBtn = row.querySelector('.save-category-btn');
+    
+    input.readOnly = false;
+    input.focus();
+    editBtn.classList.add('d-none');
+    saveBtn.classList.remove('d-none');
+}
+
+function saveCategory(btn, oldName) {
+    const row = btn.closest('tr');
+    const input = row.querySelector('.category-name-input');
+    const newName = input.value.trim();
+    
+    if (!newName) {
+        alert('Category name cannot be empty');
+        return;
+    }
+    
+    fetch('{{ url_for("files.update_category") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ old_name: oldName, new_name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Category updated successfully! Please reload the page.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error updating category: ' + error);
+    });
+}
+
+function deleteCategory(categoryName) {
+    if (!confirm(`Delete category "${categoryName}"?\n\nNote: This will not delete files, but will remove this category from them.`)) {
+        return;
+    }
+    
+    fetch('{{ url_for("files.delete_category") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: categoryName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Category deleted successfully! Please reload the page.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting category: ' + error);
+    });
+}
+
+// File Type Management Functions
+function addNewFileType() {
+    const fileTypeName = document.getElementById('newFileTypeName').value.trim();
+    if (!fileTypeName) {
+        alert('Please enter a file type name');
+        return;
+    }
+    
+    fetch('{{ url_for("files.add_file_type") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: fileTypeName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('File type added successfully! Please reload the page.');
+            bootstrap.Modal.getInstance(document.getElementById('addFileTypeModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error adding file type: ' + error);
+    });
+}
+
+function editFileType(btn, oldName) {
+    const row = btn.closest('tr');
+    const input = row.querySelector('.filetype-name-input');
+    const editBtn = row.querySelector('.edit-filetype-btn');
+    const saveBtn = row.querySelector('.save-filetype-btn');
+    
+    input.readOnly = false;
+    input.focus();
+    editBtn.classList.add('d-none');
+    saveBtn.classList.remove('d-none');
+}
+
+function saveFileType(btn, oldName) {
+    const row = btn.closest('tr');
+    const input = row.querySelector('.filetype-name-input');
+    const newName = input.value.trim();
+    
+    if (!newName) {
+        alert('File type name cannot be empty');
+        return;
+    }
+    
+    fetch('{{ url_for("files.update_file_type") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ old_name: oldName, new_name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('File type updated successfully! Please reload the page.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error updating file type: ' + error);
+    });
+}
+
+function deleteFileType(fileTypeName) {
+    if (!confirm(`Delete file type "${fileTypeName}"?\n\nNote: This will not delete files, but will remove this type from them.`)) {
+        return;
+    }
+    
+    fetch('{{ url_for("files.delete_file_type") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: fileTypeName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('File type deleted successfully! Please reload the page.');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting file type: ' + error);
+    });
+}
 </script>
 {% endblock %}

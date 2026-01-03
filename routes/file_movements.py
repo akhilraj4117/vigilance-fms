@@ -56,6 +56,7 @@ def search_files():
     # Get filter parameters
     general_search = request.args.get('q', '').strip()
     file_type = request.args.get('file_type', '')
+    category = request.args.get('category', '')
     status = request.args.get('status', '')
     file_status = request.args.get('file_status', 'all')  # active/closed/all
     institution = request.args.get('institution', '')
@@ -79,6 +80,10 @@ def search_files():
     # Filter by file type
     if file_type:
         query = query.filter(File.type_of_file.ilike(f'%{file_type}%'))
+    
+    # Filter by category
+    if category:
+        query = query.filter(File.category.ilike(f'%{category}%'))
     
     # Filter by status
     if status:
@@ -110,17 +115,22 @@ def search_files():
     # Get institutions for dropdown
     institutions = Institution.query.order_by(Institution.name.asc()).all()
     
+    # Get unique categories from database
+    from routes.files import CATEGORIES
+    
     return render_template('file_movements/search_files.html',
                           files=files,
                           pagination=pagination,
                           general_search=general_search,
                           file_type=file_type,
+                          category=category,
                           status=status,
                           file_status=file_status,
                           institution=institution,
                           from_year=from_year,
                           to_year=to_year,
                           file_types=FILE_TYPES,
+                          categories=CATEGORIES,
                           statuses=FILE_STATUSES,
                           institutions=institutions)
 
