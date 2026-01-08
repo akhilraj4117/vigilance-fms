@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+        <div class="session-info">
+            <span class="transfer-type-badge {{ transfer_type }}">
+                {{ transfer_type.title() }} Transfer
+            </span>
+            <span class="year-badge">
+                {% if month %}{{ month }} {% endif %}{{ year }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_employees }}</h3>
+                <p>Total Employees</p>
+            </div>
+            <a href="{{ url_for('cadre_list') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card stat-info">
+            <div class="stat-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.applied_employees }}</h3>
+                <p>Applied for Transfer</p>
+            </div>
+            <a href="{{ url_for('applied_employees') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card stat-warning">
+            <div class="stat-icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="stat-info">
+                {% if autofill_ran %}
+                <h3>{{ stats.draft_transfers }}</h3>
+                {% else %}
+                <h3>--</h3>
+                {% endif %}
+                <p>Draft Transfers</p>
+            </div>
+            {% if autofill_ran %}
+            <a href="{{ url_for('draft_list') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+            {% else %}
+            <span class="stat-link disabled">Run Auto-fill first</span>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card stat-success">
+            <div class="stat-icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="stat-info">
+                {% if final_exists %}
+                <h3>{{ stats.confirmed_transfers }}</h3>
+                {% else %}
+                <h3>--</h3>
+                {% endif %}
+                <p>Confirmed Transfers</p>
+            </div>
+            {% if final_exists %}
+            <a href="{{ url_for('final_list') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+            {% else %}
+            <span class="stat-link disabled">Confirm Draft first</span>
+            {% endif %}
+        </div>
+        
+        <div class="stat-card stat-vacancy">
+            <div class="stat-icon">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_vacancy }}</h3>
+                <p>Total Vacancy</p>
+            </div>
+            <a href="{{ url_for('vacancy_list') }}" class="stat-link">Manage <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card stat-filled">
+            <div class="stat-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.filled_vacancy }}</h3>
+                <p>Vacancy Filled</p>
+            </div>
+            <span class="stat-percentage">
+                {% if stats.total_vacancy > 0 %}
+                {{ ((stats.filled_vacancy / stats.total_vacancy) * 100)|round(1) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+        <div class="action-cards">
+            <a href="{{ url_for('add_employee') }}" class="action-card">
+                <i class="fas fa-user-plus"></i>
+                <span>Add Employee</span>
+            </a>
+            <a href="{{ url_for('application_list') }}" class="action-card">
+                <i class="fas fa-file-signature"></i>
+                <span>Mark Applications</span>
+            </a>
+            <a href="{{ url_for('vacancy_list') }}" class="action-card">
+                <i class="fas fa-edit"></i>
+                <span>Update Vacancy</span>
+            </a>
+            <a href="{{ url_for('draft_list') }}" class="action-card">
+                <i class="fas fa-magic"></i>
+                <span>Auto-fill Vacancies</span>
+            </a>
+            <a href="{{ url_for('export_csv', list_type='cadre') }}" class="action-card">
+                <i class="fas fa-download"></i>
+                <span>Export Cadre List</span>
+            </a>
+            <a href="{{ url_for('export_csv', list_type='draft') }}" class="action-card">
+                <i class="fas fa-file-export"></i>
+                <span>Export Draft List</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="district-summary">
+        <h2><i class="fas fa-map-marker-alt"></i> District Summary</h2>
+        <div class="district-grid" id="district-summary">
+            <!-- Will be populated via JavaScript -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load district summary
+fetch('/api/vacancy-stats')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('district-summary');
+        container.innerHTML = data.map(d => `
+            <div class="district-card">
+                <h4>${d.district}</h4>
+                <div class="district-stats">
+                    <span class="vacancy-count" title="Vacancy Reported">${d.vacancy}</span>
+                    <span class="filled-count" title="Filled">${d.filled}</span>
+                    <span class="remaining-count" title="Remaining">${d.remaining}</span>
+                </div>
+                <div class="district-progress">
+                    <div class="progress-bar" style="width: ${d.vacancy > 0 ? (d.filled / d.vacancy * 100) : 0}%"></div>
+                </div>
+            </div>
+        `).join('');
+    });
+</script>
+{% endblock %}

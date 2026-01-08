@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Applied Employees - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-check-circle"></i> Applied Employees</h1>
+        <div class="header-actions">
+            <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
+                <i class="fas fa-magic"></i> Auto-fill Vacancies
+            </button>
+            <a href="{{ url_for('export_csv', list_type='applied') }}" class="btn btn-secondary">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+            <form method="POST" action="{{ url_for('clear_applied_list') }}" style="display:inline" 
+                  onsubmit="return confirm('Clear ALL applied employees? This will remove all applications and preferences. This cannot be undone!')">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="form-group">
+                <label for="district">Filter by Current District</label>
+                <select name="district" id="district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == district_filter %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pref_district">Filter by Preference 1</label>
+                <select name="pref_district" id="pref_district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Preferences</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == pref_district %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group search-group">
+                <label for="tableSearch">Search</label>
+                <div class="search-box-inline">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tableSearch" class="form-control" placeholder="Search by Name or PEN..." onkeyup="filterTable()">
+                    <button type="button" class="search-clear" onclick="clearSearch()" title="Clear">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% if district_filter or pref_district %}
+            <a href="{{ url_for('applied_employees') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear Filters
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table applied-table" id="appliedTable">
+            <thead>
+                <tr>
+                    <th>Sl No</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 1, 'number')">PEN</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 2, 'text')">Name</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 3, 'text')">Institution</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 4, 'text')">Current District</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 5, 'duration')">Duration</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 6, 'text')">Weightage</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'text')">Pref 1</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Receipt</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr class="{% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %}>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ emp[0] }}</td>
+                    <td>{{ emp[1] }}</td>
+                    <td>{{ emp[2] }}</td>
+                    <td>{{ emp[3] }}</td>
+                    <td>{{ format_duration(emp[4]) }}</td>
+                    <td>
+                        {% if emp[6] == 'Yes' %}
+                        <span class="badge badge-warning" title="{{ emp[7] or '' }}">Yes</span>
+                        {% else %}
+                        <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td class="pref-cell">{{ emp[11] or '-' }}</td>
+                    <td>{{ emp[8] or '-' }}</td>
+                    <td class="action-cell">
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="showDetails('{{ emp[0] }}', '{{ emp[1] }}', '{{ emp[11] }}', '{{ emp[12] }}', '{{ emp[13] }}', '{{ emp[14] }}', '{{ emp[15] }}', '{{ emp[16] }}', '{{ emp[17] }}', '{{ emp[18] }}')"
+                                title="View All Preferences">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <form method="POST" action="{{ url_for('remove_from_applied', pen=emp[0]) }}" 
+                              style="display:inline" onsubmit="return confirm('Remove this employee from applied list?')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="no-data">
+                        <i class="fas fa-inbox"></i>
+                        <p>No applied employees found</p>
+                        <a href="{{ url_for('application_list') }}" class="btn btn-primary">Mark Applications</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-footer">
+        <span class="record-count">Total: {{ employees|length }} employee(s)</span>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h2><i class="fas fa-list-ol"></i> All Preferences</h2>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- Auto-fill Modal -->
+<div id="autoFillModal" class="modal">
+    <div class="modal-content modal-lg">
+        <span class="modal-close" onclick="closeAutoFillModal()">&times;</span>
+        <h2><i class="fas fa-magic"></i> Auto-fill Vacancies</h2>
+        <form method="POST" action="{{ url_for('auto_fill_vacancies') }}">
+            <div class="auto-fill-info">
+                <p><strong>This will automatically assign transfers based on:</strong></p>
+                <div class="priority-list">
+                    <div class="priority-item priority-special">
+                        <span class="priority-badge">PRIORITY 0</span>
+                        <span class="priority-text">Employees with <strong>SPECIAL PRIORITY</strong> - Processed FIRST, get preferences in order</span>
+                    </div>
+                    <div class="priority-item priority-weightage">
+                        <span class="priority-badge">PRIORITY 1</span>
+                        <span class="priority-text">Employees with <strong>WEIGHTAGE</strong> - Get preferences in order if vacancy available</span>
+                    </div>
+                    <div class="priority-item priority-normal">
+                        <span class="priority-badge">PRIORITY 2</span>
+                        <span class="priority-text">Employees <strong>WITHOUT weightage</strong> - Junior employees first (least duration)</span>
+                    </div>
+                </div>
+                <div class="cascade-info">
+                    <i class="fas fa-sync-alt"></i>
+                    <span><strong>CASCADING VACANCIES:</strong> When an employee transfers out, their old district gets a NEW vacancy that can also be filled!</span>
+                </div>
+                <p class="note"><i class="fas fa-info-circle"></i> Employees already in Draft List will be skipped. Results will appear in Draft List.</p>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="enable_against">
+                    <span>Enable 'Against' Transfers (Displace senior employees if no vacancy available)</span>
+                </label>
+                <p class="help-text">If enabled: When an applicant cannot get ANY of their 8 preferences, the senior-most employee in their Pref 1 district will be displaced.</p>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeAutoFillModal()">Cancel</button>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-rocket"></i> Start Auto-fill
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showDetails(pen, name, p1, p2, p3, p4, p5, p6, p7, p8) {
+    const prefs = [p1, p2, p3, p4, p5, p6, p7, p8].filter(p => p && p !== 'None');
+    let html = `<h3>${name} (${pen})</h3><div class="pref-list">`;
+    prefs.forEach((p, i) => {
+        html += `<div class="pref-item"><span class="pref-num">${i+1}</span><span class="pref-value">${p}</span></div>`;
+    });
+    if (prefs.length === 0) {
+        html += '<p>No preferences set</p>';
+    }
+    html += '</div>';
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('detailsModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+}
+
+// Close modal on outside click
+window.onclick = function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+}
+
+function openAutoFillModal() {
+    document.getElementById('autoFillModal').style.display = 'flex';
+}
+
+function closeAutoFillModal() {
+    document.getElementById('autoFillModal').style.display = 'none';
+}
+
+// Search/Filter table
+function filterTable() {
+    const searchInput = document.getElementById('tableSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const clearBtn = document.querySelector('.search-clear');
+    const table = document.getElementById('appliedTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        if (row.querySelector('.no-data')) return;
+        
+        const pen = (row.cells[1]?.textContent || '').toLowerCase();
+        const name = (row.cells[2]?.textContent || '').toLowerCase();
+        const institution = (row.cells[3]?.textContent || '').toLowerCase();
+        
+        if (pen.includes(searchTerm) || name.includes(searchTerm) || institution.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update record count
+    const countEl = document.querySelector('.record-count');
+    if (countEl) {
+        countEl.textContent = `Showing: ${visibleCount} of {{ employees|length }} employee(s)`;
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('tableSearch');
+    searchInput.value = '';
+    filterTable();
+    searchInput.focus();
+    document.querySelector('.record-count').textContent = 'Total: {{ employees|length }} employee(s)';
+}
+</script>
+
+<style>
+.search-group {
+    min-width: 250px;
+}
+.search-box-inline {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}
+.search-box-inline i.fa-search {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+.search-box-inline input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    outline: none;
+    min-width: 150px;
+}
+.search-box-inline input::placeholder {
+    color: var(--text-muted);
+}
+.search-box-inline .search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    display: none;
+}
+.search-box-inline .search-clear:hover {
+    color: var(--danger-color);
+}
+</style>
+{% endblock %}

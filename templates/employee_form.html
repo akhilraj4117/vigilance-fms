@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Employee - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1><i class="fas fa-{% if action == 'Add' %}user-plus{% else %}user-edit{% endif %}"></i> {{ action }} Employee</h1>
+        <a href="{{ url_for('cadre_list') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+    
+    <form method="POST" class="employee-form">
+        <div class="form-card">
+            <h3><i class="fas fa-id-card"></i> Basic Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pen">PEN (Employee ID) *</label>
+                    <input type="text" name="pen" id="pen" class="form-control" 
+                           value="{{ employee[0] if employee else '' }}"
+                           {% if action == 'Edit' %}readonly{% endif %} required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" name="name" id="name" class="form-control" 
+                           value="{{ employee[1] if employee else '' }}" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="designation">Designation</label>
+                    <select name="designation" id="designation" class="form-control">
+                        <option value="JPHN Gr I" {% if not employee or employee[2] == 'JPHN Gr I' %}selected{% endif %}>JPHN Gr I</option>
+                        <option value="JPHN Gr II" {% if employee and employee[2] == 'JPHN Gr II' %}selected{% endif %}>JPHN Gr II</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contact">Contact Number</label>
+                    <input type="text" name="contact" id="contact" class="form-control" 
+                           value="{{ employee[12] if employee else '' }}" placeholder="Mobile Number">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-card">
+            <h3><i class="fas fa-building"></i> Posting Details</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="institution">Institution</label>
+                    <input type="text" name="institution" id="institution" class="form-control" 
+                           value="{{ employee[3] if employee else '' }}" placeholder="Current Institution">
+                </div>
+                
+                <div class="form-group">
+                    <label for="district">District</label>
+                    <select name="district" id="district" class="form-control">
+                        <option value="">Select District</option>
+                        {% for d in districts %}
+                        <option value="{{ d }}" {% if employee and employee[4] == d %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-card">
+            <h3><i class="fas fa-calendar-alt"></i> Important Dates</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="entry_date">Entry Date (Service)</label>
+                    <input type="text" name="entry_date" id="entry_date" class="form-control date-input" 
+                           value="{{ employee[5] if employee else '' }}" placeholder="DD-MM-YYYY">
+                </div>
+                
+                <div class="form-group">
+                    <label for="retirement_date">Retirement Date</label>
+                    <input type="text" name="retirement_date" id="retirement_date" class="form-control date-input" 
+                           value="{{ employee[6] if employee else '' }}" placeholder="DD-MM-YYYY">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="district_join_date">District Join Date</label>
+                    <input type="text" name="district_join_date" id="district_join_date" class="form-control date-input" 
+                           value="{{ employee[7] if employee else '' }}" placeholder="DD-MM-YYYY">
+                </div>
+                
+                <div class="form-group">
+                    <label for="institution_join_date">Institution Join Date</label>
+                    <input type="text" name="institution_join_date" id="institution_join_date" class="form-control date-input" 
+                           value="{{ employee[9] if employee else '' }}" placeholder="DD-MM-YYYY">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-card">
+            <h3><i class="fas fa-star"></i> Weightage Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" name="weightage" id="weightage" 
+                               {% if employee and employee[10] == 'Yes' %}checked{% endif %}>
+                        Has Weightage
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group" id="weightage-details-group">
+                <label for="weightage_details">Weightage Details</label>
+                <textarea name="weightage_details" id="weightage_details" class="form-control" 
+                          rows="3" placeholder="Enter weightage reason/details">{{ employee[11] if employee else '' }}</textarea>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('cadre_list') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> {{ action }} Employee
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle weightage details visibility
+document.getElementById('weightage').addEventListener('change', function() {
+    document.getElementById('weightage-details-group').style.display = this.checked ? 'block' : 'none';
+});
+
+// Date input formatting
+document.querySelectorAll('.date-input').forEach(input => {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) value = value.slice(0,2) + '-' + value.slice(2);
+        if (value.length >= 5) value = value.slice(0,5) + '-' + value.slice(5,9);
+        e.target.value = value;
+    });
+});
+</script>
+{% endblock %}

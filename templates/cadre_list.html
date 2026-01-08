@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block title %}Cadre List - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> Cadre List</h1>
+        <div class="header-actions">
+            <button type="button" class="btn btn-success" onclick="openUploadModal()">
+                <i class="fas fa-file-upload"></i> Upload Data
+            </button>
+            <a href="{{ url_for('add_employee') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Employee
+            </a>
+            <a href="{{ url_for('export_csv', list_type='cadre') }}" class="btn btn-secondary">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="form-group">
+                <label for="district">Filter by District</label>
+                <select name="district" id="district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == district_filter %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="search">Search</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       value="{{ search }}" placeholder="Name, PEN or Institution">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if district_filter or search %}
+            <a href="{{ url_for('cadre_list') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table" id="cadreTable">
+            <thead>
+                <tr>
+                    <th>Sl No</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 1, 'number')">PEN</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 2, 'text')">Name</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 3, 'text')">Designation</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 4, 'text')">Institution</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 5, 'text')">District</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 6, 'date')">District Join Date</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 7, 'duration')">Duration</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 8, 'text')">Weightage</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('cadreTable'), 9, 'text')">Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr class="{% if emp[0] in applied_pens %}row-applied{% endif %}">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ emp[0] }}</td>
+                    <td>{{ emp[1] }}</td>
+                    <td>{{ emp[2] or 'JPHN Gr I' }}</td>
+                    <td>{{ emp[3] }}</td>
+                    <td>{{ emp[4] }}</td>
+                    <td>{{ emp[7] or '-' }}</td>
+                    <td>{{ format_duration(emp[8]) }}</td>
+                    <td>
+                        {% if emp[10] == 'Yes' %}
+                        <span class="badge badge-warning" title="{{ emp[11] or '' }}">Yes</span>
+                        {% else %}
+                        <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp[0] in applied_pens %}
+                        <span class="badge badge-success">Applied</span>
+                        {% else %}
+                        <span class="badge badge-info">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="action-cell">
+                        <a href="{{ url_for('edit_employee', pen=emp[0]) }}" class="btn btn-sm btn-info" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('delete_employee', pen=emp[0]) }}" 
+                              style="display:inline" onsubmit="return confirm('Delete this employee?')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" class="no-data">
+                        <i class="fas fa-inbox"></i>
+                        <p>No employees found</p>
+                        <a href="{{ url_for('add_employee') }}" class="btn btn-primary">Add First Employee</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-footer">
+        <span class="record-count">Total: {{ employees|length }} employee(s)</span>
+    </div>
+</div>
+
+<!-- Upload Data Modal -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content modal-lg">
+        <span class="modal-close" onclick="closeUploadModal()">&times;</span>
+        <h2><i class="fas fa-file-upload"></i> Upload Cadre Data</h2>
+        
+        <form method="POST" action="{{ url_for('upload_cadre_data') }}" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-info">
+                <p><strong>Supported file formats:</strong></p>
+                <div class="format-list">
+                    <div class="format-item">
+                        <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
+                        <span><strong>PDF</strong> - Cadre Register (one employee per page)</span>
+                    </div>
+                    <div class="format-item">
+                        <i class="fas fa-file-csv" style="color: #28a745;"></i>
+                        <span><strong>CSV</strong> - Comma-separated values</span>
+                    </div>
+                    <div class="format-item">
+                        <i class="fas fa-file-excel" style="color: #217346;"></i>
+                        <span><strong>Excel</strong> - .xlsx or .xls files</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="file"><i class="fas fa-file"></i> Select File</label>
+                <input type="file" name="file" id="file" class="form-control" 
+                       accept=".pdf,.csv,.xlsx,.xls" required>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="replace_existing" id="replace_existing">
+                    <span>Replace existing data (will clear all current employees)</span>
+                </label>
+                <p class="help-text text-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Warning: If checked, ALL existing employees will be deleted before import!
+                </p>
+            </div>
+            
+            <div class="csv-format-info">
+                <h4><i class="fas fa-info-circle"></i> Expected CSV/Excel Format:</h4>
+                <p>Columns: <code>Name, PEN, Designation, Institution, District, Entry Date, Retirement Date, District Join Date, Institution Join Date, Weightage, Weightage Details, Contact</code></p>
+            </div>
+            
+            <!-- Progress Bar Section -->
+            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                <div class="progress-header">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="progressStatus">Uploading file...</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progressPercent">0%</span>
+                    <span id="progressSize"></span>
+                </div>
+            </div>
+            
+            <div class="modal-actions" id="uploadActions">
+                <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                <button type="submit" class="btn btn-success btn-lg" id="uploadBtn">
+                    <i class="fas fa-upload"></i> Upload & Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.upload-info {
+    background: var(--bg-hover);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+.format-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.format-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: var(--bg-card);
+    border-radius: 4px;
+}
+.format-item i {
+    font-size: 1.5rem;
+    width: 30px;
+    text-align: center;
+}
+.csv-format-info {
+    background: rgba(14, 165, 233, 0.1);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border-left: 3px solid var(--info-color);
+}
+.csv-format-info h4 {
+    margin-bottom: 0.5rem;
+    color: var(--info-color);
+}
+.csv-format-info code {
+    background: var(--bg-hover);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+.text-danger {
+    color: var(--danger-color);
+}
+input[type="file"].form-control {
+    padding: 0.5rem;
+}
+
+/* Progress Bar Styles */
+.upload-progress {
+    background: var(--bg-hover);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border: 2px solid var(--primary-color);
+}
+.progress-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+.progress-header i {
+    font-size: 1.25rem;
+}
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+#progressPercent {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+.upload-progress.processing .progress-bar {
+    animation: pulse 1s infinite alternate;
+}
+@keyframes pulse {
+    0% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+}
+
+window.onclick = function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form submission with progress tracking
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const file = document.getElementById('file').files[0];
+    if (!file) {
+        alert('Please select a file to upload');
+        return false;
+    }
+    
+    const replace = document.getElementById('replace_existing').checked;
+    if (replace) {
+        if (!confirm('WARNING: This will DELETE ALL existing employees and replace with uploaded data. Are you sure?')) {
+            return false;
+        }
+    }
+    
+    // Show progress bar
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressSize = document.getElementById('progressSize');
+    const progressStatus = document.getElementById('progressStatus');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadActions = document.getElementById('uploadActions');
+    
+    progressDiv.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    
+    // Create FormData
+    const formData = new FormData(this);
+    
+    // Create XMLHttpRequest for progress tracking
+    const xhr = new XMLHttpRequest();
+    
+    // Upload progress
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            progressSize.textContent = formatFileSize(e.loaded) + ' / ' + formatFileSize(e.total);
+            
+            if (percent === 100) {
+                progressStatus.textContent = 'Processing file... Please wait';
+                progressDiv.classList.add('processing');
+            }
+        }
+    });
+    
+    // Request complete
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            progressStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Upload complete! Redirecting...';
+            progressDiv.classList.remove('processing');
+            // Redirect to cadre list page
+            setTimeout(function() {
+                window.location.href = '{{ url_for("cadre_list") }}';
+            }, 1000);
+        } else {
+            progressStatus.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> Error occurred!';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Retry Upload';
+        }
+    });
+    
+    // Error handling
+    xhr.addEventListener('error', function() {
+        progressStatus.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> Upload failed!';
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Retry Upload';
+    });
+    
+    // Send request
+    xhr.open('POST', '{{ url_for("upload_cadre_data") }}');
+    xhr.send(formData);
+});
+</script>
+{% endblock %}

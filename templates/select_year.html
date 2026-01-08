@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Select Year - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="selection-container">
+    <div class="selection-header">
+        <h1><i class="fas fa-calendar"></i> General Transfer - Select Year</h1>
+        <p>Choose a year to manage transfer data</p>
+    </div>
+    
+    <form action="{{ url_for('set_session') }}" method="POST" class="selection-form">
+        <input type="hidden" name="transfer_type" value="general">
+        
+        <div class="year-selection">
+            <div class="form-group">
+                <label for="year"><i class="fas fa-calendar-check"></i> Select Year</label>
+                <select name="year" id="year" class="form-control">
+                    {% for y in range(current_year + 1, current_year - 10, -1) %}
+                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        {% if available_years %}
+        <div class="existing-data">
+            <h3>Existing Transfer Data</h3>
+            <div class="year-badges">
+                {% for year in available_years %}
+                <button type="submit" name="year" value="{{ year }}" class="year-badge">
+                    <i class="fas fa-database"></i> {{ year }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="form-actions">
+            <a href="{{ url_for('select_transfer') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i> Continue
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
