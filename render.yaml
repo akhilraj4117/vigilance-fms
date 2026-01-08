@@ -13,11 +13,13 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: FLASK_CONFIG
+        value: production
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
         sync: false  # Set this manually in Render dashboard with Supabase URL
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.11
     autoDeploy: true
     healthCheckPath: /api/health
