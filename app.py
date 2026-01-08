@@ -1328,6 +1328,93 @@ def clear_applied_list():
     return redirect(url_for('applied_employees'))
 
 
+@app.route('/applied/edit/<pen>', methods=['GET', 'POST'])
+@login_required
+@requires_transfer_session
+def edit_applied(pen):
+    """Edit applied employee details"""
+    prefix = get_table_prefix()
+    
+    if request.method == 'POST':
+        try:
+            receipt_numbers = request.form.get('receipt_numbers', '')
+            applied_date = request.form.get('applied_date', '')
+            special_priority = 'Yes' if request.form.get('special_priority') else 'No'
+            has_weightage = request.form.get('has_weightage')
+            weightage_details = request.form.get('weightage_details', '')
+            weightage_priority = int(request.form.get('weightage_priority', 5))
+            
+            # Get preferences
+            prefs = []
+            for i in range(1, 9):
+                prefs.append(request.form.get(f'pref{i}', ''))
+            
+            # Update transfer_applied
+            db.session.execute(db.text(f"""
+                UPDATE {prefix}transfer_applied
+                SET receipt_numbers = :receipt, applied_date = :applied_date,
+                    special_priority = :special_priority,
+                    pref1 = :p1, pref2 = :p2, pref3 = :p3, pref4 = :p4,
+                    pref5 = :p5, pref6 = :p6, pref7 = :p7, pref8 = :p8
+                WHERE pen = :pen
+            """), {
+                'receipt': receipt_numbers, 'applied_date': applied_date,
+                'special_priority': special_priority,
+                'p1': prefs[0], 'p2': prefs[1], 'p3': prefs[2], 'p4': prefs[3],
+                'p5': prefs[4], 'p6': prefs[5], 'p7': prefs[6], 'p8': prefs[7],
+                'pen': pen
+            })
+            
+            # Update weightage in jphn table
+            if has_weightage:
+                db.session.execute(db.text(f"""
+                    UPDATE {prefix}jphn
+                    SET weightage = 'Yes', weightage_details = :details, weightage_priority = :priority
+                    WHERE pen = :pen
+                """), {'details': weightage_details, 'priority': weightage_priority, 'pen': pen})
+            else:
+                db.session.execute(db.text(f"""
+                    UPDATE {prefix}jphn
+                    SET weightage = 'No', weightage_details = '', weightage_priority = 5
+                    WHERE pen = :pen
+                """), {'pen': pen})
+            
+            db.session.commit()
+            flash('Application updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'error')
+        
+        return redirect(url_for('applied_employees'))
+    
+    # GET request - return employee data as JSON for modal
+    try:
+        result = db.session.execute(db.text(f"""
+            SELECT j.pen, j.name, j.institution, j.district, j.weightage, j.weightage_details, j.weightage_priority,
+                   t.receipt_numbers, t.applied_date, t.special_priority,
+                   t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE j.pen = :pen
+        """), {'pen': pen})
+        emp = result.fetchone()
+        
+        if emp:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'pen': emp[0], 'name': emp[1], 'institution': emp[2], 'district': emp[3],
+                    'weightage': emp[4], 'weightage_details': emp[5] or '', 'weightage_priority': emp[6] or 5,
+                    'receipt_numbers': emp[7] or '', 'applied_date': emp[8] or '', 'special_priority': emp[9],
+                    'pref1': emp[10] or '', 'pref2': emp[11] or '', 'pref3': emp[12] or '', 'pref4': emp[13] or '',
+                    'pref5': emp[14] or '', 'pref6': emp[15] or '', 'pref7': emp[16] or '', 'pref8': emp[17] or ''
+                }
+            })
+        return jsonify({'success': False, 'error': 'Employee not found'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 # ==================== DRAFT LIST ROUTES ====================
 
 @app.route('/draft')

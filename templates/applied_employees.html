@@ -99,6 +99,11 @@
                                 title="View All Preferences">
                             <i class="fas fa-eye"></i>
                         </button>
+                        <button type="button" class="btn btn-sm btn-warning" 
+                                onclick="openEditModal('{{ emp[0] }}')"
+                                title="Edit Application">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <form method="POST" action="{{ url_for('remove_from_applied', pen=emp[0]) }}" 
                               style="display:inline" onsubmit="return confirm('Remove this employee from applied list?')">
                             <button type="submit" class="btn btn-sm btn-danger" title="Remove">
@@ -181,6 +186,149 @@
     </div>
 </div>
 
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content modal-lg">
+        <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        <h2><i class="fas fa-edit"></i> Edit Application</h2>
+        <form method="POST" id="editForm" action="">
+            <div class="selected-employee-edit" id="editSelectedEmployee"></div>
+            
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_receipt_numbers"><i class="fas fa-receipt"></i> Receipt Number</label>
+                        <input type="text" name="receipt_numbers" id="edit_receipt_numbers" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_applied_date"><i class="fas fa-calendar"></i> Applied Date</label>
+                        <input type="text" name="applied_date" id="edit_applied_date" class="form-control" placeholder="DD-MM-YYYY">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" name="special_priority" id="edit_special_priority">
+                            <span>Special Priority</span>
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" name="has_weightage" id="edit_has_weightage" onchange="toggleEditWeightage()">
+                            <span>Has Weightage</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="weightage-fields" id="editWeightageFields" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_weightage_details">Weightage Reason</label>
+                            <input type="text" name="weightage_details" id="edit_weightage_details" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_weightage_priority">Priority Level</label>
+                            <select name="weightage_priority" id="edit_weightage_priority" class="form-control">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4><i class="fas fa-list-ol"></i> District Preferences (1-8)</h4>
+                <div class="preferences-grid">
+                    <div class="form-group">
+                        <label>Pref 1</label>
+                        <select name="pref1" id="edit_pref1" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 2</label>
+                        <select name="pref2" id="edit_pref2" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 3</label>
+                        <select name="pref3" id="edit_pref3" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 4</label>
+                        <select name="pref4" id="edit_pref4" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 5</label>
+                        <select name="pref5" id="edit_pref5" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 6</label>
+                        <select name="pref6" id="edit_pref6" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 7</label>
+                        <select name="pref7" id="edit_pref7" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 8</label>
+                        <select name="pref8" id="edit_pref8" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -216,6 +364,59 @@ function openAutoFillModal() {
 
 function closeAutoFillModal() {
     document.getElementById('autoFillModal').style.display = 'none';
+}
+
+// Edit Modal Functions
+function openEditModal(pen) {
+    fetch(`/applied/edit/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const emp = data.data;
+                
+                // Set form action
+                document.getElementById('editForm').action = `/applied/edit/${pen}`;
+                
+                // Set employee info
+                document.getElementById('editSelectedEmployee').innerHTML = `
+                    <strong>${emp.name}</strong> (PEN: ${emp.pen})<br>
+                    <small>${emp.institution} | ${emp.district}</small>
+                `;
+                
+                // Set form values
+                document.getElementById('edit_receipt_numbers').value = emp.receipt_numbers;
+                document.getElementById('edit_applied_date').value = emp.applied_date;
+                document.getElementById('edit_special_priority').checked = emp.special_priority === 'Yes';
+                document.getElementById('edit_has_weightage').checked = emp.weightage === 'Yes';
+                document.getElementById('edit_weightage_details').value = emp.weightage_details;
+                document.getElementById('edit_weightage_priority').value = emp.weightage_priority;
+                
+                // Show/hide weightage fields
+                document.getElementById('editWeightageFields').style.display = emp.weightage === 'Yes' ? 'block' : 'none';
+                
+                // Set preferences
+                for (let i = 1; i <= 8; i++) {
+                    document.getElementById(`edit_pref${i}`).value = emp[`pref${i}`] || '';
+                }
+                
+                // Show modal
+                document.getElementById('editModal').style.display = 'flex';
+            } else {
+                alert('Error loading employee data: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function toggleEditWeightage() {
+    const checked = document.getElementById('edit_has_weightage').checked;
+    document.getElementById('editWeightageFields').style.display = checked ? 'block' : 'none';
 }
 
 // Search/Filter table
@@ -299,6 +500,62 @@ function clearSearch() {
 }
 .search-box-inline .search-clear:hover {
     color: var(--danger-color);
+}
+
+/* Edit Modal Styles */
+.selected-employee-edit {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+.form-section {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+.form-section:last-of-type {
+    border-bottom: none;
+}
+.form-section h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.preferences-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+.preferences-grid .form-group {
+    margin-bottom: 0;
+}
+.preferences-grid label {
+    font-size: 0.75rem;
+}
+.preferences-grid .form-control {
+    padding: 0.35rem;
+    font-size: 0.8rem;
+}
+.weightage-fields {
+    background: var(--bg-hover);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+}
+.modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
 }
 </style>
 {% endblock %}
