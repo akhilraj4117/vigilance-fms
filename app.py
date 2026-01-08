@@ -1122,14 +1122,10 @@ def save_vacancy():
 def application_list():
     """View transfer applications - employees who haven't applied yet"""
     prefix = get_table_prefix()
-    district_filter = request.args.get('district', '')
+    district_filter = request.args.get('district', 'All Districts')  # Default to All Districts
     
     if not district_filter:
-        return render_template('application.html',
-                             employees=[],
-                             districts=DISTRICTS,
-                             district_filter='',
-                             format_duration=format_duration)
+        district_filter = 'All Districts'
     
     # Check if "All Districts" is selected
     if district_filter == 'All Districts':
@@ -1174,6 +1170,27 @@ def application_list():
                          district_filter=district_filter,
                          applied_count=applied_count,
                          format_duration=format_duration)
+
+
+@app.route('/application/check/<pen>')
+@login_required
+@requires_transfer_session
+def check_applied(pen):
+    """Check if an employee has already applied"""
+    prefix = get_table_prefix()
+    try:
+        result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district 
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE t.pen = :pen
+        """), {'pen': pen})
+        emp = result.fetchone()
+        if emp:
+            return jsonify({'applied': True, 'name': emp[1], 'district': emp[2]})
+        return jsonify({'applied': False})
+    except:
+        return jsonify({'applied': False})
 
 
 @app.route('/application/mark', methods=['POST'])

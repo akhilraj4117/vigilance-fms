@@ -50,6 +50,10 @@
                     </button>
                 </div>
             </div>
+            <div class="already-applied-alert" id="alreadyAppliedAlert" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="alreadyAppliedMessage">This Employee Already Applied</span>
+            </div>
             {% if employees %}
             <div class="employee-list-scroll">
                 {% for emp in employees %}
@@ -715,15 +719,21 @@ document.getElementById('applicationForm')?.addEventListener('submit', function(
 });
 
 // Search/Filter employees
+let checkAppliedTimeout = null;
+
 function filterEmployees() {
     const searchInput = document.getElementById('employeeSearch');
     const searchTerm = searchInput.value.toLowerCase().trim();
     const clearBtn = document.querySelector('.search-clear');
     const rows = document.querySelectorAll('.employee-row');
     const noResults = document.getElementById('noSearchResults');
+    const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
     
     // Show/hide clear button
     clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    // Hide already applied alert initially
+    alreadyAppliedAlert.style.display = 'none';
     
     let visibleCount = 0;
     
@@ -745,13 +755,62 @@ function filterEmployees() {
     if (noResults) {
         noResults.style.display = (visibleCount === 0 && searchTerm) ? 'block' : 'none';
     }
+    
+    // Check if the search term looks like a PEN number (numeric) and employee is not found
+    if (searchTerm && /^\d+$/.test(searchTerm) && searchTerm.length >= 3) {
+        // Clear previous timeout
+        if (checkAppliedTimeout) clearTimeout(checkAppliedTimeout);
+        
+        // Debounce the check
+        checkAppliedTimeout = setTimeout(() => {
+            checkIfAlreadyApplied(searchTerm);
+        }, 300);
+    }
+}
+
+function checkIfAlreadyApplied(pen) {
+    fetch(`/application/check/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
+            if (data.applied) {
+                document.getElementById('alreadyAppliedMessage').innerHTML = 
+                    `<strong>${data.name}</strong> (PEN: ${pen}) from <strong>${data.district}</strong> has already applied!`;
+                alreadyAppliedAlert.style.display = 'flex';
+            } else {
+                alreadyAppliedAlert.style.display = 'none';
+            }
+        })
+        .catch(() => {
+            // Silently fail
+        });
 }
 
 function clearSearch() {
     const searchInput = document.getElementById('employeeSearch');
     searchInput.value = '';
+    document.getElementById('alreadyAppliedAlert').style.display = 'none';
     filterEmployees();
     searchInput.focus();
 }
 </script>
+
+<style>
+.already-applied-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    margin: 0.5rem;
+    font-size: 0.85rem;
+}
+.already-applied-alert i {
+    color: #ffc107;
+    font-size: 1rem;
+}
+</style>
 {% endblock %}
