@@ -11,7 +11,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
     
     # Database configuration - Supabase PostgreSQL (Session Pooler - IPv4 compatible)
-    SUPABASE_DB_URL = 'postgresql+psycopg://postgres.tmlenfumgrdtywxoytzj:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
+    SUPABASE_DB_URL = 'postgresql+psycopg://postgres.qkhpacqsztvpnkrfmwgz:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or SUPABASE_DB_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
