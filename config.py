@@ -11,11 +11,11 @@ class Config:
     
     # Database Configuration - PostgreSQL (Supabase)
     # Using port 6543 (Transaction Pooler) instead of 5432 to bypass ISP blocking
-    DB_HOST = 'aws-0-ap-south-1.pooler.supabase.com'
+    DB_HOST = 'aws-1-ap-south-1.pooler.supabase.com'
     DB_PORT = 6543  # Transaction pooler port (use this if 5432 is blocked)
     DB_NAME = 'postgres'
-    DB_USER = 'postgres.xyspjqfyxiyrowvxyqad'
-    DB_PASSWORD = 'JPHNTransferDB@123'
+    DB_USER = 'postgres.qkhpacqsztvpnkrfmwgz'
+    DB_PASSWORD = 'Revathyr@j6123'
     
     # Check for DATABASE_URL environment variable first (for Render deployment)
     # Use postgresql+psycopg:// for psycopg3 compatibility
