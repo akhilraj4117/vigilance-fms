@@ -406,9 +406,29 @@ function clearRemarksForm() {
     updateRemarksPreview();
 }
 
-// Generate and save remarks
+// Generate and save remarks (also copies to clipboard)
 function generateAndSaveRemarks() {
     updateRemarksPreview();
+    
+    // Copy to clipboard
+    const textarea = document.getElementById('remarks_message');
+    textarea.select();
+    textarea.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    
+    // Show brief notification that it was copied
+    const generateBtn = document.querySelector('button[onclick="generateAndSaveRemarks()"]');
+    if (generateBtn) {
+        const originalHTML = generateBtn.innerHTML;
+        generateBtn.innerHTML = '<i class="bi bi-check"></i> Generated & Copied!';
+        generateBtn.classList.remove('btn-success');
+        generateBtn.classList.add('btn-primary');
+        setTimeout(() => {
+            generateBtn.innerHTML = originalHTML;
+            generateBtn.classList.remove('btn-primary');
+            generateBtn.classList.add('btn-success');
+        }, 1500);
+    }
     
     // Submit the form
     const form = document.getElementById('remarksForm');

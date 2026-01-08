@@ -16,8 +16,8 @@ WTForms==3.1.1
 # Production Server
 gunicorn==23.0.0
 
-# PostgreSQL Driver (psycopg3 for Python 3.13 compatibility)
-psycopg[binary]==3.2.3
+# PostgreSQL Driver (psycopg2 for connection pooler compatibility)
+psycopg2-binary==2.9.9
 
 # Environment Variables
 python-dotenv==1.0.0

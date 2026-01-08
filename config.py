@@ -11,14 +11,16 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
     
     # Database configuration - Supabase PostgreSQL (Session Pooler - IPv4 compatible)
-    # Using psycopg3 driver for Python 3.13 compatibility
-    SUPABASE_DB_URL = 'postgresql+psycopg://postgres.tmlenfumgrdtywxoytzj:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
+    # Using psycopg2 driver for connection pooler compatibility
+    SUPABASE_DB_URL = 'postgresql+psycopg2://postgres.tmlenfumgrdtywxoytzj:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or SUPABASE_DB_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # SSL mode for PostgreSQL connections
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'connect_args': {'sslmode': 'require'}
+        'connect_args': {
+            'sslmode': 'require'
+        }
     }
     
     # Session configuration
@@ -50,9 +52,9 @@ class ProductionConfig(Config):
     # Fix for PostgreSQL URL format (Render uses postgres://)
     if SQLALCHEMY_DATABASE_URI:
         if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql+psycopg://', 1)
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql+psycopg2://', 1)
         elif SQLALCHEMY_DATABASE_URI.startswith('postgresql://') and '+psycopg' not in SQLALCHEMY_DATABASE_URI:
-            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg://', 1)
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg2://', 1)
 
 
 class TestingConfig(Config):
