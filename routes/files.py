@@ -882,8 +882,126 @@ def delete_pr_entry(entry_id):
     db.session.delete(entry)
     db.session.commit()
     
+    # Check if it's an AJAX request
+    if request.headers.get('X-CSRFToken'):
+        return jsonify({'success': True, 'message': 'PR Entry deleted successfully.'})
+    
     flash('PR Entry deleted successfully.', 'success')
     return redirect(url_for('files.manage_pr_entries', file_number=file_number))
+
+
+@files_bp.route('/pr-entries/<path:file_number>/json')
+@login_required
+def get_pr_entries_json(file_number):
+    """Get all PR entries for a file as JSON."""
+    from datetime import datetime
+    
+    def convert_date_to_input_format(date_str):
+        """Convert date string to YYYY-MM-DD format for HTML input."""
+        if not date_str or date_str.strip() == '':
+            return ''
+        date_formats = ['%d-%m-%Y', '%d/%m/%Y', '%Y-%m-%d', '%d.%m.%Y', '%d-%b-%Y']
+        for fmt in date_formats:
+            try:
+                date_obj = datetime.strptime(date_str.strip(), fmt)
+                return date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        return date_str
+    
+    entries = PREntry.query.filter_by(file_number=file_number).order_by(PREntry.serial_number.asc()).all()
+    
+    return jsonify({
+        'success': True,
+        'entries': [{
+            'id': entry.id,
+            'serial_number': entry.serial_number or '',
+            'current_number': entry.current_number or '',
+            'date_receipt_clerk': convert_date_to_input_format(entry.date_receipt_clerk or ''),
+            'title': entry.title or '',
+            'from_whom_outside_name': entry.from_whom_outside_name or '',
+            'from_whom_outside_number': entry.from_whom_outside_number or '',
+            'from_whom_outside_date': convert_date_to_input_format(entry.from_whom_outside_date or ''),
+            'submitted_by_clerk_date': convert_date_to_input_format(entry.submitted_by_clerk_date or ''),
+            'return_to_clerk_date': convert_date_to_input_format(entry.return_to_clerk_date or ''),
+            'reference_issued_to_whom': entry.reference_issued_to_whom or '',
+            'reference_issued_date': convert_date_to_input_format(entry.reference_issued_date or ''),
+            'reply_fresh_current_from_whom': entry.reply_fresh_current_from_whom or '',
+            'reply_fresh_current_number': entry.reply_fresh_current_number or '',
+            'reply_fresh_current_date': convert_date_to_input_format(entry.reply_fresh_current_date or ''),
+            'date_receipt_clerk_fresh': convert_date_to_input_format(entry.date_receipt_clerk_fresh or ''),
+            'disposal_nature': entry.disposal_nature or '',
+            'disposal_date': convert_date_to_input_format(entry.disposal_date or '')
+        } for entry in entries]
+    })
+
+
+@files_bp.route('/pr-entries/<path:file_number>/add', methods=['POST'])
+@login_required
+def add_pr_entry_ajax(file_number):
+    """Add a new PR entry via AJAX."""
+    try:
+        pr_entry = PREntry(
+            file_number=file_number,
+            serial_number=request.form.get('serial_number', ''),
+            current_number=request.form.get('current_number', ''),
+            date_receipt_clerk=request.form.get('date_receipt_clerk', ''),
+            title=request.form.get('title', ''),
+            from_whom_outside_name=request.form.get('from_whom_outside_name', ''),
+            from_whom_outside_number=request.form.get('from_whom_outside_number', ''),
+            from_whom_outside_date=request.form.get('from_whom_outside_date', ''),
+            submitted_by_clerk_date=request.form.get('submitted_by_clerk_date', ''),
+            return_to_clerk_date=request.form.get('return_to_clerk_date', ''),
+            reference_issued_to_whom=request.form.get('reference_issued_to_whom', ''),
+            reference_issued_date=request.form.get('reference_issued_date', ''),
+            reply_fresh_current_from_whom=request.form.get('reply_fresh_current_from_whom', ''),
+            reply_fresh_current_number=request.form.get('reply_fresh_current_number', ''),
+            reply_fresh_current_date=request.form.get('reply_fresh_current_date', ''),
+            date_receipt_clerk_fresh=request.form.get('date_receipt_clerk_fresh', ''),
+            disposal_nature=request.form.get('disposal_nature', ''),
+            disposal_date=request.form.get('disposal_date', '')
+        )
+        
+        db.session.add(pr_entry)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'PR Entry added successfully.', 'id': pr_entry.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@files_bp.route('/pr-entries/<path:file_number>/update/<int:entry_id>', methods=['POST'])
+@login_required
+def update_pr_entry_ajax(file_number, entry_id):
+    """Update a PR entry via AJAX."""
+    try:
+        pr_entry = PREntry.query.get_or_404(entry_id)
+        
+        pr_entry.serial_number = request.form.get('serial_number', '')
+        pr_entry.current_number = request.form.get('current_number', '')
+        pr_entry.date_receipt_clerk = request.form.get('date_receipt_clerk', '')
+        pr_entry.title = request.form.get('title', '')
+        pr_entry.from_whom_outside_name = request.form.get('from_whom_outside_name', '')
+        pr_entry.from_whom_outside_number = request.form.get('from_whom_outside_number', '')
+        pr_entry.from_whom_outside_date = request.form.get('from_whom_outside_date', '')
+        pr_entry.submitted_by_clerk_date = request.form.get('submitted_by_clerk_date', '')
+        pr_entry.return_to_clerk_date = request.form.get('return_to_clerk_date', '')
+        pr_entry.reference_issued_to_whom = request.form.get('reference_issued_to_whom', '')
+        pr_entry.reference_issued_date = request.form.get('reference_issued_date', '')
+        pr_entry.reply_fresh_current_from_whom = request.form.get('reply_fresh_current_from_whom', '')
+        pr_entry.reply_fresh_current_number = request.form.get('reply_fresh_current_number', '')
+        pr_entry.reply_fresh_current_date = request.form.get('reply_fresh_current_date', '')
+        pr_entry.date_receipt_clerk_fresh = request.form.get('date_receipt_clerk_fresh', '')
+        pr_entry.disposal_nature = request.form.get('disposal_nature', '')
+        pr_entry.disposal_date = request.form.get('disposal_date', '')
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'PR Entry updated successfully.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 
 @files_bp.route('/api/search')
