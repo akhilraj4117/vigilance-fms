@@ -1312,7 +1312,10 @@ def create_disciplinary_action():
     # Get existing DA entries for this file
     existing_entries = []
     if file_number:
-        existing_entries = DisciplinaryAction.query.filter_by(file_number=file_number).order_by(DisciplinaryAction.id.desc()).all()
+        try:
+            existing_entries = DisciplinaryAction.query.filter_by(file_number=file_number).order_by(DisciplinaryAction.id.desc()).all()
+        except Exception as e:
+            flash(f'Error loading existing entries: {str(e)}', 'warning')
     
     return render_template('disciplinary/create.html', file_number=file_number, existing_entries=existing_entries)
 
