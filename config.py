@@ -35,12 +35,18 @@ class Config:
         )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 5,
-        'pool_recycle': 300,
-        'pool_pre_ping': True,
+        'pool_size': 3,
+        'max_overflow': 5,
+        'pool_recycle': 120,  # Recycle connections every 2 minutes
+        'pool_pre_ping': True,  # Test connection before using
+        'pool_timeout': 30,
         'connect_args': {
-            'connect_timeout': 30,
-            'sslmode': 'require'
+            'connect_timeout': 10,
+            'sslmode': 'require',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5
         }
     }
     
