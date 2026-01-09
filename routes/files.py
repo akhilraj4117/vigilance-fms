@@ -1181,7 +1181,7 @@ def save_report_sought():
                     report_sought_date=body_data.get('sought_date', ''),
                     status='Pending' if body_data.get('submitted') != 'Yes' else 'Submitted',
                     institution=institution,
-                    details='',
+                    details=body_data.get('details', ''),
                     submitted=body_data.get('submitted', 'No'),
                     submitted_date=body_data.get('submitted_date', '')
                 )

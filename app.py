@@ -169,6 +169,33 @@ def register_custom_filters(app):
             return date_str
         
         return date_str
+    
+    @app.template_filter('format_date_html')
+    def format_date_html_filter(date_str):
+        """Convert date string to YYYY-MM-DD format for HTML date input.
+        Handles DD-MM-YYYY format from database.
+        """
+        if not date_str or date_str == '-' or not str(date_str).strip():
+            return ''
+        
+        date_str = str(date_str).strip()
+        
+        # Try different date formats and convert to YYYY-MM-DD
+        formats_to_try = [
+            ('%d-%m-%Y', '%Y-%m-%d'),  # DD-MM-YYYY -> YYYY-MM-DD
+            ('%d/%m/%Y', '%Y-%m-%d'),  # DD/MM/YYYY -> YYYY-MM-DD
+            ('%Y-%m-%d', '%Y-%m-%d'),  # Already in HTML format
+            ('%d.%m.%Y', '%Y-%m-%d'),  # DD.MM.YYYY -> YYYY-MM-DD
+        ]
+        
+        for input_fmt, output_fmt in formats_to_try:
+            try:
+                date_obj = datetime.strptime(date_str, input_fmt)
+                return date_obj.strftime(output_fmt)
+            except ValueError:
+                continue
+        
+        return ''
 
 
 def register_error_handlers(app):

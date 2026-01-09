@@ -42,7 +42,7 @@
                             <div class="col-md-6">
                                 <label for="report_sought_date" class="form-label">Report Sought Date</label>
                                 <input type="date" class="form-control" id="report_sought_date" name="report_sought_date"
-                                       value="{{ record.report_sought_date or '' }}">
+                                       value="{{ record.report_sought_date|format_date_html }}">
                             </div>
                             <div class="col-md-6">
                                 <label for="institution" class="form-label">Institution</label>
@@ -68,7 +68,7 @@
                             <div class="col-md-4" id="submittedDateDiv" {% if record.submitted != 'Yes' %}style="display: none;"{% endif %}>
                                 <label for="submitted_date" class="form-label">Submitted Date</label>
                                 <input type="date" class="form-control" id="submitted_date" name="submitted_date"
-                                       value="{{ record.submitted_date or '' }}">
+                                       value="{{ record.submitted_date|format_date_html }}">
                             </div>
                         </div>
                         

@@ -2510,6 +2510,12 @@
                                 </div>
                             </div>
                             
+                            <!-- Details Field -->
+                            <div class="mb-3">
+                                <label for="rsDetailsText" class="form-label">Details</label>
+                                <textarea class="form-control" id="rsDetailsText" name="details_text" rows="3" placeholder="Enter additional details..."></textarea>
+                            </div>
+                            
                             <!-- Hidden fields to aggregate body data -->
                             <input type="hidden" name="body" id="rsBodyHidden">
                             <input type="hidden" name="report_sought_date" id="rsDateHidden">
@@ -5176,13 +5182,15 @@
     function prepareRsFormSubmit() {
         // Collect all selected bodies and their data
         const selectedBodies = [];
+        const detailsText = document.getElementById('rsDetailsText')?.value || '';
         
         if (document.getElementById('rsBodyGovt').checked) {
             selectedBodies.push({
                 body: 'Govt.',
                 sought_date: document.querySelector('input[name="govt_sought_date"]').value,
                 submitted: document.querySelector('input[name="govt_submitted"]:checked')?.value || 'No',
-                submitted_date: document.querySelector('input[name="govt_submitted_date"]')?.value || ''
+                submitted_date: document.querySelector('input[name="govt_submitted_date"]')?.value || '',
+                details: detailsText
             });
         }
         
@@ -5191,7 +5199,8 @@
                 body: 'DHS',
                 sought_date: document.querySelector('input[name="dhs_sought_date"]').value,
                 submitted: document.querySelector('input[name="dhs_submitted"]:checked')?.value || 'No',
-                submitted_date: document.querySelector('input[name="dhs_submitted_date"]')?.value || ''
+                submitted_date: document.querySelector('input[name="dhs_submitted_date"]')?.value || '',
+                details: detailsText
             });
         }
         
@@ -5201,7 +5210,8 @@
                 body: othersSpecify,
                 sought_date: document.querySelector('input[name="others_sought_date"]').value,
                 submitted: document.querySelector('input[name="others_submitted"]:checked')?.value || 'No',
-                submitted_date: document.querySelector('input[name="others_submitted_date"]')?.value || ''
+                submitted_date: document.querySelector('input[name="others_submitted_date"]')?.value || '',
+                details: detailsText
             });
         }
         
