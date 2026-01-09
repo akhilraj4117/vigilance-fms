@@ -10,6 +10,7 @@ from functools import wraps
 import os
 import io
 import csv
+import time
 
 from config import config
 
@@ -28,6 +29,44 @@ DISTRICTS = app.config['DISTRICTS']
 NEARBY_DISTRICTS = app.config['NEARBY_DISTRICTS']
 MONTHS = app.config['MONTHS']
 VALID_USERS = app.config['VALID_USERS']
+
+
+# ==================== HEALTH CHECK & ERROR HANDLING ====================
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render"""
+    try:
+        # Test database connection
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+    except Exception as e:
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
+
+
+@app.errorhandler(502)
+def bad_gateway_error(error):
+    """Handle 502 errors gracefully"""
+    return render_template('error.html', 
+                          error_code=502, 
+                          error_message='Service temporarily unavailable. Please refresh the page.'), 502
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors and attempt database reconnection"""
+    db.session.rollback()
+    return render_template('error.html', 
+                          error_code=500, 
+                          error_message='Internal server error. Please try again.'), 500
+
+
+@app.before_request
+def before_request():
+    """Ensure database connection is alive before each request"""
+    try:
+        db.session.execute(db.text('SELECT 1'))
+    except Exception:
+        db.session.rollback()
 
 
 # ==================== USER MODEL ====================
