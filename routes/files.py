@@ -336,9 +336,6 @@ def change_file_mode():
             ('rule15_statements', 'file_number'),
         ]
         
-        # Temporarily disable foreign key checks for SQLite
-        db.session.execute(db.text('PRAGMA foreign_keys=OFF'))
-        
         # Update file number in main files table
         db.session.execute(
             db.text('UPDATE files SET file_number = :new, file_type = :mode, last_modified = :modified WHERE file_number = :old'),
@@ -356,9 +353,6 @@ def change_file_mode():
                 # Table might not exist, continue
                 print(f"Note: Could not update table {table_name}: {table_error}")
                 pass
-        
-        # Re-enable foreign key checks
-        db.session.execute(db.text('PRAGMA foreign_keys=ON'))
         
         db.session.commit()
         
