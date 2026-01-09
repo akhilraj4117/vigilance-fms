@@ -16,10 +16,11 @@ main_bp = Blueprint('main', __name__)
 def fix_db_sequences():
     """Fix PostgreSQL sequences - accessible by any logged in user."""
     try:
-        # Fix disciplinary_action_details sequence specifically
+        # Fix all table sequences
         tables = [
             'disciplinary_action_details',
             'unauthorised_absentee_details',
+            'unauthorised_absentees',
             'rti_application_details',
             'court_case_details',
             'inquiry_details',
