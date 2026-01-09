@@ -11,6 +11,53 @@ import json
 main_bp = Blueprint('main', __name__)
 
 
+@main_bp.route('/fix-db-sequences')
+@login_required
+def fix_db_sequences():
+    """Fix PostgreSQL sequences - accessible by any logged in user."""
+    try:
+        # Fix disciplinary_action_details sequence specifically
+        tables = [
+            'disciplinary_action_details',
+            'unauthorised_absentee_details',
+            'rti_application_details',
+            'court_case_details',
+            'inquiry_details',
+            'report_sought_details',
+            'report_asked_details',
+            'communication_details',
+            'social_security_pension_details',
+            'pr_entry_details',
+            'employees',
+            'institutions'
+        ]
+        
+        fixed = 0
+        for table in tables:
+            try:
+                # Get max ID
+                result = db.session.execute(
+                    db.text(f"SELECT MAX(id) FROM {table}")
+                ).scalar()
+                
+                if result:
+                    # Reset sequence
+                    db.session.execute(
+                        db.text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), {result}, true)")
+                    )
+                    fixed += 1
+            except:
+                pass
+        
+        db.session.commit()
+        flash(f'Database sequences reset successfully ({fixed} tables fixed).', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
+
 @main_bp.route('/')
 def index():
     """Home page - redirect to login or dashboard."""
