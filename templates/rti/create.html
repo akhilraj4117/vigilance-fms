@@ -14,10 +14,21 @@
         </div>
         {% endif %}
     </div>
-    <a href="{{ url_for('files.view_file', file_number=file_number) if file_number else url_for('rti.rti_index') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('files.file_management', file=file_number) if file_number else url_for('rti.rti_index') }}" class="btn btn-secondary" id="backBtn">
+            <i class="bi bi-x-lg"></i> Close
+        </a>
+    </div>
 </div>
+
+<script>
+// Keyboard shortcut: Escape to close
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('backBtn').click();
+    }
+});
+</script>
 
 <div class="card border-primary mb-4">
     <div class="card-header bg-primary text-white">
