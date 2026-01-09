@@ -296,3 +296,51 @@ def init_categories_and_types():
     
     return redirect(url_for('main.dashboard'))
 
+
+@main_bp.route('/fix-sequences')
+@login_required
+def fix_sequences():
+    """Fix PostgreSQL sequences that are out of sync with table data."""
+    try:
+        # List of tables with auto-increment primary keys that might need fixing
+        tables_to_fix = [
+            ('disciplinary_action_details', 'id'),
+            ('unauthorised_absentee_details', 'id'),
+            ('rti_application_details', 'id'),
+            ('court_case_details', 'id'),
+            ('inquiry_details', 'id'),
+            ('report_sought_details', 'id'),
+            ('report_asked_details', 'id'),
+            ('communication_details', 'id'),
+            ('employees', 'id'),
+            ('institutions', 'id'),
+            ('social_security_pension_details', 'id'),
+            ('pr_entry_details', 'id'),
+        ]
+        
+        fixed_count = 0
+        for table_name, pk_column in tables_to_fix:
+            try:
+                # Get the max ID from the table
+                result = db.session.execute(
+                    db.text(f"SELECT MAX({pk_column}) FROM {table_name}")
+                ).scalar()
+                
+                if result is not None:
+                    # Reset the sequence to max_id + 1
+                    seq_name = f"{table_name}_{pk_column}_seq"
+                    db.session.execute(
+                        db.text(f"SELECT setval('{seq_name}', {result}, true)")
+                    )
+                    fixed_count += 1
+            except Exception as table_error:
+                # Table might not exist or have different sequence name
+                pass
+        
+        db.session.commit()
+        flash(f'Successfully reset {fixed_count} database sequences.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error fixing sequences: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
