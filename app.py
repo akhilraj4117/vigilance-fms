@@ -63,14 +63,6 @@ def internal_error(error):
                           error='Internal server error. Please try again.'), 500
 
 
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    """Clean up database session after each request"""
-    if exception:
-        db.session.rollback()
-    db.session.remove()
-
-
 # ==================== USER MODEL ======================================
 class User(UserMixin):
     """Simple user model for authentication"""
