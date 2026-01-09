@@ -824,17 +824,22 @@
 
 <!-- File Details Modal - Matching Desktop App -->
 <div class="modal fade" id="fileDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl" id="fileDetailsModalDialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title"><i class="bi bi-file-text"></i> File Details Entry</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="toggleFileDetailsExpand()" title="Toggle Fullscreen" id="fileDetailsExpandBtn">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
             </div>
             <div class="modal-body">
                 <h5 class="text-center mb-3">Enter File Details</h5>
                 
                 <!-- Table for File Details Entry -->
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div class="table-responsive" style="overflow-y: auto;" id="fileDetailsTableContainer">
                     <table class="table table-bordered table-striped" id="fileDetailsTable">
                         <thead class="table-primary sticky-top">
                             <tr>
@@ -3439,12 +3444,46 @@
     // ============== File Details Table Functions ==============
     let fileDetailsEditingEnabled = false;
     let selectedFileDetailsRow = null;
+    let fileDetailsExpanded = false;
+    
+    // Toggle fullscreen/expanded view for File Details modal
+    function toggleFileDetailsExpand() {
+        const dialog = document.getElementById('fileDetailsModalDialog');
+        const btn = document.getElementById('fileDetailsExpandBtn');
+        const tableContainer = document.getElementById('fileDetailsTableContainer');
+        
+        fileDetailsExpanded = !fileDetailsExpanded;
+        
+        if (fileDetailsExpanded) {
+            dialog.classList.remove('modal-xl');
+            dialog.classList.add('modal-fullscreen');
+            tableContainer.style.maxHeight = 'calc(100vh - 250px)';
+            btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+            btn.title = 'Exit Fullscreen';
+        } else {
+            dialog.classList.remove('modal-fullscreen');
+            dialog.classList.add('modal-xl');
+            tableContainer.style.maxHeight = '400px';
+            btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+            btn.title = 'Toggle Fullscreen';
+        }
+    }
     
     // Initialize the file details modal when it opens
     document.getElementById('fileDetailsModal').addEventListener('show.bs.modal', function() {
         loadFileDetailsIntoTable();
         fileDetailsEditingEnabled = false;
         updateFileDetailsEditingState();
+        
+        // Reset expanded state
+        fileDetailsExpanded = false;
+        const dialog = document.getElementById('fileDetailsModalDialog');
+        const btn = document.getElementById('fileDetailsExpandBtn');
+        const tableContainer = document.getElementById('fileDetailsTableContainer');
+        dialog.classList.remove('modal-fullscreen');
+        dialog.classList.add('modal-xl');
+        tableContainer.style.maxHeight = '400px';
+        btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
     });
     
     // Load file details from textarea into table
