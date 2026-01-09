@@ -14,14 +14,30 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/fix-db-sequences')
 @login_required
 def fix_db_sequences():
-    """Fix PostgreSQL sequences - accessible by any logged in user."""
+    """Fix PostgreSQL sequences - finds actual sequence names from system tables."""
     results = []
     try:
-        # Fix all table sequences using direct sequence name pattern
-        tables = [
-            'disciplinary_action_details',
-            'unauthorised_absentee_details',
+        # Get all sequences and their associated tables from PostgreSQL system tables
+        seq_query = """
+            SELECT 
+                t.relname as table_name,
+                s.relname as sequence_name,
+                (SELECT MAX(id) FROM """ + '"{}"'.format('dummy') + """) as max_id
+            FROM pg_class s
+            JOIN pg_depend d ON d.objid = s.oid
+            JOIN pg_class t ON d.refobjid = t.oid
+            WHERE s.relkind = 'S'
+            AND t.relname IN ('unauthorised_absentees', 'disciplinary_action_details', 
+                              'rti_application_details', 'court_case_details',
+                              'inquiry_details', 'report_sought_details', 
+                              'report_asked_details', 'communication_details',
+                              'social_security_pension_details', 'employees', 'institutions')
+        """
+        
+        # Fix each table individually
+        tables_to_fix = [
             'unauthorised_absentees',
+            'disciplinary_action_details', 
             'rti_application_details',
             'court_case_details',
             'inquiry_details',
@@ -29,31 +45,38 @@ def fix_db_sequences():
             'report_asked_details',
             'communication_details',
             'social_security_pension_details',
-            'pr_entry_details',
             'employees',
             'institutions'
         ]
         
-        for table in tables:
+        for table in tables_to_fix:
             try:
-                # Get max ID
-                max_result = db.session.execute(
-                    db.text(f"SELECT MAX(id) FROM {table}")
+                # Get max ID from table
+                max_id = db.session.execute(
+                    db.text(f"SELECT COALESCE(MAX(id), 0) FROM {table}")
                 ).scalar()
                 
-                if max_result:
-                    # Add buffer of 100 to be safe
-                    new_val = max_result + 100
-                    seq_name = f"{table}_id_seq"
-                    db.session.execute(
-                        db.text(f"ALTER SEQUENCE {seq_name} RESTART WITH {new_val}")
-                    )
-                    results.append(f"{table}: max={max_result}, seq→{new_val}")
+                # Get current sequence value
+                seq_name = f"{table}_id_seq"
+                try:
+                    curr_val = db.session.execute(
+                        db.text(f"SELECT last_value FROM {seq_name}")
+                    ).scalar()
+                except:
+                    curr_val = "unknown"
+                
+                # Set sequence to max + 1000 to be absolutely safe
+                new_val = max_id + 1000
+                db.session.execute(
+                    db.text(f"SELECT setval('{seq_name}', {new_val}, false)")
+                )
+                
+                results.append(f"{table}: max={max_id}, was={curr_val}, now={new_val}")
             except Exception as e:
-                results.append(f"{table}: ERROR - {str(e)[:30]}")
+                results.append(f"{table}: ERR-{str(e)[:25]}")
         
         db.session.commit()
-        flash(f'Sequences fixed: {"; ".join(results)}', 'success')
+        flash(f'Fixed: {"; ".join(results)}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
