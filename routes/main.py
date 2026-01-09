@@ -15,6 +15,7 @@ main_bp = Blueprint('main', __name__)
 @login_required
 def fix_db_sequences():
     """Fix PostgreSQL sequences - accessible by any logged in user."""
+    results = []
     try:
         # Fix all table sequences using direct sequence name pattern
         tables = [
@@ -33,37 +34,25 @@ def fix_db_sequences():
             'institutions'
         ]
         
-        fixed = 0
-        errors = []
         for table in tables:
             try:
                 # Get max ID
-                result = db.session.execute(
+                max_result = db.session.execute(
                     db.text(f"SELECT MAX(id) FROM {table}")
                 ).scalar()
                 
-                if result:
-                    # Try both sequence name patterns
+                if max_result:
+                    # Reset sequence using direct name
                     seq_name = f"{table}_id_seq"
-                    try:
-                        db.session.execute(
-                            db.text(f"SELECT setval('{seq_name}', {result}, true)")
-                        )
-                        fixed += 1
-                    except:
-                        # Try with pg_get_serial_sequence
-                        db.session.execute(
-                            db.text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), {result}, true)")
-                        )
-                        fixed += 1
+                    db.session.execute(
+                        db.text(f"ALTER SEQUENCE {seq_name} RESTART WITH {max_result + 1}")
+                    )
+                    results.append(f"{table}: set to {max_result + 1}")
             except Exception as e:
-                errors.append(f"{table}: {str(e)[:50]}")
+                results.append(f"{table}: ERROR - {str(e)[:30]}")
         
         db.session.commit()
-        msg = f'Database sequences reset successfully ({fixed} tables fixed).'
-        if errors:
-            msg += f' Errors: {", ".join(errors[:3])}'
-        flash(msg, 'success')
+        flash(f'Sequences fixed: {"; ".join(results)}', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
