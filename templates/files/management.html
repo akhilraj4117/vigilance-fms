@@ -3513,15 +3513,36 @@
         const isEditing = fileDetailsEditingEnabled;
         row.innerHTML = `
             <td class="text-center align-middle" style="width: 80px;">${slNo}</td>
-            <td>
+            <td class="file-details-cell">
                 <input type="text" class="form-control file-details-input" value="${escapeHtml(details)}" 
                        style="border: ${isEditing ? '1px solid #ced4da' : 'none'}; background: ${isEditing ? '#fff' : 'transparent'};" 
                        ${isEditing ? '' : 'readonly'}
                        onclick="selectFileDetailsRow(this)">
+                <div class="file-details-wrapped d-none" style="white-space: pre-wrap; word-wrap: break-word; padding: 6px 12px; background: #f8f9fa; border-radius: 4px; min-height: 38px;"></div>
             </td>
         `;
         row.onclick = function() { selectFileDetailsRow(row.querySelector('input')); };
+        row.ondblclick = function() { toggleRowWrappedView(row); };
         tbody.appendChild(row);
+    }
+    
+    // Toggle wrapped view for a row on double-click
+    function toggleRowWrappedView(row) {
+        const input = row.querySelector('.file-details-input');
+        const wrappedDiv = row.querySelector('.file-details-wrapped');
+        
+        if (wrappedDiv.classList.contains('d-none')) {
+            // Show wrapped view
+            wrappedDiv.textContent = input.value;
+            wrappedDiv.classList.remove('d-none');
+            input.classList.add('d-none');
+            row.style.backgroundColor = '#e7f3ff';
+        } else {
+            // Hide wrapped view, show input
+            wrappedDiv.classList.add('d-none');
+            input.classList.remove('d-none');
+            row.style.backgroundColor = '';
+        }
     }
     
     // Escape HTML to prevent XSS
