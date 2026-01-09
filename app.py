@@ -38,8 +38,10 @@ def health_check():
     try:
         # Test database connection
         db.session.execute(db.text('SELECT 1'))
+        db.session.commit()
         return jsonify({'status': 'healthy', 'database': 'connected'}), 200
     except Exception as e:
+        db.session.rollback()
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 
@@ -47,29 +49,29 @@ def health_check():
 def bad_gateway_error(error):
     """Handle 502 errors gracefully"""
     return render_template('error.html', 
-                          error_code=502, 
-                          error_message='Service temporarily unavailable. Please refresh the page.'), 502
+                          error='Service temporarily unavailable. Please refresh the page.'), 502
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors and attempt database reconnection"""
-    db.session.rollback()
-    return render_template('error.html', 
-                          error_code=500, 
-                          error_message='Internal server error. Please try again.'), 500
-
-
-@app.before_request
-def before_request():
-    """Ensure database connection is alive before each request"""
     try:
-        db.session.execute(db.text('SELECT 1'))
-    except Exception:
         db.session.rollback()
+    except:
+        pass
+    return render_template('error.html', 
+                          error='Internal server error. Please try again.'), 500
 
 
-# ==================== USER MODEL ====================
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Clean up database session after each request"""
+    if exception:
+        db.session.rollback()
+    db.session.remove()
+
+
+# ==================== USER MODEL ======================================
 class User(UserMixin):
     """Simple user model for authentication"""
     def __init__(self, user_id):
