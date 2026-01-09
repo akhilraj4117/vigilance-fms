@@ -1160,42 +1160,48 @@ def application_list():
     if not district_filter:
         district_filter = 'All Districts'
     
-    # Check if "All Districts" is selected
-    if district_filter == 'All Districts':
-        # Get employees NOT in transfer_applied from ALL districts
-        result = db.session.execute(db.text(f"""
-            SELECT j.pen, j.name, j.institution, j.duration_days, j.district
-            FROM {prefix}jphn j
-            WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-            ORDER BY j.district, j.duration_days DESC
-        """))
-        
-        employees = result.fetchall()
-        
-        # Get count of already applied from all districts
-        applied_result = db.session.execute(db.text(f"""
-            SELECT COUNT(*) FROM {prefix}transfer_applied
-        """))
-        applied_count = applied_result.fetchone()[0] or 0
-    else:
-        # Get employees NOT in transfer_applied for this district
-        result = db.session.execute(db.text(f"""
-            SELECT j.pen, j.name, j.institution, j.duration_days
-            FROM {prefix}jphn j
-            WHERE j.district = :district
-            AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-            ORDER BY j.duration_days DESC
-        """), {'district': district_filter})
-        
-        employees = result.fetchall()
-        
-        # Get count of already applied
-        applied_result = db.session.execute(db.text(f"""
-            SELECT COUNT(*) FROM {prefix}transfer_applied t
-            INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            WHERE j.district = :district
-        """), {'district': district_filter})
-        applied_count = applied_result.fetchone()[0] or 0
+    try:
+        # Check if "All Districts" is selected
+        if district_filter == 'All Districts':
+            # Get employees NOT in transfer_applied from ALL districts
+            result = db.session.execute(db.text(f"""
+                SELECT j.pen, j.name, j.institution, j.duration_days, j.district
+                FROM {prefix}jphn j
+                WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+                ORDER BY j.district, j.duration_days DESC
+            """))
+            
+            employees = result.fetchall()
+            
+            # Get count of already applied from all districts
+            applied_result = db.session.execute(db.text(f"""
+                SELECT COUNT(*) FROM {prefix}transfer_applied
+            """))
+            applied_count = applied_result.fetchone()[0] or 0
+        else:
+            # Get employees NOT in transfer_applied for this district
+            result = db.session.execute(db.text(f"""
+                SELECT j.pen, j.name, j.institution, j.duration_days
+                FROM {prefix}jphn j
+                WHERE j.district = :district
+                AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+                ORDER BY j.duration_days DESC
+            """), {'district': district_filter})
+            
+            employees = result.fetchall()
+            
+            # Get count of already applied
+            applied_result = db.session.execute(db.text(f"""
+                SELECT COUNT(*) FROM {prefix}transfer_applied t
+                INNER JOIN {prefix}jphn j ON t.pen = j.pen
+                WHERE j.district = :district
+            """), {'district': district_filter})
+            applied_count = applied_result.fetchone()[0] or 0
+    except Exception as e:
+        db.session.rollback()
+        employees = []
+        applied_count = 0
+        flash(f'Error loading employees: {str(e)}', 'error')
     
     return render_template('application.html',
                          employees=employees,
