@@ -42,12 +42,13 @@ def fix_db_sequences():
                 ).scalar()
                 
                 if max_result:
-                    # Reset sequence using direct name
+                    # Add buffer of 100 to be safe
+                    new_val = max_result + 100
                     seq_name = f"{table}_id_seq"
                     db.session.execute(
-                        db.text(f"ALTER SEQUENCE {seq_name} RESTART WITH {max_result + 1}")
+                        db.text(f"ALTER SEQUENCE {seq_name} RESTART WITH {new_val}")
                     )
-                    results.append(f"{table}: set to {max_result + 1}")
+                    results.append(f"{table}: max={max_result}, seq→{new_val}")
             except Exception as e:
                 results.append(f"{table}: ERROR - {str(e)[:30]}")
         
