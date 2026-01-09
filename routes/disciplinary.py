@@ -1493,78 +1493,82 @@ def edit_disciplinary_action(id):
     action = DisciplinaryAction.query.get_or_404(id)
     ua_details = UnauthorisedAbsentee.query.filter_by(da_id=id).first()
     
-    action.employee_name = request.form.get('employee_name', '')
-    action.pen = request.form.get('pen', '')
-    action.designation = request.form.get('designation', '')
-    action.institution = request.form.get('institution', '')
-    action.entry_cadre = request.form.get('entry_cadre', '')
-    action.joining_date = convert_date_format(request.form.get('joining_date', ''))
-    action.service_regularised = request.form.get('service_regularised', '')
-    action.date_regularisation = convert_date_format(request.form.get('date_regularisation', ''))
-    action.probation = request.form.get('probation', '')
-    action.date_probation_declared = convert_date_format(request.form.get('date_probation_declared', ''))
-    action.date_superannuation = convert_date_format(request.form.get('date_superannuation', ''))
-    action.unauthorised_others = request.form.get('unauthorised_others', '')
-    action.subject = request.form.get('subject', '')
-    action.probation_termination_notice = request.form.get('probation_termination_notice', '')
-    action.action_taking_office = request.form.get('action_taking_office', '')
-    action.moc_issued = request.form.get('moc_issued', '')
-    action.moc_issued_by = request.form.get('moc_issued_by', '')
-    action.major_minor = request.form.get('major_minor', '')
-    action.moc_number = request.form.get('moc_number', '')
-    action.moc_date = convert_date_format(request.form.get('moc_date', ''))
-    action.moc_receipt_date = convert_date_format(request.form.get('moc_receipt_date', ''))
-    action.wsd_received_date = convert_date_format(request.form.get('wsd_received_date', ''))
-    action.wsd_letter_no = request.form.get('wsd_letter_no', '')
-    action.scn_issued_date = convert_date_format(request.form.get('scn_issued_date', ''))
-    action.scn_issued_by = request.form.get('scn_issued_by', '')
-    action.scn_receipt_date = convert_date_format(request.form.get('scn_receipt_date', ''))
-    action.scn_receipt_sent_to_dhs_date = convert_date_format(request.form.get('scn_receipt_sent_to_dhs_date', ''))
-    action.scn_reply_date = convert_date_format(request.form.get('scn_reply_date', ''))
-    action.moc_received_at_dmo_date = convert_date_format(request.form.get('moc_received_at_dmo_date', ''))
-    action.moc_received_letter_no = request.form.get('moc_received_letter_no', '')
-    action.moc_sent_to_dhs_date = convert_date_format(request.form.get('moc_sent_to_dhs_date', ''))
-    action.wsd_sent_to_dhs_date = convert_date_format(request.form.get('wsd_sent_to_dhs_date', ''))
-    action.wsd_sent_letter_no = request.form.get('wsd_sent_letter_no', '')
-    action.scn_received_at_dmo_date = convert_date_format(request.form.get('scn_received_at_dmo_date', ''))
-    action.scn_reply_sent_to_dhs_date = convert_date_format(request.form.get('scn_reply_sent_to_dhs_date', ''))
-    action.dhs_file_number = request.form.get('dhs_file_number', '')
-    action.finalised_date = convert_date_format(request.form.get('finalised_date', ''))
+    try:
+        action.employee_name = request.form.get('employee_name', '')
+        action.pen = request.form.get('pen', '')
+        action.designation = request.form.get('designation', '')
+        action.institution = request.form.get('institution', '')
+        action.entry_cadre = request.form.get('entry_cadre', '')
+        action.joining_date = convert_date_format(request.form.get('joining_date', ''))
+        action.service_regularised = request.form.get('service_regularised', '')
+        action.date_regularisation = convert_date_format(request.form.get('date_regularisation', ''))
+        action.probation = request.form.get('probation', '')
+        action.date_probation_declared = convert_date_format(request.form.get('date_probation_declared', ''))
+        action.date_superannuation = convert_date_format(request.form.get('date_superannuation', ''))
+        action.unauthorised_others = request.form.get('unauthorised_others', '')
+        action.subject = request.form.get('subject', '')
+        action.probation_termination_notice = request.form.get('probation_termination_notice', '')
+        action.action_taking_office = request.form.get('action_taking_office', '')
+        action.moc_issued = request.form.get('moc_issued', '')
+        action.moc_issued_by = request.form.get('moc_issued_by', '')
+        action.major_minor = request.form.get('major_minor', '')
+        action.moc_number = request.form.get('moc_number', '')
+        action.moc_date = convert_date_format(request.form.get('moc_date', ''))
+        action.moc_receipt_date = convert_date_format(request.form.get('moc_receipt_date', ''))
+        action.wsd_received_date = convert_date_format(request.form.get('wsd_received_date', ''))
+        action.wsd_letter_no = request.form.get('wsd_letter_no', '')
+        action.scn_issued_date = convert_date_format(request.form.get('scn_issued_date', ''))
+        action.scn_issued_by = request.form.get('scn_issued_by', '')
+        action.scn_receipt_date = convert_date_format(request.form.get('scn_receipt_date', ''))
+        action.scn_receipt_sent_to_dhs_date = convert_date_format(request.form.get('scn_receipt_sent_to_dhs_date', ''))
+        action.scn_reply_date = convert_date_format(request.form.get('scn_reply_date', ''))
+        action.moc_received_at_dmo_date = convert_date_format(request.form.get('moc_received_at_dmo_date', ''))
+        action.moc_received_letter_no = request.form.get('moc_received_letter_no', '')
+        action.moc_sent_to_dhs_date = convert_date_format(request.form.get('moc_sent_to_dhs_date', ''))
+        action.wsd_sent_to_dhs_date = convert_date_format(request.form.get('wsd_sent_to_dhs_date', ''))
+        action.wsd_sent_letter_no = request.form.get('wsd_sent_letter_no', '')
+        action.scn_received_at_dmo_date = convert_date_format(request.form.get('scn_received_at_dmo_date', ''))
+        action.scn_reply_sent_to_dhs_date = convert_date_format(request.form.get('scn_reply_sent_to_dhs_date', ''))
+        action.dhs_file_number = request.form.get('dhs_file_number', '')
+        action.finalised_date = convert_date_format(request.form.get('finalised_date', ''))
+        
+        # Update or create UA details
+        if request.form.get('unauthorised_others') == 'Unauthorised':
+            if ua_details:
+                ua_details.date_from_ua = convert_date_format(request.form.get('date_from_ua', ''))
+                ua_details.willingness = request.form.get('willingness', '')
+                ua_details.bond_submitted = request.form.get('bond_submitted', '')
+                ua_details.communication_address = request.form.get('communication_address', '')
+                ua_details.date_reported_to_dmo = convert_date_format(request.form.get('date_reported_to_dmo', ''))
+                ua_details.letter_no_reported_to_dmo = request.form.get('letter_no_reported_to_dmo', '')
+                ua_details.date_reported_to_dhs = convert_date_format(request.form.get('date_reported_to_dhs', ''))
+                ua_details.letter_no_reported_to_dhs = request.form.get('letter_no_reported_to_dhs', '')
+                ua_details.weather_reported_to_dhs = request.form.get('weather_reported_to_dhs', '')
+                ua_details.present_status = request.form.get('present_status', '')
+                ua_details.disc_action_status = request.form.get('disc_action_status', '')
+            else:
+                ua = UnauthorisedAbsentee(
+                    da_id=action.id,
+                    date_from_ua=convert_date_format(request.form.get('date_from_ua', '')),
+                    willingness=request.form.get('willingness', ''),
+                    bond_submitted=request.form.get('bond_submitted', ''),
+                    communication_address=request.form.get('communication_address', ''),
+                    date_reported_to_dmo=convert_date_format(request.form.get('date_reported_to_dmo', '')),
+                    letter_no_reported_to_dmo=request.form.get('letter_no_reported_to_dmo', ''),
+                    date_reported_to_dhs=convert_date_format(request.form.get('date_reported_to_dhs', '')),
+                    letter_no_reported_to_dhs=request.form.get('letter_no_reported_to_dhs', ''),
+                    weather_reported_to_dhs=request.form.get('weather_reported_to_dhs', ''),
+                    present_status=request.form.get('present_status', ''),
+                    disc_action_status=request.form.get('disc_action_status', '')
+                )
+                db.session.add(ua)
+        
+        db.session.commit()
+        flash('Disciplinary action updated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating disciplinary action: {str(e)}', 'danger')
     
-    # Update or create UA details
-    if request.form.get('unauthorised_others') == 'Unauthorised':
-        if ua_details:
-            ua_details.date_from_ua = convert_date_format(request.form.get('date_from_ua', ''))
-            ua_details.willingness = request.form.get('willingness', '')
-            ua_details.bond_submitted = request.form.get('bond_submitted', '')
-            ua_details.communication_address = request.form.get('communication_address', '')
-            ua_details.date_reported_to_dmo = convert_date_format(request.form.get('date_reported_to_dmo', ''))
-            ua_details.letter_no_reported_to_dmo = request.form.get('letter_no_reported_to_dmo', '')
-            ua_details.date_reported_to_dhs = convert_date_format(request.form.get('date_reported_to_dhs', ''))
-            ua_details.letter_no_reported_to_dhs = request.form.get('letter_no_reported_to_dhs', '')
-            ua_details.weather_reported_to_dhs = request.form.get('weather_reported_to_dhs', '')
-            ua_details.present_status = request.form.get('present_status', '')
-            ua_details.disc_action_status = request.form.get('disc_action_status', '')
-        else:
-            ua = UnauthorisedAbsentee(
-                da_id=action.id,
-                date_from_ua=convert_date_format(request.form.get('date_from_ua', '')),
-                willingness=request.form.get('willingness', ''),
-                bond_submitted=request.form.get('bond_submitted', ''),
-                communication_address=request.form.get('communication_address', ''),
-                date_reported_to_dmo=convert_date_format(request.form.get('date_reported_to_dmo', '')),
-                letter_no_reported_to_dmo=request.form.get('letter_no_reported_to_dmo', ''),
-                date_reported_to_dhs=convert_date_format(request.form.get('date_reported_to_dhs', '')),
-                letter_no_reported_to_dhs=request.form.get('letter_no_reported_to_dhs', ''),
-                weather_reported_to_dhs=request.form.get('weather_reported_to_dhs', ''),
-                present_status=request.form.get('present_status', ''),
-                disc_action_status=request.form.get('disc_action_status', '')
-            )
-            db.session.add(ua)
-    
-    db.session.commit()
-    
-    flash('Disciplinary action updated successfully.', 'success')
     return redirect(url_for('disciplinary.create_disciplinary_action', file_number=action.file_number))
 
 
