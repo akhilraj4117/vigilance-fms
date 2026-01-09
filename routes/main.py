@@ -16,7 +16,7 @@ main_bp = Blueprint('main', __name__)
 def fix_db_sequences():
     """Fix PostgreSQL sequences - accessible by any logged in user."""
     try:
-        # Fix all table sequences
+        # Fix all table sequences using direct sequence name pattern
         tables = [
             'disciplinary_action_details',
             'unauthorised_absentee_details',
@@ -34,6 +34,7 @@ def fix_db_sequences():
         ]
         
         fixed = 0
+        errors = []
         for table in tables:
             try:
                 # Get max ID
@@ -42,16 +43,27 @@ def fix_db_sequences():
                 ).scalar()
                 
                 if result:
-                    # Reset sequence
-                    db.session.execute(
-                        db.text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), {result}, true)")
-                    )
-                    fixed += 1
-            except:
-                pass
+                    # Try both sequence name patterns
+                    seq_name = f"{table}_id_seq"
+                    try:
+                        db.session.execute(
+                            db.text(f"SELECT setval('{seq_name}', {result}, true)")
+                        )
+                        fixed += 1
+                    except:
+                        # Try with pg_get_serial_sequence
+                        db.session.execute(
+                            db.text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), {result}, true)")
+                        )
+                        fixed += 1
+            except Exception as e:
+                errors.append(f"{table}: {str(e)[:50]}")
         
         db.session.commit()
-        flash(f'Database sequences reset successfully ({fixed} tables fixed).', 'success')
+        msg = f'Database sequences reset successfully ({fixed} tables fixed).'
+        if errors:
+            msg += f' Errors: {", ".join(errors[:3])}'
+        flash(msg, 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {str(e)}', 'danger')
