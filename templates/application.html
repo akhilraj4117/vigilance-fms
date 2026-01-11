@@ -793,6 +793,32 @@ function clearSearch() {
     filterEmployees();
     searchInput.focus();
 }
+
+// Auto-focus search field when redirected after marking as applied
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('focus_search') === '1') {
+        // Set district to "All Districts" for easier searching
+        const districtSelect = document.getElementById('districtSelect');
+        if (districtSelect && districtSelect.value !== '') {
+            districtSelect.value = '';
+            districtSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Focus the search field after a short delay to ensure page is ready
+        setTimeout(function() {
+            const searchInput = document.getElementById('employeeSearch');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }, 100);
+        
+        // Clean up URL (remove the parameter)
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+    }
+})();
 </script>
 
 <style>

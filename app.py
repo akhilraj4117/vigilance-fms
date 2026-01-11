@@ -1296,8 +1296,8 @@ def mark_applied():
         db.session.rollback()
         flash(f'Error: {str(e)}', 'error')
     
-    # Redirect to All Districts (empty district) after adding employee
-    return redirect(url_for('application_list'))
+    # Redirect to All Districts with focus_search parameter to focus search field
+    return redirect(url_for('application_list', focus_search='1'))
 
 
 @app.route('/applied')
@@ -1469,6 +1469,152 @@ def edit_applied(pen):
         return jsonify({'success': False, 'error': 'Employee not found'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/applied/export-excel')
+@login_required
+@requires_transfer_session
+def export_applied_excel():
+    """Export applied employees list to Excel with proper formatting"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    except ImportError:
+        flash('openpyxl library not installed', 'error')
+        return redirect(url_for('applied_employees'))
+    
+    prefix = get_table_prefix()
+    
+    query = f"""
+        SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
+               j.weightage, j.weightage_details, t.receipt_numbers,
+               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+        FROM {prefix}jphn j
+        INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+        ORDER BY j.district, j.duration_days DESC
+    """
+    
+    result = db.session.execute(db.text(query))
+    employees = result.fetchall()
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Applied Employees'
+    
+    # Styles
+    header_font = Font(bold=True, size=14)
+    subheader_font = Font(bold=True, size=11)
+    table_header_font = Font(bold=True, size=10)
+    table_header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal='center', vertical='center')
+    left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    
+    # Set column widths
+    ws.column_dimensions['A'].width = 8    # Sl. No.
+    ws.column_dimensions['B'].width = 12   # PEN
+    ws.column_dimensions['C'].width = 25   # Name
+    ws.column_dimensions['D'].width = 30   # Institution
+    ws.column_dimensions['E'].width = 18   # District
+    ws.column_dimensions['F'].width = 12   # Duration
+    ws.column_dimensions['G'].width = 10   # Weightage
+    ws.column_dimensions['H'].width = 20   # Reason
+    ws.column_dimensions['I'].width = 12   # Receipt
+    ws.column_dimensions['J'].width = 15   # Pref 1
+    ws.column_dimensions['K'].width = 15   # Pref 2
+    ws.column_dimensions['L'].width = 15   # Pref 3
+    ws.column_dimensions['M'].width = 15   # Pref 4
+    ws.column_dimensions['N'].width = 15   # Pref 5
+    ws.column_dimensions['O'].width = 15   # Pref 6
+    ws.column_dimensions['P'].width = 15   # Pref 7
+    ws.column_dimensions['Q'].width = 15   # Pref 8
+    
+    # Title rows
+    ws.merge_cells('A1:Q1')
+    ws['A1'] = 'JPHN Transfer Management System'
+    ws['A1'].font = header_font
+    ws['A1'].alignment = center_align
+    
+    ws.merge_cells('A2:Q2')
+    ws['A2'] = 'Applied Employees List'
+    ws['A2'].font = subheader_font
+    ws['A2'].alignment = center_align
+    
+    ws.merge_cells('A3:Q3')
+    ws['A3'] = f'Generated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}'
+    ws['A3'].alignment = center_align
+    
+    # Column headers (row 5)
+    headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'Current District', 'Duration',
+               'Weightage', 'Reason', 'Receipt No.', 'Pref 1', 'Pref 2', 'Pref 3', 'Pref 4',
+               'Pref 5', 'Pref 6', 'Pref 7', 'Pref 8']
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=5, column=col_num, value=header)
+        cell.font = table_header_font
+        cell.fill = table_header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    
+    # Data rows
+    for idx, emp in enumerate(employees, 1):
+        row_num = idx + 5
+        duration_days = emp[4] or 0
+        years = duration_days // 365
+        months = (duration_days % 365) // 30
+        days = duration_days % 30
+        duration_str = ''
+        if years > 0:
+            duration_str += f'{years}Y '
+        if months > 0:
+            duration_str += f'{months}M '
+        if days > 0:
+            duration_str += f'{days}D'
+        duration_str = duration_str.strip() or '-'
+        
+        data = [
+            idx,                       # Sl. No.
+            emp[0],                    # PEN
+            emp[1],                    # Name
+            emp[2],                    # Institution
+            emp[3],                    # District
+            duration_str,              # Duration
+            emp[5] or 'No',            # Weightage
+            emp[6] or 'NA',            # Reason
+            emp[7] or '',              # Receipt
+            emp[8] or '',              # Pref 1
+            emp[9] or '',              # Pref 2
+            emp[10] or '',             # Pref 3
+            emp[11] or '',             # Pref 4
+            emp[12] or '',             # Pref 5
+            emp[13] or '',             # Pref 6
+            emp[14] or '',             # Pref 7
+            emp[15] or ''              # Pref 8
+        ]
+        
+        for col_num, value in enumerate(data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.border = thin_border
+            if col_num == 1:  # Sl. No. column - center aligned
+                cell.alignment = center_align
+            else:
+                cell.alignment = left_align
+    
+    # Save to BytesIO
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=applied_employees_{datetime.now().strftime("%Y%m%d")}.xlsx'}
+    )
 
 
 # ==================== DRAFT LIST ROUTES ====================
