@@ -1043,7 +1043,6 @@ def vacancy_list():
     displaced_counts = {}
     applied_from_counts = {}
     applied_to_counts = {}
-    not_applied_counts = {}
     
     # Get all vacancy data in one query
     try:
@@ -1065,17 +1064,6 @@ def vacancy_list():
         applied_from_counts = {row[0]: row[1] for row in applied_from_result.fetchall()}
     except Exception as e:
         print(f"Error fetching applied from counts: {e}")
-    
-    # Get not applied counts (employees who have NOT applied FROM each district)
-    try:
-        not_applied_result = db.session.execute(db.text(f"""
-            SELECT j.district, COUNT(*) FROM {prefix}jphn j
-            WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-            GROUP BY j.district
-        """))
-        not_applied_counts = {row[0]: row[1] for row in not_applied_result.fetchall()}
-    except Exception as e:
-        print(f"Error fetching not applied counts: {e}")
     
     # Get applied to counts (employees who applied TO each district - first preference)
     try:
@@ -1129,7 +1117,6 @@ def vacancy_list():
         displaced = displaced_counts.get(district, 0)
         applied_from = applied_from_counts.get(district, 0)
         applied_to = applied_to_counts.get(district, 0)
-        not_applied = not_applied_counts.get(district, 0)
         
         # Total available = reported + cascade vacancies
         total_available = vacancy_reported + cascade
@@ -1145,7 +1132,6 @@ def vacancy_list():
             'vacancy_reported': vacancy_reported,
             'displaced': displaced,
             'applied_from': applied_from,
-            'not_applied': not_applied,
             'cascade': cascade,
             'total_available': total_available,
             'applied_to': applied_to,
