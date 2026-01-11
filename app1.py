@@ -10,7 +10,6 @@ from functools import wraps
 import os
 import io
 import csv
-import time
 
 from config import config
 
@@ -31,39 +30,7 @@ MONTHS = app.config['MONTHS']
 VALID_USERS = app.config['VALID_USERS']
 
 
-# ==================== HEALTH CHECK & ERROR HANDLING ====================
-@app.route('/health')
-def health_check():
-    """Health check endpoint for Render"""
-    try:
-        # Test database connection
-        db.session.execute(db.text('SELECT 1'))
-        db.session.commit()
-        return jsonify({'status': 'healthy', 'database': 'connected'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
-
-
-@app.errorhandler(502)
-def bad_gateway_error(error):
-    """Handle 502 errors gracefully"""
-    return render_template('error.html', 
-                          error='Service temporarily unavailable. Please refresh the page.'), 502
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors and attempt database reconnection"""
-    try:
-        db.session.rollback()
-    except:
-        pass
-    return render_template('error.html', 
-                          error='Internal server error. Please try again.'), 500
-
-
-# ==================== USER MODEL ======================================
+# ==================== USER MODEL ====================
 class User(UserMixin):
     """Simple user model for authentication"""
     def __init__(self, user_id):
@@ -1155,53 +1122,33 @@ def save_vacancy():
 def application_list():
     """View transfer applications - employees who haven't applied yet"""
     prefix = get_table_prefix()
-    district_filter = request.args.get('district', 'All Districts')  # Default to All Districts
+    district_filter = request.args.get('district', '')
     
     if not district_filter:
-        district_filter = 'All Districts'
+        return render_template('application.html',
+                             employees=[],
+                             districts=DISTRICTS,
+                             district_filter='',
+                             format_duration=format_duration)
     
-    try:
-        # Check if "All Districts" is selected
-        if district_filter == 'All Districts':
-            # Get employees NOT in transfer_applied from ALL districts
-            result = db.session.execute(db.text(f"""
-                SELECT j.pen, j.name, j.institution, j.duration_days, j.district
-                FROM {prefix}jphn j
-                WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-                ORDER BY j.district, j.duration_days DESC
-            """))
-            
-            employees = result.fetchall()
-            
-            # Get count of already applied from all districts
-            applied_result = db.session.execute(db.text(f"""
-                SELECT COUNT(*) FROM {prefix}transfer_applied
-            """))
-            applied_count = applied_result.fetchone()[0] or 0
-        else:
-            # Get employees NOT in transfer_applied for this district
-            result = db.session.execute(db.text(f"""
-                SELECT j.pen, j.name, j.institution, j.duration_days
-                FROM {prefix}jphn j
-                WHERE j.district = :district
-                AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-                ORDER BY j.duration_days DESC
-            """), {'district': district_filter})
-            
-            employees = result.fetchall()
-            
-            # Get count of already applied
-            applied_result = db.session.execute(db.text(f"""
-                SELECT COUNT(*) FROM {prefix}transfer_applied t
-                INNER JOIN {prefix}jphn j ON t.pen = j.pen
-                WHERE j.district = :district
-            """), {'district': district_filter})
-            applied_count = applied_result.fetchone()[0] or 0
-    except Exception as e:
-        db.session.rollback()
-        employees = []
-        applied_count = 0
-        flash(f'Error loading employees: {str(e)}', 'error')
+    # Get employees NOT in transfer_applied for this district
+    result = db.session.execute(db.text(f"""
+        SELECT j.pen, j.name, j.institution, j.duration_days
+        FROM {prefix}jphn j
+        WHERE j.district = :district
+        AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+        ORDER BY j.duration_days DESC
+    """), {'district': district_filter})
+    
+    employees = result.fetchall()
+    
+    # Get count of already applied
+    applied_result = db.session.execute(db.text(f"""
+        SELECT COUNT(*) FROM {prefix}transfer_applied t
+        INNER JOIN {prefix}jphn j ON t.pen = j.pen
+        WHERE j.district = :district
+    """), {'district': district_filter})
+    applied_count = applied_result.fetchone()[0] or 0
     
     return render_template('application.html',
                          employees=employees,
@@ -1209,27 +1156,6 @@ def application_list():
                          district_filter=district_filter,
                          applied_count=applied_count,
                          format_duration=format_duration)
-
-
-@app.route('/application/check/<pen>')
-@login_required
-@requires_transfer_session
-def check_applied(pen):
-    """Check if an employee has already applied"""
-    prefix = get_table_prefix()
-    try:
-        result = db.session.execute(db.text(f"""
-            SELECT t.pen, j.name, j.district 
-            FROM {prefix}transfer_applied t
-            INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            WHERE t.pen = :pen
-        """), {'pen': pen})
-        emp = result.fetchone()
-        if emp:
-            return jsonify({'applied': True, 'name': emp[1], 'district': emp[2]})
-        return jsonify({'applied': False})
-    except:
-        return jsonify({'applied': False})
 
 
 @app.route('/application/mark', methods=['POST'])
@@ -1296,8 +1222,9 @@ def mark_applied():
         db.session.rollback()
         flash(f'Error: {str(e)}', 'error')
     
-    # Redirect to All Districts (empty district) after adding employee
-    return redirect(url_for('application_list'))
+    # Stay on the same page with the same district filter
+    district = request.form.get('district', '')
+    return redirect(url_for('application_list', district=district))
 
 
 @app.route('/applied')
@@ -1313,8 +1240,7 @@ def applied_employees():
         SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
                j.district_join_date, j.weightage, j.weightage_details,
                t.receipt_numbers, t.applied_date, t.special_priority,
-               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
-               j.weightage_priority
+               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
         WHERE 1=1
@@ -1382,93 +1308,6 @@ def clear_applied_list():
         flash(f'Error: {str(e)}', 'error')
     
     return redirect(url_for('applied_employees'))
-
-
-@app.route('/applied/edit/<pen>', methods=['GET', 'POST'])
-@login_required
-@requires_transfer_session
-def edit_applied(pen):
-    """Edit applied employee details"""
-    prefix = get_table_prefix()
-    
-    if request.method == 'POST':
-        try:
-            receipt_numbers = request.form.get('receipt_numbers', '')
-            applied_date = request.form.get('applied_date', '')
-            special_priority = 'Yes' if request.form.get('special_priority') else 'No'
-            has_weightage = request.form.get('has_weightage')
-            weightage_details = request.form.get('weightage_details', '')
-            weightage_priority = int(request.form.get('weightage_priority', 5))
-            
-            # Get preferences
-            prefs = []
-            for i in range(1, 9):
-                prefs.append(request.form.get(f'pref{i}', ''))
-            
-            # Update transfer_applied
-            db.session.execute(db.text(f"""
-                UPDATE {prefix}transfer_applied
-                SET receipt_numbers = :receipt, applied_date = :applied_date,
-                    special_priority = :special_priority,
-                    pref1 = :p1, pref2 = :p2, pref3 = :p3, pref4 = :p4,
-                    pref5 = :p5, pref6 = :p6, pref7 = :p7, pref8 = :p8
-                WHERE pen = :pen
-            """), {
-                'receipt': receipt_numbers, 'applied_date': applied_date,
-                'special_priority': special_priority,
-                'p1': prefs[0], 'p2': prefs[1], 'p3': prefs[2], 'p4': prefs[3],
-                'p5': prefs[4], 'p6': prefs[5], 'p7': prefs[6], 'p8': prefs[7],
-                'pen': pen
-            })
-            
-            # Update weightage in jphn table
-            if has_weightage:
-                db.session.execute(db.text(f"""
-                    UPDATE {prefix}jphn
-                    SET weightage = 'Yes', weightage_details = :details, weightage_priority = :priority
-                    WHERE pen = :pen
-                """), {'details': weightage_details, 'priority': weightage_priority, 'pen': pen})
-            else:
-                db.session.execute(db.text(f"""
-                    UPDATE {prefix}jphn
-                    SET weightage = 'No', weightage_details = '', weightage_priority = 5
-                    WHERE pen = :pen
-                """), {'pen': pen})
-            
-            db.session.commit()
-            flash('Application updated successfully!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'error')
-        
-        return redirect(url_for('applied_employees'))
-    
-    # GET request - return employee data as JSON for modal
-    try:
-        result = db.session.execute(db.text(f"""
-            SELECT j.pen, j.name, j.institution, j.district, j.weightage, j.weightage_details, j.weightage_priority,
-                   t.receipt_numbers, t.applied_date, t.special_priority,
-                   t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
-            FROM {prefix}jphn j
-            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
-            WHERE j.pen = :pen
-        """), {'pen': pen})
-        emp = result.fetchone()
-        
-        if emp:
-            return jsonify({
-                'success': True,
-                'data': {
-                    'pen': emp[0], 'name': emp[1], 'institution': emp[2], 'district': emp[3],
-                    'weightage': emp[4], 'weightage_details': emp[5] or '', 'weightage_priority': emp[6] or 5,
-                    'receipt_numbers': emp[7] or '', 'applied_date': emp[8] or '', 'special_priority': emp[9],
-                    'pref1': emp[10] or '', 'pref2': emp[11] or '', 'pref3': emp[12] or '', 'pref4': emp[13] or '',
-                    'pref5': emp[14] or '', 'pref6': emp[15] or '', 'pref7': emp[16] or '', 'pref8': emp[17] or ''
-                }
-            })
-        return jsonify({'success': False, 'error': 'Employee not found'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
 
 
 # ==================== DRAFT LIST ROUTES ====================

@@ -70,8 +70,9 @@
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 4, 'text')">Current District</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 5, 'duration')">Duration</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 6, 'text')">Weightage</th>
-                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'text')">Pref 1</th>
-                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Receipt</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'number')">Priority</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -89,6 +90,13 @@
                         <span class="badge badge-warning" title="{{ emp[7] or '' }}">Yes</span>
                         {% else %}
                         <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp[6] == 'Yes' %}
+                        <span class="badge badge-info">{{ emp[19] or 5 }}</span>
+                        {% else %}
+                        <span class="badge badge-secondary">NA</span>
                         {% endif %}
                     </td>
                     <td class="pref-cell">{{ emp[11] or '-' }}</td>
@@ -114,7 +122,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" class="no-data">
+                    <td colspan="11" class="no-data">
                         <i class="fas fa-inbox"></i>
                         <p>No applied employees found</p>
                         <a href="{{ url_for('application_list') }}" class="btn btn-primary">Mark Applications</a>
