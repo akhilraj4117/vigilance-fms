@@ -70,7 +70,7 @@
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 4, 'text')">Current District</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 5, 'duration')">Duration</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 6, 'text')">Weightage</th>
-                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'number')">Priority</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'text')">Reason</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
                     <th>Actions</th>
@@ -94,7 +94,7 @@
                     </td>
                     <td>
                         {% if emp[6] == 'Yes' %}
-                        <span class="badge badge-info">{{ emp[19] or 5 }}</span>
+                        <span title="{{ emp[7] or '' }}">{{ emp[7] or '-' }}</span>
                         {% else %}
                         <span class="badge badge-secondary">NA</span>
                         {% endif %}
