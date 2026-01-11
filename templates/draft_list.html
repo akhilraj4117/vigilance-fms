@@ -873,11 +873,21 @@ window.onclick = function(e) {
     @page {
         size: A4 landscape;
         margin: 10mm;
+        /* Remove browser headers and footers */
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    
+    /* Hide URL and other browser-added content */
+    html {
+        margin: 0;
+        padding: 0;
     }
     
     body {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        margin: 10mm;
     }
     
     .page-header, .filter-section, .header-actions, 
