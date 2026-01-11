@@ -9,9 +9,9 @@
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
             </button>
-            <a href="{{ url_for('export_csv', list_type='applied') }}" class="btn btn-secondary">
-                <i class="fas fa-download"></i> Export CSV
-            </a>
+            <button type="button" class="btn btn-secondary" onclick="exportExcel()">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
             <form method="POST" action="{{ url_for('clear_applied_list') }}" style="display:inline" 
                   onsubmit="return confirm('Clear ALL applied employees? This will remove all applications and preferences. This cannot be undone!')">
                 <button type="submit" class="btn btn-danger">
@@ -467,6 +467,102 @@ function clearSearch() {
     filterTable();
     searchInput.focus();
     document.querySelector('.record-count').textContent = 'Total: {{ employees|length }} employee(s)';
+}
+
+// Export to Excel function using SheetJS
+function exportExcel() {
+    // Prepare data for export
+    const appliedData = [
+        {% for emp in employees %}
+        {
+            pen: {{ emp[0]|tojson }},
+            name: {{ emp[1]|tojson }},
+            institution: {{ emp[2]|tojson }},
+            district: {{ emp[3]|tojson }},
+            duration: {{ emp[4]|tojson }},
+            weightage: {{ emp[6]|tojson }},
+            weightageReason: {{ emp[7]|tojson }},
+            receipt: {{ emp[8]|tojson }},
+            pref1: {{ emp[11]|tojson }},
+            pref2: {{ emp[12]|tojson }},
+            pref3: {{ emp[13]|tojson }},
+            pref4: {{ emp[14]|tojson }},
+            pref5: {{ emp[15]|tojson }},
+            pref6: {{ emp[16]|tojson }},
+            pref7: {{ emp[17]|tojson }},
+            pref8: {{ emp[18]|tojson }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    
+    // Create worksheet data
+    const wsData = [];
+    
+    // Header rows
+    wsData.push(['JPHN Transfer Management System']);
+    wsData.push(['Applied Employees List']);
+    wsData.push([`Generated: ${new Date().toLocaleDateString()}`]);
+    wsData.push([]);
+    
+    // Column headers
+    const headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'Current District', 'Duration (Days)', 
+                     'Weightage', 'Reason', 'Receipt No.', 'Pref 1', 'Pref 2', 'Pref 3', 'Pref 4', 
+                     'Pref 5', 'Pref 6', 'Pref 7', 'Pref 8'];
+    wsData.push(headers);
+    
+    // Data rows
+    appliedData.forEach((emp, idx) => {
+        wsData.push([
+            idx + 1,
+            emp.pen,
+            emp.name,
+            emp.institution,
+            emp.district,
+            emp.duration || '',
+            emp.weightage || 'No',
+            emp.weightageReason || 'NA',
+            emp.receipt || '',
+            emp.pref1 || '',
+            emp.pref2 || '',
+            emp.pref3 || '',
+            emp.pref4 || '',
+            emp.pref5 || '',
+            emp.pref6 || '',
+            emp.pref7 || '',
+            emp.pref8 || ''
+        ]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths
+    ws['!cols'] = [
+        {wch: 8},   // Sl. No.
+        {wch: 12},  // PEN
+        {wch: 25},  // Name
+        {wch: 30},  // Institution
+        {wch: 18},  // District
+        {wch: 12},  // Duration
+        {wch: 10},  // Weightage
+        {wch: 20},  // Reason
+        {wch: 12},  // Receipt
+        {wch: 15},  // Pref 1
+        {wch: 15},  // Pref 2
+        {wch: 15},  // Pref 3
+        {wch: 15},  // Pref 4
+        {wch: 15},  // Pref 5
+        {wch: 15},  // Pref 6
+        {wch: 15},  // Pref 7
+        {wch: 15}   // Pref 8
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Applied Employees');
+    
+    // Generate filename with date
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    XLSX.writeFile(wb, `applied_employees_${date}.xlsx`);
 }
 </script>
 
