@@ -1610,10 +1610,11 @@ def export_applied_excel():
     wb.save(output)
     output.seek(0)
     
-    return Response(
-        output.getvalue(),
+    return send_file(
+        output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': f'attachment; filename=applied_employees_{datetime.now().strftime("%Y%m%d")}.xlsx'}
+        as_attachment=True,
+        download_name=f'applied_employees_{datetime.now().strftime("%Y%m%d")}.xlsx'
     )
 
 
