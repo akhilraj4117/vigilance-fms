@@ -2998,6 +2998,57 @@ def api_debug_vacancy():
         return jsonify({'error': str(e), 'table': f'{prefix}vacancy'})
 
 
+@app.route('/api/debug/district/<district>')
+@login_required
+@requires_transfer_session
+def api_debug_district(district):
+    """Debug: Show detailed breakdown for a specific district"""
+    prefix = get_table_prefix()
+    
+    try:
+        # Applied from this district (in transfer_applied)
+        applied_from = db.session.execute(db.text(f"""
+            SELECT j.pen, j.name, t.pref1, t.pref2, t.pref3
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE j.district = :district
+        """), {'district': district}).fetchall()
+        
+        # In draft FROM this district (leaving)
+        draft_leaving = db.session.execute(db.text(f"""
+            SELECT d.pen, j.name, j.district as from_district, d.transfer_to_district, d.remarks
+            FROM {prefix}transfer_draft d
+            INNER JOIN {prefix}jphn j ON d.pen = j.pen
+            WHERE j.district = :district AND j.district != d.transfer_to_district
+        """), {'district': district}).fetchall()
+        
+        # In draft TO this district (filling)
+        draft_filling = db.session.execute(db.text(f"""
+            SELECT d.pen, j.name, j.district as from_district, d.transfer_to_district
+            FROM {prefix}transfer_draft d
+            INNER JOIN {prefix}jphn j ON d.pen = j.pen
+            WHERE d.transfer_to_district = :district
+        """), {'district': district}).fetchall()
+        
+        return jsonify({
+            'district': district,
+            'applied_from': {
+                'count': len(applied_from),
+                'employees': [{'pen': r[0], 'name': r[1], 'pref1': r[2], 'pref2': r[3], 'pref3': r[4]} for r in applied_from]
+            },
+            'draft_leaving_cascade': {
+                'count': len(draft_leaving),
+                'employees': [{'pen': r[0], 'name': r[1], 'from': r[2], 'to': r[3], 'remarks': r[4]} for r in draft_leaving]
+            },
+            'draft_filling': {
+                'count': len(draft_filling),
+                'employees': [{'pen': r[0], 'name': r[1], 'from': r[2], 'to': r[3]} for r in draft_filling]
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
 # ==================== ERROR HANDLERS ====================
 
 @app.errorhandler(404)
