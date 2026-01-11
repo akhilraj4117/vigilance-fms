@@ -1037,44 +1037,60 @@ def vacancy_list():
     prefix = get_table_prefix()
     autofill_ran = check_autofill_ran()
     
+    vacancy_data = {}
+    filled_counts = {}
+    cascade_counts = {}
+    displaced_counts = {}
+    applied_from_counts = {}
+    applied_to_counts = {}
+    not_applied_counts = {}
+    
+    # Get all vacancy data in one query
     try:
-        # Get all vacancy data in one query
         vacancy_result = db.session.execute(db.text(f"""
             SELECT district, total_strength, vacancy_reported FROM {prefix}vacancy
         """))
         vacancy_data = {row[0]: {'total_strength': row[1] or 0, 'vacancy_reported': row[2] or 0} 
                        for row in vacancy_result.fetchall()}
-        
-        filled_counts = {}
-        cascade_counts = {}
-        displaced_counts = {}
-        applied_from_counts = {}
-        applied_to_counts = {}
-        
-        # Get applied from counts (employees who applied FROM each district)
+    except Exception as e:
+        print(f"Error fetching vacancy data: {e}")
+    
+    # Get applied from counts (employees who applied FROM each district)
+    try:
+        applied_from_result = db.session.execute(db.text(f"""
+            SELECT j.district, COUNT(*) FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            GROUP BY j.district
+        """))
+        applied_from_counts = {row[0]: row[1] for row in applied_from_result.fetchall()}
+    except Exception as e:
+        print(f"Error fetching applied from counts: {e}")
+    
+    # Get not applied counts (employees who have NOT applied FROM each district)
+    try:
+        not_applied_result = db.session.execute(db.text(f"""
+            SELECT j.district, COUNT(*) FROM {prefix}jphn j
+            WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+            GROUP BY j.district
+        """))
+        not_applied_counts = {row[0]: row[1] for row in not_applied_result.fetchall()}
+    except Exception as e:
+        print(f"Error fetching not applied counts: {e}")
+    
+    # Get applied to counts (employees who applied TO each district - first preference)
+    try:
+        applied_to_result = db.session.execute(db.text(f"""
+            SELECT t.pref1, COUNT(*) FROM {prefix}transfer_applied t
+            WHERE t.pref1 IS NOT NULL AND t.pref1 != ''
+            GROUP BY t.pref1
+        """))
+        applied_to_counts = {row[0]: row[1] for row in applied_to_result.fetchall()}
+    except Exception as e:
+        print(f"Error fetching applied to counts: {e}")
+    
+    # Only fetch filled/cascade/displaced if autofill has been run
+    if autofill_ran:
         try:
-            applied_from_result = db.session.execute(db.text(f"""
-                SELECT district, COUNT(*) FROM {prefix}jphn 
-                WHERE applied = 'yes'
-                GROUP BY district
-            """))
-            applied_from_counts = {row[0]: row[1] for row in applied_from_result.fetchall()}
-        except:
-            applied_from_counts = {}
-        
-        # Get applied to counts (employees who applied TO each district)
-        try:
-            applied_to_result = db.session.execute(db.text(f"""
-                SELECT option1, COUNT(*) FROM {prefix}jphn 
-                WHERE applied = 'yes' AND option1 IS NOT NULL AND option1 != ''
-                GROUP BY option1
-            """))
-            applied_to_counts = {row[0]: row[1] for row in applied_to_result.fetchall()}
-        except:
-            applied_to_counts = {}
-        
-        # Only fetch filled/cascade/displaced if autofill has been run
-        if autofill_ran:
             # Get filled counts (transfers TO each district) in one query
             filled_result = db.session.execute(db.text(f"""
                 SELECT transfer_to_district, COUNT(*) FROM {prefix}transfer_draft 
@@ -1099,15 +1115,8 @@ def vacancy_list():
                 GROUP BY j.district
             """))
             displaced_counts = {row[0]: row[1] for row in displaced_result.fetchall()}
-        
-    except Exception as e:
-        print(f"Error fetching vacancy data: {e}")
-        vacancy_data = {}
-        filled_counts = {}
-        cascade_counts = {}
-        displaced_counts = {}
-        applied_from_counts = {}
-        applied_to_counts = {}
+        except Exception as e:
+            print(f"Error fetching transfer draft data: {e}")
     
     vacancies = []
     for district in DISTRICTS:
@@ -1120,6 +1129,7 @@ def vacancy_list():
         displaced = displaced_counts.get(district, 0)
         applied_from = applied_from_counts.get(district, 0)
         applied_to = applied_to_counts.get(district, 0)
+        not_applied = not_applied_counts.get(district, 0)
         
         # Total available = reported + cascade vacancies
         total_available = vacancy_reported + cascade
@@ -1135,6 +1145,7 @@ def vacancy_list():
             'vacancy_reported': vacancy_reported,
             'displaced': displaced,
             'applied_from': applied_from,
+            'not_applied': not_applied,
             'cascade': cascade,
             'total_available': total_available,
             'applied_to': applied_to,
@@ -2309,6 +2320,80 @@ def delete_from_final(pen):
         flash(f'Error: {str(e)}', 'error')
     
     return redirect(url_for('final_list'))
+
+
+# ==================== EXCLUDED EMPLOYEES ROUTES ====================
+
+@app.route('/draft/excluded')
+@login_required
+@requires_transfer_session
+def get_excluded_from_draft():
+    """Get employees who applied but were NOT included in draft list"""
+    prefix = get_table_prefix()
+    
+    try:
+        result = db.session.execute(db.text(f"""
+            SELECT j.pen, j.name, j.institution, j.district, j.district_join_date, 
+                   j.duration_days, j.weightage, t.pref1, t.pref2, t.pref3
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+            ORDER BY j.district, j.duration_days DESC
+        """))
+        employees = result.fetchall()
+        
+        data = [{
+            'pen': emp[0],
+            'name': emp[1],
+            'institution': emp[2],
+            'district': emp[3],
+            'district_join_date': emp[4] or '',
+            'duration': format_duration(emp[5]) if emp[5] else '',
+            'weightage': emp[6] or 'No',
+            'pref1': emp[7] or '',
+            'pref2': emp[8] or '',
+            'pref3': emp[9] or ''
+        } for emp in employees]
+        
+        return jsonify({'success': True, 'employees': data, 'count': len(data)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/final/excluded')
+@login_required
+@requires_transfer_session
+def get_excluded_from_final():
+    """Get employees who applied but were NOT included in final list"""
+    prefix = get_table_prefix()
+    
+    try:
+        result = db.session.execute(db.text(f"""
+            SELECT j.pen, j.name, j.institution, j.district, j.district_join_date, 
+                   j.duration_days, j.weightage, t.pref1, t.pref2, t.pref3
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_final)
+            ORDER BY j.district, j.duration_days DESC
+        """))
+        employees = result.fetchall()
+        
+        data = [{
+            'pen': emp[0],
+            'name': emp[1],
+            'institution': emp[2],
+            'district': emp[3],
+            'district_join_date': emp[4] or '',
+            'duration': format_duration(emp[5]) if emp[5] else '',
+            'weightage': emp[6] or 'No',
+            'pref1': emp[7] or '',
+            'pref2': emp[8] or '',
+            'pref3': emp[9] or ''
+        } for emp in employees]
+        
+        return jsonify({'success': True, 'employees': data, 'count': len(data)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 # ==================== EXPORT ROUTES ====================

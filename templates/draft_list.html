@@ -6,6 +6,9 @@
     <div class="page-header">
         <h1><i class="fas fa-clipboard-list"></i> Draft Transfer List</h1>
         <div class="header-actions">
+            <button type="button" class="btn btn-info" onclick="showExcluded()">
+                <i class="fas fa-user-minus"></i> Not Included
+            </button>
             <button type="button" class="btn btn-secondary" onclick="printTable()">
                 <i class="fas fa-print"></i> Print
             </button>
@@ -944,11 +947,201 @@ window.onclick = function(e) {
 .print-header {
     display: none;
 }
+
+/* Excluded Modal Styles */
+.excluded-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.excluded-modal-overlay.show {
+    display: flex;
+}
+.excluded-modal {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    width: 95%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.excluded-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.excluded-modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+.excluded-modal-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.excluded-modal-header .close-btn:hover {
+    color: var(--danger-color);
+}
+.excluded-modal-body {
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.excluded-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.excluded-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.excluded-table th, .excluded-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+}
+.excluded-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+.excluded-table tr:hover {
+    background: var(--bg-hover);
+}
 </style>
 
+<!-- Excluded Employees Modal -->
+<div class="excluded-modal-overlay" id="excludedModal">
+    <div class="excluded-modal">
+        <div class="excluded-modal-header">
+            <h3><i class="fas fa-user-minus"></i> Applied but Not Included in Draft List (<span id="excludedCount">0</span>)</h3>
+            <button class="close-btn" onclick="closeExcludedModal()">&times;</button>
+        </div>
+        <div class="excluded-modal-body">
+            <table class="excluded-table" id="excludedTable">
+                <thead>
+                    <tr>
+                        <th>Sl No</th>
+                        <th>PEN</th>
+                        <th>Name</th>
+                        <th>Institution</th>
+                        <th>District</th>
+                        <th>Duration</th>
+                        <th>Weightage</th>
+                        <th>Pref 1</th>
+                        <th>Pref 2</th>
+                        <th>Pref 3</th>
+                    </tr>
+                </thead>
+                <tbody id="excludedTableBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="excluded-modal-footer">
+            <span id="excludedInfo"></span>
+            <button class="btn btn-success" onclick="exportExcludedExcel()">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 function printTable() {
     window.print();
 }
+
+let excludedEmployees = [];
+
+function showExcluded() {
+    fetch('/draft/excluded')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                excludedEmployees = data.employees;
+                document.getElementById('excludedCount').textContent = data.count;
+                document.getElementById('excludedInfo').textContent = `Total: ${data.count} employees applied but not included`;
+                
+                const tbody = document.getElementById('excludedTableBody');
+                tbody.innerHTML = '';
+                
+                data.employees.forEach((emp, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${emp.pen}</td>
+                        <td>${emp.name}</td>
+                        <td>${emp.institution}</td>
+                        <td>${emp.district}</td>
+                        <td>${emp.duration}</td>
+                        <td>${emp.weightage}</td>
+                        <td>${emp.pref1}</td>
+                        <td>${emp.pref2}</td>
+                        <td>${emp.pref3}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                document.getElementById('excludedModal').classList.add('show');
+            } else {
+                alert('Error loading excluded employees: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+}
+
+function closeExcludedModal() {
+    document.getElementById('excludedModal').classList.remove('show');
+}
+
+function exportExcludedExcel() {
+    if (excludedEmployees.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    const data = excludedEmployees.map((emp, index) => ({
+        'Sl No': index + 1,
+        'PEN': emp.pen,
+        'Name': emp.name,
+        'Institution': emp.institution,
+        'District': emp.district,
+        'Duration': emp.duration,
+        'Weightage': emp.weightage,
+        'Preference 1': emp.pref1,
+        'Preference 2': emp.pref2,
+        'Preference 3': emp.pref3
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Not Included in Draft');
+    XLSX.writeFile(wb, 'Not_Included_in_Draft_List.xlsx');
+}
+
+// Close modal on clicking outside
+document.getElementById('excludedModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeExcludedModal();
+    }
+});
 </script>
 {% endblock %}
