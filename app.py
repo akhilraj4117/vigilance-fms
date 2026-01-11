@@ -2061,7 +2061,13 @@ def auto_fill_vacancies():
             else:
                 not_allocated_count += 1
         
-        db.session.commit()
+        # Commit all changes
+        try:
+            db.session.commit()
+        except Exception as commit_error:
+            db.session.rollback()
+            flash(f'Error committing changes: {str(commit_error)}', 'error')
+            return redirect(url_for('applied_employees'))
         
         # Mark autofill as run in session
         session['autofill_ran'] = True
