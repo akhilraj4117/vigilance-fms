@@ -1161,12 +1161,12 @@ def application_list():
         district_filter = 'All Districts'
     
     try:
-        # Get last applied employee (by applied_date)
+        # Get last applied employee (by last_modified timestamp)
         last_applied_result = db.session.execute(db.text(f"""
             SELECT j.name, j.pen, j.district
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            ORDER BY t.applied_date DESC, t.pen DESC LIMIT 1
+            ORDER BY t.last_modified DESC NULLS LAST, t.pen DESC LIMIT 1
         """))
         last_applied = last_applied_result.fetchone()
         
