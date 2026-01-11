@@ -1379,7 +1379,8 @@ def applied_employees():
                          districts=DISTRICTS,
                          district_filter=district_filter,
                          pref_district=pref_district,
-                         format_duration=format_duration)
+                         format_duration=format_duration,
+                         now=datetime.now)
 
 
 @app.route('/applied/remove/<pen>', methods=['POST'])
@@ -1741,7 +1742,8 @@ def draft_list():
                          districts=DISTRICTS,
                          from_district=from_district,
                          to_district=to_district,
-                         format_duration=format_duration)
+                         format_duration=format_duration,
+                         now=datetime.now)
 
 
 @app.route('/draft/add', methods=['POST'])
