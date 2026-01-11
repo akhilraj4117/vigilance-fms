@@ -6,6 +6,9 @@
     <div class="page-header">
         <h1><i class="fas fa-check-circle"></i> Applied Employees</h1>
         <div class="header-actions">
+            <a href="{{ url_for('applied_employees') }}" class="btn btn-info" title="Sort by District → Special Priority → Weightage Priority → Duration">
+                <i class="fas fa-sort-amount-down"></i> Sort Default
+            </a>
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
             </button>

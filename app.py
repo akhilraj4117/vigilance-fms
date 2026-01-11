@@ -1329,7 +1329,7 @@ def applied_employees():
         query += " AND t.pref1 = :pref_district"
         params['pref_district'] = pref_district
     
-    # Order by district from South to North (Kerala geography)
+    # Order by district from South to North (Kerala geography), then Special Priority, Weightage Priority, Duration
     query += """ ORDER BY CASE j.district
         WHEN 'Thiruvananthapuram' THEN 1
         WHEN 'Kollam' THEN 2
@@ -1345,7 +1345,10 @@ def applied_employees():
         WHEN 'Wayanad' THEN 12
         WHEN 'Kannur' THEN 13
         WHEN 'Kasaragod' THEN 14
-        ELSE 15 END, j.duration_days DESC"""
+        ELSE 15 END,
+        CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+        COALESCE(j.weightage_priority, 5),
+        j.duration_days DESC"""
     
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
@@ -1504,7 +1507,8 @@ def export_applied_excel():
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
                j.weightage, j.weightage_details, t.receipt_numbers,
-               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
+               t.special_priority, j.weightage_priority
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
         ORDER BY CASE j.district
@@ -1522,7 +1526,10 @@ def export_applied_excel():
             WHEN 'Wayanad' THEN 12
             WHEN 'Kannur' THEN 13
             WHEN 'Kasaragod' THEN 14
-            ELSE 15 END, j.duration_days DESC
+            ELSE 15 END,
+            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+            COALESCE(j.weightage_priority, 5),
+            j.duration_days DESC
     """
     
     result = db.session.execute(db.text(query))
