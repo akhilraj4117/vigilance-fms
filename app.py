@@ -1048,6 +1048,30 @@ def vacancy_list():
         filled_counts = {}
         cascade_counts = {}
         displaced_counts = {}
+        applied_from_counts = {}
+        applied_to_counts = {}
+        
+        # Get applied from counts (employees who applied FROM each district)
+        try:
+            applied_from_result = db.session.execute(db.text(f"""
+                SELECT district, COUNT(*) FROM {prefix}jphn 
+                WHERE applied = 'yes'
+                GROUP BY district
+            """))
+            applied_from_counts = {row[0]: row[1] for row in applied_from_result.fetchall()}
+        except:
+            applied_from_counts = {}
+        
+        # Get applied to counts (employees who applied TO each district)
+        try:
+            applied_to_result = db.session.execute(db.text(f"""
+                SELECT option1, COUNT(*) FROM {prefix}jphn 
+                WHERE applied = 'yes' AND option1 IS NOT NULL AND option1 != ''
+                GROUP BY option1
+            """))
+            applied_to_counts = {row[0]: row[1] for row in applied_to_result.fetchall()}
+        except:
+            applied_to_counts = {}
         
         # Only fetch filled/cascade/displaced if autofill has been run
         if autofill_ran:
@@ -1082,6 +1106,8 @@ def vacancy_list():
         filled_counts = {}
         cascade_counts = {}
         displaced_counts = {}
+        applied_from_counts = {}
+        applied_to_counts = {}
     
     vacancies = []
     for district in DISTRICTS:
@@ -1092,6 +1118,8 @@ def vacancy_list():
         filled = filled_counts.get(district, 0)
         cascade = cascade_counts.get(district, 0)
         displaced = displaced_counts.get(district, 0)
+        applied_from = applied_from_counts.get(district, 0)
+        applied_to = applied_to_counts.get(district, 0)
         
         # Total available = reported + cascade vacancies
         total_available = vacancy_reported + cascade
@@ -1106,8 +1134,10 @@ def vacancy_list():
             'total_strength': total_strength,
             'vacancy_reported': vacancy_reported,
             'displaced': displaced,
+            'applied_from': applied_from,
             'cascade': cascade,
             'total_available': total_available,
+            'applied_to': applied_to,
             'filled': filled,
             'remaining': remaining
         })
