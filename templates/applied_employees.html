@@ -13,7 +13,7 @@
                 <i class="fas fa-file-excel"></i> Export Excel
             </a>
             <form method="POST" action="{{ url_for('clear_applied_list') }}" style="display:inline" 
-                  onsubmit="return confirm('Clear ALL applied employees? This will remove all applications and preferences. This cannot be undone!')">>
+                  onsubmit="return confirm('Clear ALL applied employees? This will remove all applications and preferences. This cannot be undone!')">
                 <button type="submit" class="btn btn-danger">
                     <i class="fas fa-trash"></i> Clear All
                 </button>
