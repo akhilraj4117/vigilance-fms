@@ -1206,11 +1206,19 @@ def application_list():
                 WHERE j.district = :district
             """), {'district': district_filter})
             applied_count = applied_result.fetchone()[0] or 0
+        
+        # Get all applied PENs for comparison feature
+        applied_pens_result = db.session.execute(db.text(f"""
+            SELECT pen FROM {prefix}transfer_applied
+        """))
+        applied_pens = [row[0] for row in applied_pens_result.fetchall()]
+        
     except Exception as e:
         db.session.rollback()
         employees = []
         applied_count = 0
         last_applied = None
+        applied_pens = []
         flash(f'Error loading employees: {str(e)}', 'error')
     
     return render_template('application.html',
@@ -1219,6 +1227,7 @@ def application_list():
                          district_filter=district_filter,
                          applied_count=applied_count,
                          last_applied=last_applied,
+                         applied_pens=applied_pens,
                          format_duration=format_duration)
 
 

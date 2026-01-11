@@ -5,7 +5,11 @@
 <div class="page-container">
     <div class="page-header">
         <h1><i class="fas fa-file-alt"></i> Transfer Applications</h1>
-        <p class="page-subtitle">Mark employees who have applied for transfer</p>
+        <div class="header-actions">
+            <button type="button" class="btn btn-info" onclick="openCompareModal()">
+                <i class="fas fa-exchange-alt"></i> Compare PENs
+            </button>
+        </div>
     </div>
     
     <div class="filter-section">
@@ -840,5 +844,324 @@ function clearSearch() {
     color: #ffc107;
     font-size: 1rem;
 }
+
+/* Compare Modal Styles */
+.compare-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+.compare-modal {
+    background: var(--bg-card);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.compare-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+.compare-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+.compare-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.compare-modal-close:hover {
+    opacity: 0.8;
+}
+.compare-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.compare-upload-section {
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+.compare-upload-section i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+.compare-upload-section p {
+    margin: 0.5rem 0;
+    color: var(--text-muted);
+}
+.compare-file-input {
+    display: none;
+}
+.compare-results {
+    display: none;
+}
+.compare-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.compare-stat {
+    flex: 1;
+    min-width: 150px;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+.compare-stat.uploaded {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+.compare-stat.applied {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.compare-stat.not-applied {
+    background: #fff3e0;
+    color: #e65100;
+}
+.compare-stat .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+.compare-stat .stat-label {
+    font-size: 0.85rem;
+}
+.compare-list {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+.compare-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.compare-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.compare-list th, .compare-list td {
+    padding: 0.5rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.compare-list th {
+    background: var(--bg-main);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+.compare-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
 </style>
+
+<!-- Compare PENs Modal -->
+<div class="compare-modal-overlay" id="compareModal">
+    <div class="compare-modal">
+        <div class="compare-modal-header">
+            <h3><i class="fas fa-exchange-alt"></i> Compare PENs</h3>
+            <button type="button" class="compare-modal-close" onclick="closeCompareModal()">&times;</button>
+        </div>
+        <div class="compare-modal-body">
+            <div class="compare-upload-section" id="compareUploadSection">
+                <i class="fas fa-file-excel"></i>
+                <h4>Upload Excel File with PENs</h4>
+                <p>Upload an Excel file with PEN numbers (one PEN per row in the first column)</p>
+                <input type="file" id="comparePenFile" class="compare-file-input" accept=".xlsx,.xls" onchange="processCompareFile(this)">
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('comparePenFile').click()">
+                    <i class="fas fa-upload"></i> Select Excel File
+                </button>
+            </div>
+            
+            <div class="compare-results" id="compareResults">
+                <div class="compare-stats">
+                    <div class="compare-stat uploaded">
+                        <div class="stat-number" id="statUploaded">0</div>
+                        <div class="stat-label">Uploaded PENs</div>
+                    </div>
+                    <div class="compare-stat applied">
+                        <div class="stat-number" id="statApplied">0</div>
+                        <div class="stat-label">Already Applied</div>
+                    </div>
+                    <div class="compare-stat not-applied">
+                        <div class="stat-number" id="statNotApplied">0</div>
+                        <div class="stat-label">NOT Applied</div>
+                    </div>
+                </div>
+                
+                <div class="compare-list-header">
+                    <strong><i class="fas fa-exclamation-circle"></i> PENs NOT Applied Yet:</strong>
+                    <button type="button" class="btn btn-sm btn-success" onclick="exportNotApplied()">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                <div class="compare-list" id="compareListContainer">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sl. No.</th>
+                                <th>PEN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notAppliedList">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="compare-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="resetCompare()">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+            <button type="button" class="btn btn-danger" onclick="closeCompareModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// Applied PENs list (from server)
+const appliedPens = new Set([
+    {% for emp in applied_pens %}'{{ emp }}'{% if not loop.last %},{% endif %}{% endfor %}
+]);
+
+let notAppliedPens = [];
+
+function openCompareModal() {
+    document.getElementById('compareModal').style.display = 'flex';
+}
+
+function closeCompareModal() {
+    document.getElementById('compareModal').style.display = 'none';
+}
+
+function resetCompare() {
+    document.getElementById('compareUploadSection').style.display = 'block';
+    document.getElementById('compareResults').style.display = 'none';
+    document.getElementById('comparePenFile').value = '';
+    notAppliedPens = [];
+}
+
+function processCompareFile(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            
+            // Extract PENs from first column
+            const uploadedPens = [];
+            rows.forEach(row => {
+                if (row && row[0]) {
+                    const pen = String(row[0]).trim();
+                    if (pen && /^\d+$/.test(pen)) {
+                        uploadedPens.push(pen);
+                    }
+                }
+            });
+            
+            if (uploadedPens.length === 0) {
+                alert('No valid PEN numbers found in the uploaded file.');
+                return;
+            }
+            
+            // Compare with applied PENs
+            notAppliedPens = uploadedPens.filter(pen => !appliedPens.has(pen));
+            const appliedCount = uploadedPens.length - notAppliedPens.length;
+            
+            // Update stats
+            document.getElementById('statUploaded').textContent = uploadedPens.length;
+            document.getElementById('statApplied').textContent = appliedCount;
+            document.getElementById('statNotApplied').textContent = notAppliedPens.length;
+            
+            // Populate not applied list
+            const tbody = document.getElementById('notAppliedList');
+            tbody.innerHTML = '';
+            notAppliedPens.forEach((pen, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${idx + 1}</td><td>${pen}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            // Show results
+            document.getElementById('compareUploadSection').style.display = 'none';
+            document.getElementById('compareResults').style.display = 'block';
+            
+        } catch (err) {
+            alert('Error reading file: ' + err.message);
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+function exportNotApplied() {
+    if (notAppliedPens.length === 0) {
+        alert('No PENs to export');
+        return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const wsData = [['Sl. No.', 'PEN (NOT Applied)']];
+    notAppliedPens.forEach((pen, idx) => {
+        wsData.push([idx + 1, pen]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch: 10}, {wch: 20}];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Not Applied PENs');
+    XLSX.writeFile(wb, `not_applied_pens_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// Close modal when clicking outside
+document.getElementById('compareModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCompareModal();
+    }
+});
+</script>
 {% endblock %}
