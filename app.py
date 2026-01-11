@@ -1161,6 +1161,15 @@ def application_list():
         district_filter = 'All Districts'
     
     try:
+        # Get last applied employee
+        last_applied_result = db.session.execute(db.text(f"""
+            SELECT j.name, j.pen, j.district
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            ORDER BY t.id DESC LIMIT 1
+        """))
+        last_applied = last_applied_result.fetchone()
+        
         # Check if "All Districts" is selected
         if district_filter == 'All Districts':
             # Get employees NOT in transfer_applied from ALL districts
@@ -1201,6 +1210,7 @@ def application_list():
         db.session.rollback()
         employees = []
         applied_count = 0
+        last_applied = None
         flash(f'Error loading employees: {str(e)}', 'error')
     
     return render_template('application.html',
@@ -1208,6 +1218,7 @@ def application_list():
                          districts=DISTRICTS,
                          district_filter=district_filter,
                          applied_count=applied_count,
+                         last_applied=last_applied,
                          format_duration=format_duration)
 
 
@@ -1347,6 +1358,7 @@ def applied_employees():
         WHEN 'Kasaragod' THEN 14
         ELSE 15 END,
         CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+        CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
         COALESCE(j.weightage_priority, 5),
         j.duration_days DESC"""
     
@@ -1528,6 +1540,7 @@ def export_applied_excel():
             WHEN 'Kasaragod' THEN 14
             ELSE 15 END,
             CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+            CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
             COALESCE(j.weightage_priority, 5),
             j.duration_days DESC
     """

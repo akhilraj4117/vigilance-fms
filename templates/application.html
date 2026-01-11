@@ -28,10 +28,12 @@
         <span><i class="fas fa-info-circle"></i> Showing employees from <strong>{{ district_filter }}</strong> who have NOT applied for transfer yet.</span>
         {% if applied_count %}
         {% if district_filter == 'All Districts' %}
-        <span class="already-applied">{{ applied_count }} employee(s) already applied</span>
+        <span class="already-applied">
+            {{ applied_count }} applied{% if last_applied %} | Last: <strong>{{ last_applied[0] }}</strong> ({{ last_applied[2] }}){% endif %}
+        </span>
         {% else %}
         <a href="{{ url_for('applied_employees', district=district_filter) }}" class="already-applied-link">
-            <span class="already-applied">{{ applied_count }} employee(s) already applied <i class="fas fa-external-link-alt"></i></span>
+            <span class="already-applied">{{ applied_count }} applied{% if last_applied %} | Last: <strong>{{ last_applied[0] }}</strong>{% endif %} <i class="fas fa-external-link-alt"></i></span>
         </a>
         {% endif %}
         {% endif %}
