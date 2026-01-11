@@ -1329,7 +1329,23 @@ def applied_employees():
         query += " AND t.pref1 = :pref_district"
         params['pref_district'] = pref_district
     
-    query += " ORDER BY j.district, j.duration_days DESC"
+    # Order by district from South to North (Kerala geography)
+    query += """ ORDER BY CASE j.district
+        WHEN 'Thiruvananthapuram' THEN 1
+        WHEN 'Kollam' THEN 2
+        WHEN 'Pathanamthitta' THEN 3
+        WHEN 'Alappuzha' THEN 4
+        WHEN 'Kottayam' THEN 5
+        WHEN 'Idukki' THEN 6
+        WHEN 'Ernakulam' THEN 7
+        WHEN 'Thrissur' THEN 8
+        WHEN 'Palakkad' THEN 9
+        WHEN 'Malappuram' THEN 10
+        WHEN 'Kozhikode' THEN 11
+        WHEN 'Wayanad' THEN 12
+        WHEN 'Kannur' THEN 13
+        WHEN 'Kasaragod' THEN 14
+        ELSE 15 END, j.duration_days DESC"""
     
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
@@ -1491,7 +1507,22 @@ def export_applied_excel():
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
-        ORDER BY j.district, j.duration_days DESC
+        ORDER BY CASE j.district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END, j.duration_days DESC
     """
     
     result = db.session.execute(db.text(query))
@@ -1655,7 +1686,23 @@ def draft_list():
         query += " AND d.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    query += " ORDER BY d.transfer_to_district, j.duration_days DESC"
+    # Order by transfer_to_district from South to North (Kerala geography)
+    query += """ ORDER BY CASE d.transfer_to_district
+        WHEN 'Thiruvananthapuram' THEN 1
+        WHEN 'Kollam' THEN 2
+        WHEN 'Pathanamthitta' THEN 3
+        WHEN 'Alappuzha' THEN 4
+        WHEN 'Kottayam' THEN 5
+        WHEN 'Idukki' THEN 6
+        WHEN 'Ernakulam' THEN 7
+        WHEN 'Thrissur' THEN 8
+        WHEN 'Palakkad' THEN 9
+        WHEN 'Malappuram' THEN 10
+        WHEN 'Kozhikode' THEN 11
+        WHEN 'Wayanad' THEN 12
+        WHEN 'Kannur' THEN 13
+        WHEN 'Kasaragod' THEN 14
+        ELSE 15 END, j.duration_days DESC"""
     
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
@@ -2150,7 +2197,23 @@ def final_list():
         query += " AND f.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    query += " ORDER BY f.transfer_to_district, j.duration_days DESC"
+    # Order by transfer_to_district from South to North (Kerala geography)
+    query += """ ORDER BY CASE f.transfer_to_district
+        WHEN 'Thiruvananthapuram' THEN 1
+        WHEN 'Kollam' THEN 2
+        WHEN 'Pathanamthitta' THEN 3
+        WHEN 'Alappuzha' THEN 4
+        WHEN 'Kottayam' THEN 5
+        WHEN 'Idukki' THEN 6
+        WHEN 'Ernakulam' THEN 7
+        WHEN 'Thrissur' THEN 8
+        WHEN 'Palakkad' THEN 9
+        WHEN 'Malappuram' THEN 10
+        WHEN 'Kozhikode' THEN 11
+        WHEN 'Wayanad' THEN 12
+        WHEN 'Kannur' THEN 13
+        WHEN 'Kasaragod' THEN 14
+        ELSE 15 END, j.duration_days DESC"""
     
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
