@@ -3518,10 +3518,12 @@
                        style="border: ${isEditing ? '1px solid #ced4da' : 'none'}; background: ${isEditing ? '#fff' : 'transparent'};" 
                        ${isEditing ? '' : 'readonly'}
                        onclick="selectFileDetailsRow(this)">
-                <div class="file-details-wrapped d-none" style="white-space: pre-wrap; word-wrap: break-word; padding: 6px 12px; background: #f8f9fa; border-radius: 4px; min-height: 38px;"></div>
+                <textarea class="form-control file-details-wrapped d-none" 
+                       style="white-space: pre-wrap; word-wrap: break-word; min-height: 80px; resize: vertical;"
+                       ${isEditing ? '' : 'readonly'}></textarea>
             </td>
         `;
-        row.onclick = function() { selectFileDetailsRow(row.querySelector('input')); };
+        row.onclick = function() { selectFileDetailsRow(row.querySelector('.file-details-input')); };
         row.ondblclick = function() { toggleRowWrappedView(row); };
         tbody.appendChild(row);
     }
@@ -3529,17 +3531,19 @@
     // Toggle wrapped view for a row on double-click
     function toggleRowWrappedView(row) {
         const input = row.querySelector('.file-details-input');
-        const wrappedDiv = row.querySelector('.file-details-wrapped');
+        const wrappedTextarea = row.querySelector('.file-details-wrapped');
         
-        if (wrappedDiv.classList.contains('d-none')) {
-            // Show wrapped view
-            wrappedDiv.textContent = input.value;
-            wrappedDiv.classList.remove('d-none');
+        if (wrappedTextarea.classList.contains('d-none')) {
+            // Show wrapped view - copy value from input to textarea
+            wrappedTextarea.value = input.value;
+            wrappedTextarea.classList.remove('d-none');
             input.classList.add('d-none');
             row.style.backgroundColor = '#e7f3ff';
+            wrappedTextarea.focus();
         } else {
-            // Hide wrapped view, show input
-            wrappedDiv.classList.add('d-none');
+            // Hide wrapped view - copy value from textarea back to input
+            input.value = wrappedTextarea.value.replace(/\n/g, ' ').trim();
+            wrappedTextarea.classList.add('d-none');
             input.classList.remove('d-none');
             row.style.backgroundColor = '';
         }
@@ -3611,6 +3615,7 @@
     // Update editing state for all inputs
     function updateFileDetailsEditingState() {
         const inputs = document.querySelectorAll('.file-details-input');
+        const textareas = document.querySelectorAll('.file-details-wrapped');
         const btn = document.getElementById('enableEditingBtn');
         
         if (fileDetailsEditingEnabled) {
@@ -3618,6 +3623,9 @@
                 input.removeAttribute('readonly');
                 input.style.background = '#fff';
                 input.style.border = '1px solid #ced4da';
+            });
+            textareas.forEach(textarea => {
+                textarea.removeAttribute('readonly');
             });
             btn.innerHTML = '<i class="bi bi-lock"></i> Disable Editing';
             btn.classList.remove('btn-info');
@@ -3627,6 +3635,9 @@
                 input.setAttribute('readonly', true);
                 input.style.background = 'transparent';
                 input.style.border = 'none';
+            });
+            textareas.forEach(textarea => {
+                textarea.setAttribute('readonly', true);
             });
             btn.innerHTML = '<i class="bi bi-pencil"></i> Enable Editing';
             btn.classList.remove('btn-success');
