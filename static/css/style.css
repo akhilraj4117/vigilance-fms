@@ -1009,7 +1009,8 @@ textarea.form-control {
 }
 
 .row-special {
-    background: rgba(239, 68, 68, 0.05);
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-left: 3px solid #ef4444;
 }
 
 .row-weightage {
