@@ -1444,6 +1444,7 @@ def applied_employees():
     
     # If filtering by pref_district, add the matched preference number for each employee
     employees_with_pref = []
+    pref_counts = {}  # Count employees per preference number
     if pref_district:
         for emp in employees:
             # emp[11-18] are pref1-pref8
@@ -1453,6 +1454,8 @@ def applied_employees():
                     matched_pref = i + 1
                     break
             employees_with_pref.append((*emp, matched_pref))
+            # Count by preference
+            pref_counts[matched_pref] = pref_counts.get(matched_pref, 0) + 1
         employees = employees_with_pref
     
     return render_template('applied_employees.html',
@@ -1460,6 +1463,7 @@ def applied_employees():
                          districts=DISTRICTS,
                          district_filter=district_filter,
                          pref_district=pref_district,
+                         pref_counts=pref_counts,
                          format_duration=format_duration,
                          now=datetime.now)
 

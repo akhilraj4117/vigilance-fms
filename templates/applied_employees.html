@@ -90,28 +90,23 @@
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
                     {% endif %}
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
-                    <th>Actions</th>
+                    <th class="no-print">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% set current_pref = namespace(value=0) %}
-                {% set sl_no = namespace(value=0) %}
                 {% for emp in employees %}
                 {% if pref_district and emp[20] != current_pref.value %}
                 {% set current_pref.value = emp[20] %}
-                <tr class="preference-section-header">
-                    <td colspan="11">
-                        <div class="pref-section-title">
-                            <i class="fas fa-bookmark"></i>
-                            <span>Preference {{ emp[20] }}</span>
-                            <span class="pref-count">({% set count = employees|selectattr('20', 'equalto', emp[20])|list|length %}{{ count }} applicant{{ 's' if count != 1 else '' }})</span>
-                        </div>
+                <tr class="pref-section-header">
+                    <td colspan="11" class="pref-heading">
+                        <i class="fas fa-bookmark"></i> Preference {{ emp[20] }}
+                        <span class="pref-count">({{ pref_counts.get(emp[20], 0) }} employee{% if pref_counts.get(emp[20], 0) != 1 %}s{% endif %})</span>
                     </td>
                 </tr>
                 {% endif %}
-                {% set sl_no.value = sl_no.value + 1 %}
                 <tr class="{% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %}>
-                    <td>{{ sl_no.value }}</td>
+                    <td>{{ loop.index }}</td>
                     <td>{{ emp[0] }}</td>
                     <td>{{ emp[1] }}</td>
                     <td>{{ emp[2] }}</td>
@@ -548,35 +543,6 @@ function clearSearch() {
     color: var(--danger-color);
 }
 
-/* Preference Section Headers */
-.preference-section-header {
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
-}
-.preference-section-header td {
-    padding: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-}
-.pref-section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    color: #0369a1;
-    font-size: 0.95rem;
-    border-left: 4px solid #0ea5e9;
-}
-.pref-section-title i {
-    color: #0ea5e9;
-}
-.pref-section-title .pref-count {
-    font-weight: normal;
-    color: #64748b;
-    font-size: 0.85rem;
-    margin-left: 0.5rem;
-}
-
 /* Edit Modal Styles */
 .selected-employee-edit {
     background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
@@ -631,6 +597,27 @@ function clearSearch() {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--border-light);
+}
+
+/* Preference Section Headers */
+.pref-section-header td {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color)) !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 0.6rem 1rem !important;
+    border: none !important;
+}
+.pref-heading {
+    font-size: 0.95rem;
+}
+.pref-heading i {
+    margin-right: 0.5rem;
+}
+.pref-count {
+    font-weight: 400;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-left: 0.5rem;
 }
 
 /* Print Styles */
