@@ -1065,14 +1065,31 @@ def vacancy_list():
     except Exception as e:
         print(f"Error fetching applied from counts: {e}")
     
-    # Get applied to counts (employees who applied TO each district - first preference)
+    # Get applied to counts (employees who applied TO each district - all preferences)
+    applied_to_pref1_counts = {}  # First preference counts
+    applied_to_other_counts = {}  # Non-first preference counts
     try:
-        applied_to_result = db.session.execute(db.text(f"""
+        # First preference counts
+        applied_to_pref1_result = db.session.execute(db.text(f"""
             SELECT t.pref1, COUNT(*) FROM {prefix}transfer_applied t
             WHERE t.pref1 IS NOT NULL AND t.pref1 != ''
             GROUP BY t.pref1
         """))
-        applied_to_counts = {row[0]: row[1] for row in applied_to_result.fetchall()}
+        applied_to_pref1_counts = {row[0]: row[1] for row in applied_to_pref1_result.fetchall()}
+        
+        # Non-first preference counts (pref2 to pref8)
+        for pref_col in ['pref2', 'pref3', 'pref4', 'pref5', 'pref6', 'pref7', 'pref8']:
+            pref_result = db.session.execute(db.text(f"""
+                SELECT t.{pref_col}, COUNT(*) FROM {prefix}transfer_applied t
+                WHERE t.{pref_col} IS NOT NULL AND t.{pref_col} != ''
+                GROUP BY t.{pref_col}
+            """))
+            for row in pref_result.fetchall():
+                district = row[0]
+                count = row[1]
+                if district not in applied_to_other_counts:
+                    applied_to_other_counts[district] = 0
+                applied_to_other_counts[district] += count
     except Exception as e:
         print(f"Error fetching applied to counts: {e}")
     
@@ -1116,7 +1133,8 @@ def vacancy_list():
         cascade = cascade_counts.get(district, 0)
         displaced = displaced_counts.get(district, 0)
         applied_from = applied_from_counts.get(district, 0)
-        applied_to = applied_to_counts.get(district, 0)
+        applied_to_pref1 = applied_to_pref1_counts.get(district, 0)
+        applied_to_other = applied_to_other_counts.get(district, 0)
         
         # Total available = reported + cascade vacancies
         total_available = vacancy_reported + cascade
@@ -1134,7 +1152,8 @@ def vacancy_list():
             'applied_from': applied_from,
             'cascade': cascade,
             'total_available': total_available,
-            'applied_to': applied_to,
+            'applied_to_pref1': applied_to_pref1,
+            'applied_to_other': applied_to_other,
             'filled': filled,
             'remaining': remaining
         })
@@ -1373,11 +1392,33 @@ def applied_employees():
         params['district'] = district_filter
     
     if pref_district:
-        query += " AND t.pref1 = :pref_district"
+        # Find which preference column matches this district for ordering
+        query += """ AND (t.pref1 = :pref_district OR t.pref2 = :pref_district OR t.pref3 = :pref_district 
+                    OR t.pref4 = :pref_district OR t.pref5 = :pref_district OR t.pref6 = :pref_district 
+                    OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    # Order by district from South to North (Kerala geography), then Special Priority, Weightage Priority, Duration
-    query += """ ORDER BY CASE j.district
+    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.)
+    # Otherwise, order by district from South to North (Kerala geography), then Special Priority, Weightage Priority, Duration
+    if pref_district:
+        query += f""" ORDER BY 
+            CASE 
+                WHEN t.pref1 = :pref_district THEN 1
+                WHEN t.pref2 = :pref_district THEN 2
+                WHEN t.pref3 = :pref_district THEN 3
+                WHEN t.pref4 = :pref_district THEN 4
+                WHEN t.pref5 = :pref_district THEN 5
+                WHEN t.pref6 = :pref_district THEN 6
+                WHEN t.pref7 = :pref_district THEN 7
+                WHEN t.pref8 = :pref_district THEN 8
+                ELSE 9
+            END,
+            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+            CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
+            COALESCE(j.weightage_priority, 5),
+            j.duration_days DESC"""
+    else:
+        query += """ ORDER BY CASE j.district
         WHEN 'Thiruvananthapuram' THEN 1
         WHEN 'Kollam' THEN 2
         WHEN 'Pathanamthitta' THEN 3
@@ -1400,6 +1441,19 @@ def applied_employees():
     
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
+    
+    # If filtering by pref_district, add the matched preference number for each employee
+    employees_with_pref = []
+    if pref_district:
+        for emp in employees:
+            # emp[11-18] are pref1-pref8
+            matched_pref = 0
+            for i, pref_idx in enumerate(range(11, 19)):
+                if emp[pref_idx] == pref_district:
+                    matched_pref = i + 1
+                    break
+            employees_with_pref.append((*emp, matched_pref))
+        employees = employees_with_pref
     
     return render_template('applied_employees.html',
                          employees=employees,

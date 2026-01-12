@@ -39,7 +39,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="pref_district">Filter by Preference 1</label>
+                <label for="pref_district">To District</label>
                 <select name="pref_district" id="pref_district" class="form-control" onchange="this.form.submit()">
                     <option value="">All Preferences</option>
                     {% for d in districts %}
@@ -84,7 +84,11 @@
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 5, 'duration')">Duration</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 6, 'text')">Weightage</th>
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'text')">Reason</th>
+                    {% if pref_district %}
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'number')">Pref #</th>
+                    {% else %}
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
+                    {% endif %}
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
                     <th>Actions</th>
                 </tr>
@@ -112,7 +116,13 @@
                         <span class="badge badge-secondary">NA</span>
                         {% endif %}
                     </td>
+                    {% if pref_district %}
+                    <td class="pref-cell">
+                        <span class="badge {% if emp[20] == 1 %}badge-success{% elif emp[20] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[20] }}</span>
+                    </td>
+                    {% else %}
                     <td class="pref-cell">{{ emp[11] or '-' }}</td>
+                    {% endif %}
                     <td>{{ emp[8] or '-' }}</td>
                     <td class="action-cell">
                         <button type="button" class="btn btn-sm btn-info" 

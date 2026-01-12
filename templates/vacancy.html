@@ -17,11 +17,11 @@
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 2, 'number')">Total Strength</th>
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 3, 'number')">Vacancy Reported</th>
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 4, 'number')">Applied From</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 5, 'number')">Applied To</th>
                         {% if autofill_ran %}
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 5, 'number')">Displaced</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 6, 'number')">Cascade</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 7, 'number')">Total Available</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 8, 'number')">Applied To</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 6, 'number')">Displaced</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 7, 'number')">Cascade</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 8, 'number')">Total Available</th>
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 9, 'number')">Filled</th>
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 10, 'number')">Remaining</th>
                         <th>Status</th>
@@ -45,11 +45,13 @@
                                    data-district="{{ v.district }}">
                         </td>
                         <td class="applied-from-count" style="color: #059669;">{{ v.applied_from }}</td>
+                        <td class="applied-to-count" style="color: var(--primary-color); font-weight: 500;">
+                            {{ v.applied_to_pref1 }}{% if v.applied_to_other > 0 %} <span style="color: var(--text-muted); font-weight: normal;">(+{{ v.applied_to_other }})</span>{% endif %}
+                        </td>
                         {% if autofill_ran %}
                         <td class="displaced-count" style="color: var(--danger-color);">{{ v.displaced }}</td>
                         <td class="cascade-count" style="color: #8b5cf6;">{{ v.cascade }}</td>
                         <td class="total-available" style="font-weight: 600; color: var(--info-color);">{{ v.total_available }}</td>
-                        <td class="applied-to-count" style="color: #0891b2;">{{ v.applied_to }}</td>
                         <td class="filled-count">{{ v.filled }}</td>
                         <td class="remaining-count {% if v.remaining < 0 %}negative{% endif %}">
                             {{ v.remaining }}
@@ -75,11 +77,11 @@
                         <td><strong id="total-strength">{{ vacancies|sum(attribute='total_strength') }}</strong></td>
                         <td><strong id="total-vacancy">{{ vacancies|sum(attribute='vacancy_reported') }}</strong></td>
                         <td><strong id="total-applied-from">{{ vacancies|sum(attribute='applied_from') }}</strong></td>
+                        <td><strong id="total-applied-to">{{ vacancies|sum(attribute='applied_to_pref1') }}{% if vacancies|sum(attribute='applied_to_other') > 0 %} (+{{ vacancies|sum(attribute='applied_to_other') }}){% endif %}</strong></td>
                         {% if autofill_ran %}
                         <td><strong id="total-displaced">{{ vacancies|sum(attribute='displaced') }}</strong></td>
                         <td><strong id="total-cascade">{{ vacancies|sum(attribute='cascade') }}</strong></td>
                         <td><strong id="total-available">{{ vacancies|sum(attribute='total_available') }}</strong></td>
-                        <td><strong id="total-applied-to">{{ vacancies|sum(attribute='applied_to') }}</strong></td>
                         <td><strong id="total-filled">{{ vacancies|sum(attribute='filled') }}</strong></td>
                         <td><strong id="total-remaining">{{ vacancies|sum(attribute='remaining') }}</strong></td>
                         <td></td>
