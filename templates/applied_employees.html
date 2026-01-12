@@ -7,7 +7,7 @@
         <h1><i class="fas fa-check-circle"></i> Applied Employees</h1>
         <div class="header-actions">
             <a href="{{ url_for('applied_employees') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by District → Special Priority → Weightage Priority → Duration">
-                <i class="fas fa-sort-amount-down"></i> Sort Default
+                <i class="fas fa-sort-amount-down"></i> From District Sort
             </a>
             <a href="{{ url_for('applied_employees', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Pref 1 District (South to North) → Seniority">
                 <i class="fas fa-map-marker-alt"></i> To District Sort
@@ -15,7 +15,10 @@
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
             </button>
-            <a href="{{ url_for('export_applied_excel', district=district_filter, pref_district=pref_district) }}" class="btn btn-secondary">
+            <button type="button" class="btn btn-warning" onclick="unlockAll()">
+                <i class="fas fa-unlock"></i> Unlock All
+            </button>
+            <a href="{{ url_for('export_applied_excel', district=district_filter, pref_district=pref_district, sort=sort_by) }}" class="btn btn-secondary">
                 <i class="fas fa-file-excel"></i> Export Excel
             </a>
             <button type="button" class="btn btn-secondary" onclick="printTable()">
@@ -556,6 +559,49 @@ function toggleLock(pen) {
                     penCell.innerHTML = pen;
                 }
             }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+// Unlock All employees
+function unlockAll() {
+    if (!confirm('Unlock all employees? This will make all employees available for Auto-fill.')) {
+        return;
+    }
+    
+    fetch('/applied/unlock-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update all rows in the table
+            document.querySelectorAll('tr.row-locked').forEach(row => {
+                row.classList.remove('row-locked');
+                row.dataset.locked = 'No';
+                const pen = row.dataset.pen;
+                const lockBtn = row.querySelector('.btn-lock');
+                const penCell = row.cells[1];
+                
+                if (lockBtn) {
+                    lockBtn.classList.remove('btn-danger');
+                    lockBtn.classList.add('btn-secondary');
+                    lockBtn.title = 'Lock - Exclude from Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-unlock"></i>';
+                }
+                if (penCell) {
+                    penCell.innerHTML = pen;
+                }
+            });
+            alert(`${data.count} employee(s) unlocked successfully!`);
         } else {
             alert('Error: ' + data.error);
         }

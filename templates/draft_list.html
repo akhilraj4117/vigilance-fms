@@ -7,7 +7,7 @@
         <h1><i class="fas fa-clipboard-list"></i> Draft Transfer List</h1>
         <div class="header-actions">
             <a href="{{ url_for('draft_list') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by Current District (South to North) → Seniority">
-                <i class="fas fa-sort-amount-down"></i> Sort Default
+                <i class="fas fa-sort-amount-down"></i> From District Sort
             </a>
             <a href="{{ url_for('draft_list', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Transfer To District (South to North) → Seniority">
                 <i class="fas fa-map-marker-alt"></i> To District Sort

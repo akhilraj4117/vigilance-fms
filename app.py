@@ -1660,11 +1660,39 @@ def toggle_lock_applied(pen):
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/applied/unlock-all', methods=['POST'])
+@login_required
+@requires_transfer_session
+def unlock_all_applied():
+    """Unlock all applied employees - make them available for Auto-fill"""
+    try:
+        prefix = get_table_prefix()
+        
+        # Count how many were locked before unlocking
+        result = db.session.execute(db.text(f"""
+            SELECT COUNT(*) FROM {prefix}transfer_applied WHERE locked = 'Yes'
+        """))
+        count = result.fetchone()[0]
+        
+        # Unlock all
+        db.session.execute(db.text(f"""
+            UPDATE {prefix}transfer_applied 
+            SET locked = 'No', last_modified = :now 
+            WHERE locked = 'Yes'
+        """), {'now': datetime.now().isoformat()})
+        db.session.commit()
+        
+        return jsonify({'success': True, 'count': count})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/applied/export-excel')
 @login_required
 @requires_transfer_session
 def export_applied_excel():
-    """Export applied employees list to Excel with proper formatting (respects current filters)"""
+    """Export applied employees list to Excel with proper formatting (respects current filters and sort)"""
     try:
         import openpyxl
         from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -1674,9 +1702,10 @@ def export_applied_excel():
     
     prefix = get_table_prefix()
     
-    # Get filter parameters from request (same as applied_employees view)
+    # Get filter and sort parameters from request (same as applied_employees view)
     district_filter = request.args.get('district', '')
     pref_district = request.args.get('pref_district', '')
+    sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
@@ -1701,8 +1730,9 @@ def export_applied_excel():
                     OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
+    # Order: Apply same sorting as the view
     if pref_district:
+        # When filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
         query += f""" ORDER BY 
             CASE 
                 WHEN t.pref1 = :pref_district THEN 1
@@ -1716,7 +1746,27 @@ def export_applied_excel():
                 ELSE 9
             END,
             j.duration_days DESC"""
+    elif sort_by == 'to_district':
+        # To District Sort: by Pref 1 district (South to North), then by seniority
+        query += """ ORDER BY CASE t.pref1
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END,
+            j.duration_days DESC"""
     else:
+        # Default (From District Sort): by current district (South to North), then Special Priority, Weightage, Duration
         query += """ ORDER BY CASE j.district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
@@ -1802,13 +1852,17 @@ def export_applied_excel():
     ws['A1'].font = header_font
     ws['A1'].alignment = center_align
     
-    # Build subtitle based on filters
+    # Build subtitle based on filters and sort
     subtitle = 'Applied Employees List'
     filter_parts = []
     if district_filter:
-        filter_parts.append(f'District: {district_filter}')
+        filter_parts.append(f'From District: {district_filter}')
     if pref_district:
         filter_parts.append(f'To District: {pref_district}')
+    if sort_by == 'to_district':
+        filter_parts.append('Sorted by: To District')
+    elif not pref_district:
+        filter_parts.append('Sorted by: From District')
     if filter_parts:
         subtitle += ' (' + ', '.join(filter_parts) + ')'
     
