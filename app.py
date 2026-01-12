@@ -222,6 +222,7 @@ def ensure_tables():
         pref8 TEXT,
         special_priority TEXT DEFAULT 'No',
         special_priority_reason TEXT,
+        locked TEXT DEFAULT 'No',
         last_modified TEXT
     );
     
@@ -1374,13 +1375,14 @@ def applied_employees():
     prefix = get_table_prefix()
     district_filter = request.args.get('district', '')
     pref_district = request.args.get('pref_district', '')
+    sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
                j.district_join_date, j.weightage, j.weightage_details,
                t.receipt_numbers, t.applied_date, t.special_priority,
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
-               j.weightage_priority
+               j.weightage_priority, COALESCE(t.locked, 'No') as locked
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
         WHERE 1=1
@@ -1398,9 +1400,9 @@ def applied_employees():
                     OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
-    # Otherwise, order by district from South to North (Kerala geography), then Special Priority, Weightage Priority, Duration
+    # Order: Different sorting options
     if pref_district:
+        # When filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
         query += f""" ORDER BY 
             CASE 
                 WHEN t.pref1 = :pref_district THEN 1
@@ -1414,7 +1416,27 @@ def applied_employees():
                 ELSE 9
             END,
             j.duration_days DESC"""
+    elif sort_by == 'to_district':
+        # To District Sort: by Pref 1 district (South to North), then by seniority
+        query += """ ORDER BY CASE t.pref1
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END,
+            j.duration_days DESC"""
     else:
+        # Default sort: by current district from South to North, then Special Priority, Weightage Priority, Duration
         query += """ ORDER BY CASE j.district
         WHEN 'Thiruvananthapuram' THEN 1
         WHEN 'Kollam' THEN 2
@@ -1460,6 +1482,7 @@ def applied_employees():
                          districts=DISTRICTS,
                          district_filter=district_filter,
                          pref_district=pref_district,
+                         sort_by=sort_by,
                          pref_counts=pref_counts,
                          format_duration=format_duration,
                          now=datetime.now)
@@ -1591,6 +1614,39 @@ def edit_applied(pen):
             })
         return jsonify({'success': False, 'error': 'Employee not found'})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/applied/toggle-lock/<pen>', methods=['POST'])
+@login_required
+@requires_transfer_session
+def toggle_lock_applied(pen):
+    """Toggle lock status of an applied employee"""
+    prefix = get_table_prefix()
+    
+    try:
+        # Get current lock status
+        result = db.session.execute(db.text(f"""
+            SELECT COALESCE(locked, 'No') FROM {prefix}transfer_applied WHERE pen = :pen
+        """), {'pen': pen})
+        row = result.fetchone()
+        
+        if not row:
+            return jsonify({'success': False, 'error': 'Employee not found'})
+        
+        current_status = row[0]
+        new_status = 'No' if current_status == 'Yes' else 'Yes'
+        
+        db.session.execute(db.text(f"""
+            UPDATE {prefix}transfer_applied 
+            SET locked = :status, last_modified = :now 
+            WHERE pen = :pen
+        """), {'status': new_status, 'now': datetime.now().isoformat(), 'pen': pen})
+        db.session.commit()
+        
+        return jsonify({'success': True, 'locked': new_status == 'Yes'})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -1853,6 +1909,7 @@ def draft_list():
     
     from_district = request.args.get('from_district', '')
     to_district = request.args.get('to_district', '')
+    sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
@@ -1874,23 +1931,43 @@ def draft_list():
         query += " AND d.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    # Order by transfer_to_district from South to North (Kerala geography)
-    query += """ ORDER BY CASE d.transfer_to_district
-        WHEN 'Thiruvananthapuram' THEN 1
-        WHEN 'Kollam' THEN 2
-        WHEN 'Pathanamthitta' THEN 3
-        WHEN 'Alappuzha' THEN 4
-        WHEN 'Kottayam' THEN 5
-        WHEN 'Idukki' THEN 6
-        WHEN 'Ernakulam' THEN 7
-        WHEN 'Thrissur' THEN 8
-        WHEN 'Palakkad' THEN 9
-        WHEN 'Malappuram' THEN 10
-        WHEN 'Kozhikode' THEN 11
-        WHEN 'Wayanad' THEN 12
-        WHEN 'Kannur' THEN 13
-        WHEN 'Kasaragod' THEN 14
-        ELSE 15 END, j.duration_days DESC"""
+    # Order based on sort option
+    if sort_by == 'to_district':
+        # To District Sort: by transfer_to_district (South to North), then by seniority
+        query += """ ORDER BY CASE d.transfer_to_district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END, j.duration_days DESC"""
+    else:
+        # Default: by current district (South to North), then by seniority
+        query += """ ORDER BY CASE j.district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END, j.duration_days DESC"""
     
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
@@ -1900,6 +1977,7 @@ def draft_list():
                          districts=DISTRICTS,
                          from_district=from_district,
                          to_district=to_district,
+                         sort_by=sort_by,
                          format_duration=format_duration,
                          now=datetime.now)
 
@@ -2140,6 +2218,7 @@ def auto_fill_vacancies():
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE t.special_priority = 'Yes'
+            AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
@@ -2169,6 +2248,7 @@ def auto_fill_vacancies():
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE j.weightage = 'Yes'
             AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
@@ -2198,6 +2278,7 @@ def auto_fill_vacancies():
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE (j.weightage IS NULL OR j.weightage != 'Yes')
             AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)

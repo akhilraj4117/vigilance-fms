@@ -6,7 +6,13 @@
     <div class="page-header">
         <h1><i class="fas fa-clipboard-list"></i> Draft Transfer List</h1>
         <div class="header-actions">
-            <button type="button" class="btn btn-info" onclick="showExcluded()">
+            <a href="{{ url_for('draft_list') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by Current District (South to North) → Seniority">
+                <i class="fas fa-sort-amount-down"></i> Sort Default
+            </a>
+            <a href="{{ url_for('draft_list', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Transfer To District (South to North) → Seniority">
+                <i class="fas fa-map-marker-alt"></i> To District Sort
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="showExcluded()">
                 <i class="fas fa-user-minus"></i> Not Included
             </button>
             <button type="button" class="btn btn-secondary" onclick="printTable()">
@@ -832,6 +838,12 @@ window.onclick = function(e) {
 </script>
 
 <style>
+/* Active button state for sort buttons */
+.header-actions .btn.active {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
+    font-weight: bold;
+}
+
 .search-group {
     min-width: 250px;
 }

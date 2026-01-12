@@ -6,8 +6,11 @@
     <div class="page-header">
         <h1><i class="fas fa-check-circle"></i> Applied Employees</h1>
         <div class="header-actions">
-            <a href="{{ url_for('applied_employees') }}" class="btn btn-info" title="Sort by District → Special Priority → Weightage Priority → Duration">
+            <a href="{{ url_for('applied_employees') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by District → Special Priority → Weightage Priority → Duration">
                 <i class="fas fa-sort-amount-down"></i> Sort Default
+            </a>
+            <a href="{{ url_for('applied_employees', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Pref 1 District (South to North) → Seniority">
+                <i class="fas fa-map-marker-alt"></i> To District Sort
             </a>
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
@@ -96,19 +99,24 @@
             <tbody>
                 {% set current_pref = namespace(value=0) %}
                 {% for emp in employees %}
-                {% if pref_district and emp[20] != current_pref.value %}
-                {% set current_pref.value = emp[20] %}
+                {% if pref_district and emp[21] != current_pref.value %}
+                {% set current_pref.value = emp[21] %}
                 <tr class="pref-section-header">
                     <td colspan="10" class="pref-heading">
-                        <i class="fas fa-bookmark"></i> Preference {{ emp[20] }}
-                        <span class="pref-count">({{ pref_counts.get(emp[20], 0) }} employee{% if pref_counts.get(emp[20], 0) != 1 %}s{% endif %})</span>
+                        <i class="fas fa-bookmark"></i> Preference {{ emp[21] }}
+                        <span class="pref-count">({{ pref_counts.get(emp[21], 0) }} employee{% if pref_counts.get(emp[21], 0) != 1 %}s{% endif %})</span>
                     </td>
                     <td class="action-cell"></td>
                 </tr>
                 {% endif %}
-                <tr class="{% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %}>
+                <tr class="{% if emp[20] == 'Yes' %}row-locked{% endif %} {% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %} data-pen="{{ emp[0] }}" data-locked="{{ emp[20] }}">
                     <td>{{ loop.index }}</td>
-                    <td>{{ emp[0] }}</td>
+                    <td>
+                        {{ emp[0] }}
+                        {% if emp[20] == 'Yes' %}
+                        <i class="fas fa-lock text-danger" title="Locked - Will not be included in Auto-fill"></i>
+                        {% endif %}
+                    </td>
                     <td>{{ emp[1] }}</td>
                     <td>{{ emp[2] }}</td>
                     <td>{{ emp[3] }}</td>
@@ -129,13 +137,18 @@
                     </td>
                     {% if pref_district %}
                     <td class="pref-cell">
-                        <span class="badge {% if emp[20] == 1 %}badge-success{% elif emp[20] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[20] }}</span>
+                        <span class="badge {% if emp[21] == 1 %}badge-success{% elif emp[21] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[21] }}</span>
                     </td>
                     {% else %}
                     <td class="pref-cell">{{ emp[11] or '-' }}</td>
                     {% endif %}
                     <td>{{ emp[8] or '-' }}</td>
                     <td class="action-cell">
+                        <button type="button" class="btn btn-sm {% if emp[20] == 'Yes' %}btn-danger{% else %}btn-secondary{% endif %} btn-lock" 
+                                onclick="toggleLock('{{ emp[0] }}')"
+                                title="{% if emp[20] == 'Yes' %}Unlock - Include in Auto-fill{% else %}Lock - Exclude from Auto-fill{% endif %}">
+                            <i class="fas {% if emp[20] == 'Yes' %}fa-lock{% else %}fa-unlock{% endif %}"></i>
+                        </button>
                         <button type="button" class="btn btn-sm btn-info" 
                                 onclick="showDetails('{{ emp[0] }}', '{{ emp[1] }}', '{{ emp[11] }}', '{{ emp[12] }}', '{{ emp[13] }}', '{{ emp[14] }}', '{{ emp[15] }}', '{{ emp[16] }}', '{{ emp[17] }}', '{{ emp[18] }}')"
                                 title="View All Preferences">
@@ -503,9 +516,76 @@ function clearSearch() {
     searchInput.focus();
     document.querySelector('.record-count').textContent = 'Total: {{ employees|length }} employee(s)';
 }
+
+// Toggle Lock/Unlock
+function toggleLock(pen) {
+    fetch(`/applied/toggle-lock/${pen}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Find the row and update it
+            const row = document.querySelector(`tr[data-pen="${pen}"]`);
+            if (row) {
+                const lockBtn = row.querySelector('.btn-lock');
+                const penCell = row.cells[1];
+                
+                if (data.locked) {
+                    row.classList.add('row-locked');
+                    row.dataset.locked = 'Yes';
+                    lockBtn.classList.remove('btn-secondary');
+                    lockBtn.classList.add('btn-danger');
+                    lockBtn.title = 'Unlock - Include in Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-lock"></i>';
+                    // Add lock icon to PEN cell
+                    if (!penCell.querySelector('.fa-lock')) {
+                        penCell.innerHTML = pen + ' <i class="fas fa-lock text-danger" title="Locked - Will not be included in Auto-fill"></i>';
+                    }
+                } else {
+                    row.classList.remove('row-locked');
+                    row.dataset.locked = 'No';
+                    lockBtn.classList.remove('btn-danger');
+                    lockBtn.classList.add('btn-secondary');
+                    lockBtn.title = 'Lock - Exclude from Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-unlock"></i>';
+                    // Remove lock icon from PEN cell
+                    penCell.innerHTML = pen;
+                }
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
 </script>
 
 <style>
+/* Active button state for sort buttons */
+.header-actions .btn.active {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
+    font-weight: bold;
+}
+
+/* Locked row styling */
+.row-locked {
+    background-color: rgba(231, 76, 60, 0.1) !important;
+    opacity: 0.8;
+}
+.row-locked td {
+    color: var(--text-muted);
+}
+.text-danger {
+    color: #e74c3c !important;
+    margin-left: 5px;
+}
+
 .search-group {
     min-width: 250px;
 }
