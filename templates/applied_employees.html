@@ -99,10 +99,11 @@
                 {% if pref_district and emp[20] != current_pref.value %}
                 {% set current_pref.value = emp[20] %}
                 <tr class="pref-section-header">
-                    <td colspan="11" class="pref-heading">
+                    <td colspan="10" class="pref-heading">
                         <i class="fas fa-bookmark"></i> Preference {{ emp[20] }}
                         <span class="pref-count">({{ pref_counts.get(emp[20], 0) }} employee{% if pref_counts.get(emp[20], 0) != 1 %}s{% endif %})</span>
                     </td>
+                    <td class="action-cell"></td>
                 </tr>
                 {% endif %}
                 <tr class="{% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %}>
@@ -155,11 +156,12 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="11" class="no-data">
+                    <td colspan="10" class="no-data">
                         <i class="fas fa-inbox"></i>
                         <p>No applied employees found</p>
                         <a href="{{ url_for('application_list') }}" class="btn btn-primary">Mark Applications</a>
                     </td>
+                    <td class="action-cell"></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -670,9 +672,15 @@ function clearSearch() {
         font-weight: bold !important;
     }
     
-    .data-table th:last-child,
+    /* Hide Actions column in print */
+    .data-table th.no-print,
     .data-table td.action-cell {
         display: none !important;
+    }
+    
+    /* Adjust preference section header colspan for print (10 cols instead of 11) */
+    .pref-section-header .pref-heading {
+        border: 1px solid #333 !important;
     }
     
     .print-header {
