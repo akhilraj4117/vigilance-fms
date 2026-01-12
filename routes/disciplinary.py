@@ -1342,6 +1342,7 @@ def get_da_json(id):
         'date_probation_declared': action.date_probation_declared or '',
         'date_superannuation': action.date_superannuation or '',
         'unauthorised_others': action.unauthorised_others or '',
+        'subject': action.subject or '',
         'probation_termination_notice': action.probation_termination_notice or '',
         'ptn_reply_received': action.ptn_reply_received or '',
         'ptn_reply_date': action.ptn_reply_date or '',
