@@ -1228,10 +1228,11 @@ def get_files_by_followup_status(status_type):
     today = datetime.now().date()
     files = []
     
-    # Get all non-closed files with follow-up dates
+    # Get all non-closed files with follow-up dates (excluding Handed Over files)
     query = File.query.filter(
         and_(
             or_(File.is_closed == 0, File.is_closed == None),
+            or_(File.status != 'Handed Over', File.status == None),
             File.follow_up_date != None,
             File.follow_up_date != ''
         )
@@ -1377,9 +1378,12 @@ def randomize_exceeded_dates():
 @login_required
 def randomize_all_files():
     """Randomize follow-up dates for ALL active files with max 25 per day."""
-    # Get all non-closed files
+    # Get all non-closed files (excluding Handed Over files)
     active_files = File.query.filter(
-        or_(File.is_closed == 0, File.is_closed == None)
+        and_(
+            or_(File.is_closed == 0, File.is_closed == None),
+            or_(File.status != 'Handed Over', File.status == None)
+        )
     ).all()
     
     if not active_files:
