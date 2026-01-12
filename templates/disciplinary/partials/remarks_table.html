@@ -91,7 +91,11 @@
             <!-- Generated Message Preview -->
             <div class="mt-3">
                 <label class="form-label small fw-bold">Generated Remarks:</label>
-                <textarea class="form-control" id="remarks_message" name="remarks_message" rows="5" readonly style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14px;"></textarea>
+                <div class="border rounded p-3" style="background: #fff; min-height: 120px;">
+                    <h6 id="remarks_heading" class="text-center fw-bold" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14px; text-decoration: underline;"></h6>
+                    <p id="remarks_body" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14px; margin-top: 10px; white-space: pre-wrap;"></p>
+                </div>
+                <textarea class="form-control d-none" id="remarks_message" name="remarks_message" rows="5" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14px;"></textarea>
                 <div id="pen_status_label" class="mt-2"></div>
             </div>
             
@@ -353,15 +357,28 @@ function updateRemarksPreview() {
     // Combine heading and body with line break
     const message = `${heading}\n\n${bodyText}`;
     
+    // Update formatted display
+    document.getElementById('remarks_heading').textContent = heading;
+    document.getElementById('remarks_body').textContent = bodyText;
+    
+    // Also update hidden textarea for copy/edit functionality
     document.getElementById('remarks_message').value = message;
 }
 
 // Copy remarks to clipboard
 function copyRemarksToClipboard() {
-    const textarea = document.getElementById('remarks_message');
-    textarea.select();
-    textarea.setSelectionRange(0, 99999);
-    document.execCommand('copy');
+    const heading = document.getElementById('remarks_heading').textContent;
+    const body = document.getElementById('remarks_body').textContent;
+    const text = heading + '\n\n' + body;
+    
+    navigator.clipboard.writeText(text).then(() => {}).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.getElementById('remarks_message');
+        textarea.classList.remove('d-none');
+        textarea.select();
+        document.execCommand('copy');
+        textarea.classList.add('d-none');
+    });
     
     // Show feedback
     const btn = event.target.closest('button');
@@ -378,10 +395,29 @@ function copyRemarksToClipboard() {
 
 // Toggle edit mode for remarks
 function toggleEditRemarks() {
+    const displayDiv = document.querySelector('#remarks_heading').parentElement;
     const textarea = document.getElementById('remarks_message');
-    textarea.readOnly = !textarea.readOnly;
-    if (!textarea.readOnly) {
+    const btn = event.target.closest('button');
+    
+    if (textarea.classList.contains('d-none')) {
+        // Show textarea for editing
+        displayDiv.classList.add('d-none');
+        textarea.classList.remove('d-none');
+        textarea.readOnly = false;
         textarea.focus();
+        btn.innerHTML = '<i class="bi bi-eye"></i> Preview';
+    } else {
+        // Show formatted preview
+        displayDiv.classList.remove('d-none');
+        textarea.classList.add('d-none');
+        
+        // Parse edited text and update display
+        const lines = textarea.value.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+            document.getElementById('remarks_heading').textContent = lines[0];
+            document.getElementById('remarks_body').textContent = lines.slice(1).join('\n');
+        }
+        btn.innerHTML = '<i class="bi bi-pencil"></i> Edit';
     }
 }
 
@@ -397,6 +433,8 @@ function clearRemarksForm() {
     document.getElementById('remarks_institution').value = '';
     document.getElementById('status_clear').checked = true;
     document.getElementById('remarks_message').value = '';
+    document.getElementById('remarks_heading').textContent = '';
+    document.getElementById('remarks_body').textContent = '';
     document.getElementById('pen_status_label').innerHTML = '';
     
     // Reset PEN availability to unchecked
