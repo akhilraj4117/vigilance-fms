@@ -265,6 +265,16 @@ def ensure_tables():
             pass
     
     db.session.commit()
+    
+    # Ensure locked column exists in transfer_applied (for existing databases)
+    try:
+        db.session.execute(db.text(f"""
+            ALTER TABLE {prefix}transfer_applied ADD COLUMN IF NOT EXISTS locked TEXT DEFAULT 'No'
+        """))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Note: locked column may already exist or couldn't be added: {e}")
 
 
 def calculate_duration(join_date_str):
