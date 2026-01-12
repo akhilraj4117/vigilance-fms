@@ -15,9 +15,6 @@
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
             </button>
-            <button type="button" class="btn btn-warning" onclick="unlockAll()">
-                <i class="fas fa-unlock"></i> Unlock All
-            </button>
             <a href="{{ url_for('export_applied_excel', district=district_filter, pref_district=pref_district, sort=sort_by) }}" class="btn btn-secondary">
                 <i class="fas fa-file-excel"></i> Export Excel
             </a>
@@ -96,7 +93,12 @@
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
                     {% endif %}
                     <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
-                    <th class="no-print">Actions</th>
+                    <th class="no-print actions-header">
+                        Actions
+                        <button type="button" class="btn btn-warning btn-sm unlock-all-btn" onclick="unlockAll()" title="Unlock All Employees">
+                            <i class="fas fa-unlock"></i> Unlock All
+                        </button>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -617,6 +619,18 @@ function unlockAll() {
 .header-actions .btn.active {
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
     font-weight: bold;
+}
+
+/* Actions column header with Unlock All button */
+.actions-header {
+    position: relative;
+    min-width: 140px;
+}
+.unlock-all-btn {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.75rem;
+    padding: 3px 8px;
 }
 
 /* Locked row styling */
