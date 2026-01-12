@@ -5,7 +5,7 @@ Department of Health Services, Kerala
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file, Response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from functools import wraps
 import os
 import io
@@ -13,6 +13,13 @@ import csv
 import time
 
 from config import config
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_ist_now():
+    """Get current time in IST"""
+    return datetime.now(IST)
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -1345,7 +1352,7 @@ def export_vacancy_excel():
     ws['A2'].alignment = center_align
     
     ws.merge_cells(f'A3:{last_col}3')
-    ws['A3'] = f'Generated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}'
+    ws['A3'] = f'Generated: {get_ist_now().strftime("%d-%m-%Y %I:%M %p")}'
     ws['A3'].alignment = center_align
     
     # Headers (row 5)
@@ -1434,7 +1441,7 @@ def export_vacancy_excel():
     wb.save(output)
     output.seek(0)
     
-    filename = f'Vacancy_Report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    filename = f'Vacancy_Report_{get_ist_now().strftime("%Y%m%d_%H%M%S")}.xlsx'
     
     return Response(
         output.getvalue(),
@@ -1557,7 +1564,7 @@ def mark_applied():
     
     pens = request.form.getlist('pens')
     receipt_numbers = request.form.get('receipt_numbers', '')
-    applied_date = request.form.get('applied_date', datetime.now().strftime('%d-%m-%Y'))
+    applied_date = request.form.get('applied_date', get_ist_now().strftime('%d-%m-%Y'))
     special_priority = 'Yes' if request.form.get('special_priority') else 'No'
     has_weightage = request.form.get('has_weightage')
     weightage_details = request.form.get('weightage_details', '')
@@ -2111,7 +2118,7 @@ def export_applied_excel():
     ws['A2'].alignment = center_align
     
     ws.merge_cells(f'A3:{last_col}3')
-    ws['A3'] = f'Generated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}'
+    ws['A3'] = f'Generated: {get_ist_now().strftime("%d-%m-%Y %I:%M %p")}'
     ws['A3'].alignment = center_align
     
     # Column headers (row 5)
@@ -2186,7 +2193,7 @@ def export_applied_excel():
         filename_parts.append(district_filter.replace(' ', '_'))
     if pref_district:
         filename_parts.append(f'pref1_{pref_district.replace(" ", "_")}')
-    filename_parts.append(datetime.now().strftime("%Y%m%d"))
+    filename_parts.append(get_ist_now().strftime("%Y%m%d"))
     
     return send_file(
         output,
@@ -2333,7 +2340,7 @@ def add_to_draft():
                 VALUES (:pen, :district, :added_date, :now)
             """), {
                 'pen': pen, 'district': transfer_district,
-                'added_date': datetime.now().strftime('%d-%m-%Y'),
+                'added_date': get_ist_now().strftime('%d-%m-%Y'),
                 'now': datetime.now().isoformat()
             })
             added += 1
@@ -2435,7 +2442,7 @@ def auto_fill_vacancies():
                 VALUES (:pen, :to_district, :date, :remarks, :now)
             """), {
                 'pen': pen, 'to_district': to_district,
-                'date': datetime.now().strftime('%d-%m-%Y'),
+                'date': get_ist_now().strftime('%d-%m-%Y'),
                 'remarks': remarks, 'now': datetime.now().isoformat()
             })
             
@@ -2724,7 +2731,7 @@ def confirm_transfers():
             INSERT INTO {prefix}transfer_final (pen, transfer_to_district, confirmed_date, last_modified)
             SELECT pen, transfer_to_district, :date, :now FROM {prefix}transfer_draft
         """), {
-            'date': datetime.now().strftime('%d-%m-%Y'),
+            'date': get_ist_now().strftime('%d-%m-%Y'),
             'now': datetime.now().isoformat()
         })
         
@@ -2951,7 +2958,7 @@ def export_csv(list_type):
         io.BytesIO(output.getvalue().encode('utf-8-sig')),
         mimetype='text/csv',
         as_attachment=True,
-        download_name=f'{list_type}_list_{datetime.now().strftime("%Y%m%d")}.csv'
+        download_name=f'{list_type}_list_{get_ist_now().strftime("%Y%m%d")}.csv'
     )
 
 
@@ -3113,7 +3120,7 @@ def export_excel(list_type):
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'{list_type}_transfer_list_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        download_name=f'{list_type}_transfer_list_{get_ist_now().strftime("%Y%m%d")}.xlsx'
     )
 
 
@@ -3288,7 +3295,7 @@ def export_word(list_type):
         output,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         as_attachment=True,
-        download_name=f'{list_type}_transfer_list_{datetime.now().strftime("%Y%m%d")}.docx'
+        download_name=f'{list_type}_transfer_list_{get_ist_now().strftime("%Y%m%d")}.docx'
     )
 
 
@@ -3431,7 +3438,7 @@ def export_pdf(list_type):
         output,
         mimetype='application/pdf',
         as_attachment=True,
-        download_name=f'{list_type}_transfer_list_{datetime.now().strftime("%Y%m%d")}.pdf'
+        download_name=f'{list_type}_transfer_list_{get_ist_now().strftime("%Y%m%d")}.pdf'
     )
 
 
