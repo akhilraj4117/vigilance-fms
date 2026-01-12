@@ -1632,10 +1632,32 @@ def export_applied_excel():
         params['district'] = district_filter
     
     if pref_district:
-        query += " AND t.pref1 = :pref_district"
+        # Match across ALL preference columns (same as the view)
+        query += """ AND (t.pref1 = :pref_district OR t.pref2 = :pref_district OR t.pref3 = :pref_district 
+                    OR t.pref4 = :pref_district OR t.pref5 = :pref_district OR t.pref6 = :pref_district 
+                    OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    query += """ ORDER BY CASE j.district
+    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.)
+    if pref_district:
+        query += f""" ORDER BY 
+            CASE 
+                WHEN t.pref1 = :pref_district THEN 1
+                WHEN t.pref2 = :pref_district THEN 2
+                WHEN t.pref3 = :pref_district THEN 3
+                WHEN t.pref4 = :pref_district THEN 4
+                WHEN t.pref5 = :pref_district THEN 5
+                WHEN t.pref6 = :pref_district THEN 6
+                WHEN t.pref7 = :pref_district THEN 7
+                WHEN t.pref8 = :pref_district THEN 8
+                ELSE 9
+            END,
+            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
+            CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
+            COALESCE(j.weightage_priority, 5),
+            j.duration_days DESC"""
+    else:
+        query += """ ORDER BY CASE j.district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
             WHEN 'Pathanamthitta' THEN 3
@@ -1659,6 +1681,19 @@ def export_applied_excel():
     
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
+    
+    # If filtering by pref_district, calculate matched preference number for each employee
+    if pref_district:
+        employees_with_pref = []
+        for emp in employees:
+            # emp[8-15] are pref1-pref8
+            matched_pref = 0
+            for i, pref_idx in enumerate(range(8, 16)):
+                if emp[pref_idx] == pref_district:
+                    matched_pref = i + 1
+                    break
+            employees_with_pref.append((*emp, matched_pref))
+        employees = employees_with_pref
     
     # Create workbook
     wb = openpyxl.Workbook()
@@ -1695,9 +1730,14 @@ def export_applied_excel():
     ws.column_dimensions['O'].width = 15   # Pref 6
     ws.column_dimensions['P'].width = 15   # Pref 7
     ws.column_dimensions['Q'].width = 15   # Pref 8
+    if pref_district:
+        ws.column_dimensions['R'].width = 10   # Pref #
+    
+    # Determine last column for merge
+    last_col = 'R' if pref_district else 'Q'
     
     # Title rows
-    ws.merge_cells('A1:Q1')
+    ws.merge_cells(f'A1:{last_col}1')
     ws['A1'] = 'JPHN Transfer Management System'
     ws['A1'].font = header_font
     ws['A1'].alignment = center_align
@@ -1708,16 +1748,16 @@ def export_applied_excel():
     if district_filter:
         filter_parts.append(f'District: {district_filter}')
     if pref_district:
-        filter_parts.append(f'Pref 1: {pref_district}')
+        filter_parts.append(f'To District: {pref_district}')
     if filter_parts:
         subtitle += ' (' + ', '.join(filter_parts) + ')'
     
-    ws.merge_cells('A2:Q2')
+    ws.merge_cells(f'A2:{last_col}2')
     ws['A2'] = subtitle
     ws['A2'].font = subheader_font
     ws['A2'].alignment = center_align
     
-    ws.merge_cells('A3:Q3')
+    ws.merge_cells(f'A3:{last_col}3')
     ws['A3'] = f'Generated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}'
     ws['A3'].alignment = center_align
     
@@ -1725,6 +1765,8 @@ def export_applied_excel():
     headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'Current District', 'Duration',
                'Weightage', 'Reason', 'Receipt No.', 'Pref 1', 'Pref 2', 'Pref 3', 'Pref 4',
                'Pref 5', 'Pref 6', 'Pref 7', 'Pref 8']
+    if pref_district:
+        headers.append('Pref #')
     
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=5, column=col_num, value=header)
@@ -1768,11 +1810,13 @@ def export_applied_excel():
             emp[14] or '',             # Pref 7
             emp[15] or ''              # Pref 8
         ]
+        if pref_district:
+            data.append(emp[18])       # Pref # (matched preference number)
         
         for col_num, value in enumerate(data, 1):
             cell = ws.cell(row=row_num, column=col_num, value=value)
             cell.border = thin_border
-            if col_num == 1:  # Sl. No. column - center aligned
+            if col_num == 1 or (pref_district and col_num == len(data)):  # Sl. No. and Pref # - center aligned
                 cell.alignment = center_align
             else:
                 cell.alignment = left_align
