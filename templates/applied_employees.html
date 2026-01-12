@@ -12,7 +12,7 @@
             <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
                 <i class="fas fa-magic"></i> Auto-fill Vacancies
             </button>
-            <a href="{{ url_for('export_applied_excel') }}" class="btn btn-secondary">
+            <a href="{{ url_for('export_applied_excel', district=district_filter, pref_district=pref_district) }}" class="btn btn-secondary">
                 <i class="fas fa-file-excel"></i> Export Excel
             </a>
             <button type="button" class="btn btn-secondary" onclick="printTable()">

@@ -1601,7 +1601,7 @@ def edit_applied(pen):
 @login_required
 @requires_transfer_session
 def export_applied_excel():
-    """Export applied employees list to Excel with proper formatting"""
+    """Export applied employees list to Excel with proper formatting (respects current filters)"""
     try:
         import openpyxl
         from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -1611,6 +1611,10 @@ def export_applied_excel():
     
     prefix = get_table_prefix()
     
+    # Get filter parameters from request (same as applied_employees view)
+    district_filter = request.args.get('district', '')
+    pref_district = request.args.get('pref_district', '')
+    
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
                j.weightage, j.weightage_details, t.receipt_numbers,
@@ -1618,7 +1622,20 @@ def export_applied_excel():
                t.special_priority, j.weightage_priority
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
-        ORDER BY CASE j.district
+        WHERE 1=1
+    """
+    params = {}
+    
+    # Apply the same filters as the Applied Employees view
+    if district_filter:
+        query += " AND j.district = :district"
+        params['district'] = district_filter
+    
+    if pref_district:
+        query += " AND t.pref1 = :pref_district"
+        params['pref_district'] = pref_district
+    
+    query += """ ORDER BY CASE j.district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
             WHEN 'Pathanamthitta' THEN 3
@@ -1640,7 +1657,7 @@ def export_applied_excel():
             j.duration_days DESC
     """
     
-    result = db.session.execute(db.text(query))
+    result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
     
     # Create workbook
@@ -1685,8 +1702,18 @@ def export_applied_excel():
     ws['A1'].font = header_font
     ws['A1'].alignment = center_align
     
+    # Build subtitle based on filters
+    subtitle = 'Applied Employees List'
+    filter_parts = []
+    if district_filter:
+        filter_parts.append(f'District: {district_filter}')
+    if pref_district:
+        filter_parts.append(f'Pref 1: {pref_district}')
+    if filter_parts:
+        subtitle += ' (' + ', '.join(filter_parts) + ')'
+    
     ws.merge_cells('A2:Q2')
-    ws['A2'] = 'Applied Employees List'
+    ws['A2'] = subtitle
     ws['A2'].font = subheader_font
     ws['A2'].alignment = center_align
     
@@ -1756,11 +1783,19 @@ def export_applied_excel():
     wb.save(output)
     output.seek(0)
     
+    # Build filename based on filters
+    filename_parts = ['applied_employees']
+    if district_filter:
+        filename_parts.append(district_filter.replace(' ', '_'))
+    if pref_district:
+        filename_parts.append(f'pref1_{pref_district.replace(" ", "_")}')
+    filename_parts.append(datetime.now().strftime("%Y%m%d"))
+    
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'applied_employees_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        download_name=f'{"_".join(filename_parts)}.xlsx'
     )
 
 
