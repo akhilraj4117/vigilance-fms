@@ -5,6 +5,11 @@
 <div class="page-container">
     <div class="page-header">
         <h1><i class="fas fa-building"></i> Vacancy Management</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('export_vacancy_excel') }}" class="btn btn-secondary">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+        </div>
     </div>
     
     <form method="POST" action="{{ url_for('save_vacancy') }}" class="vacancy-form">
@@ -14,16 +19,15 @@
                     <tr>
                         <th>Sl No</th>
                         <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 1, 'text')">District</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 2, 'number')">Total Strength</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 3, 'number')">Vacancy Reported</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 4, 'number')">Applied From</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 5, 'number')">Applied To</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 2, 'number')">Vacancy Reported</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 3, 'number')">Applied From</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 4, 'number')">Applied To</th>
                         {% if autofill_ran %}
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 6, 'number')">Displaced</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 7, 'number')">Cascade</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 8, 'number')">Total Available</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 9, 'number')">Filled</th>
-                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 10, 'number')">Remaining</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 5, 'number')">Displaced</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 6, 'number')">Cascade</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 7, 'number')">Total Available</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 8, 'number')">Filled</th>
+                        <th class="sortable" onclick="sortTable(document.getElementById('vacancyTable'), 9, 'number')">Remaining</th>
                         <th>Status</th>
                         {% endif %}
                     </tr>
@@ -33,11 +37,6 @@
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td class="district-name">{{ v.district }}</td>
-                        <td>
-                            <input type="number" name="strength_{{ v.district }}" 
-                                   class="form-control form-control-sm" 
-                                   value="{{ v.total_strength }}" min="0">
-                        </td>
                         <td>
                             <input type="number" name="vacancy_{{ v.district }}" 
                                    class="form-control form-control-sm vacancy-input" 
@@ -74,7 +73,6 @@
                 <tfoot>
                     <tr class="total-row">
                         <td colspan="2"><strong>Total</strong></td>
-                        <td><strong id="total-strength">{{ vacancies|sum(attribute='total_strength') }}</strong></td>
                         <td><strong id="total-vacancy">{{ vacancies|sum(attribute='vacancy_reported') }}</strong></td>
                         <td><strong id="total-applied-from">{{ vacancies|sum(attribute='applied_from') }}</strong></td>
                         <td><strong id="total-applied-to">{{ vacancies|sum(attribute='applied_to_pref1') }}{% if vacancies|sum(attribute='applied_to_other') > 0 %} (+{{ vacancies|sum(attribute='applied_to_other') }}){% endif %}</strong></td>

@@ -1204,6 +1204,245 @@ def save_vacancy():
     return redirect(url_for('vacancy_list'))
 
 
+@app.route('/vacancy/export-excel')
+@login_required
+@requires_transfer_session
+def export_vacancy_excel():
+    """Export vacancy data to Excel"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    except ImportError:
+        flash('openpyxl library not installed', 'error')
+        return redirect(url_for('vacancy_list'))
+    
+    prefix = get_table_prefix()
+    autofill_ran = check_autofill_ran()
+    
+    # Fetch all vacancy data (same logic as vacancy_list)
+    vacancy_data = {}
+    filled_counts = {}
+    cascade_counts = {}
+    displaced_counts = {}
+    applied_from_counts = {}
+    applied_to_pref1_counts = {}
+    applied_to_other_counts = {}
+    
+    try:
+        vacancy_result = db.session.execute(db.text(f"""
+            SELECT district, vacancy_reported FROM {prefix}vacancy
+        """))
+        vacancy_data = {row[0]: row[1] or 0 for row in vacancy_result.fetchall()}
+    except:
+        pass
+    
+    try:
+        applied_from_result = db.session.execute(db.text(f"""
+            SELECT j.district, COUNT(*) FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            GROUP BY j.district
+        """))
+        applied_from_counts = {row[0]: row[1] for row in applied_from_result.fetchall()}
+    except:
+        pass
+    
+    try:
+        applied_to_pref1_result = db.session.execute(db.text(f"""
+            SELECT t.pref1, COUNT(*) FROM {prefix}transfer_applied t
+            WHERE t.pref1 IS NOT NULL AND t.pref1 != ''
+            GROUP BY t.pref1
+        """))
+        applied_to_pref1_counts = {row[0]: row[1] for row in applied_to_pref1_result.fetchall()}
+        
+        for pref_col in ['pref2', 'pref3', 'pref4', 'pref5', 'pref6', 'pref7', 'pref8']:
+            pref_result = db.session.execute(db.text(f"""
+                SELECT t.{pref_col}, COUNT(*) FROM {prefix}transfer_applied t
+                WHERE t.{pref_col} IS NOT NULL AND t.{pref_col} != ''
+                GROUP BY t.{pref_col}
+            """))
+            for row in pref_result.fetchall():
+                if row[0] not in applied_to_other_counts:
+                    applied_to_other_counts[row[0]] = 0
+                applied_to_other_counts[row[0]] += row[1]
+    except:
+        pass
+    
+    if autofill_ran:
+        try:
+            filled_result = db.session.execute(db.text(f"""
+                SELECT transfer_to_district, COUNT(*) FROM {prefix}transfer_draft 
+                GROUP BY transfer_to_district
+            """))
+            filled_counts = {row[0]: row[1] for row in filled_result.fetchall()}
+            
+            cascade_result = db.session.execute(db.text(f"""
+                SELECT j.district, COUNT(*) FROM {prefix}transfer_draft d
+                INNER JOIN {prefix}jphn j ON d.pen = j.pen
+                WHERE j.district != d.transfer_to_district
+                GROUP BY j.district
+            """))
+            cascade_counts = {row[0]: row[1] for row in cascade_result.fetchall()}
+            
+            displaced_result = db.session.execute(db.text(f"""
+                SELECT j.district, COUNT(*) FROM {prefix}transfer_draft d
+                INNER JOIN {prefix}jphn j ON d.pen = j.pen
+                WHERE d.against_info LIKE 'Displaced for%%'
+                GROUP BY j.district
+            """))
+            displaced_counts = {row[0]: row[1] for row in displaced_result.fetchall()}
+        except:
+            pass
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Vacancy Data'
+    
+    # Styles
+    header_font = Font(bold=True, size=14)
+    subheader_font = Font(bold=True, size=11)
+    table_header_font = Font(bold=True, size=10)
+    table_header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal='center', vertical='center')
+    
+    # Determine columns based on autofill status
+    if autofill_ran:
+        headers = ['Sl. No.', 'District', 'Vacancy Reported', 'Applied From', 'Applied To (Pref1)', 
+                   'Applied To (Other)', 'Displaced', 'Cascade', 'Total Available', 'Filled', 'Remaining', 'Status']
+        last_col = 'L'
+    else:
+        headers = ['Sl. No.', 'District', 'Vacancy Reported', 'Applied From', 'Applied To (Pref1)', 'Applied To (Other)']
+        last_col = 'F'
+    
+    # Column widths
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 14
+    ws.column_dimensions['E'].width = 18
+    ws.column_dimensions['F'].width = 18
+    if autofill_ran:
+        ws.column_dimensions['G'].width = 12
+        ws.column_dimensions['H'].width = 12
+        ws.column_dimensions['I'].width = 16
+        ws.column_dimensions['J'].width = 10
+        ws.column_dimensions['K'].width = 12
+        ws.column_dimensions['L'].width = 12
+    
+    # Title
+    ws.merge_cells(f'A1:{last_col}1')
+    ws['A1'] = 'JPHN Transfer Management System'
+    ws['A1'].font = header_font
+    ws['A1'].alignment = center_align
+    
+    ws.merge_cells(f'A2:{last_col}2')
+    ws['A2'] = 'Vacancy Report'
+    ws['A2'].font = subheader_font
+    ws['A2'].alignment = center_align
+    
+    ws.merge_cells(f'A3:{last_col}3')
+    ws['A3'] = f'Generated: {datetime.now().strftime("%d-%m-%Y %I:%M %p")}'
+    ws['A3'].alignment = center_align
+    
+    # Headers (row 5)
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=5, column=col_num, value=header)
+        cell.font = table_header_font
+        cell.fill = table_header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    
+    # Data rows
+    totals = {'vacancy': 0, 'from': 0, 'to_pref1': 0, 'to_other': 0, 'displaced': 0, 
+              'cascade': 0, 'available': 0, 'filled': 0, 'remaining': 0}
+    
+    for idx, district in enumerate(DISTRICTS, 1):
+        row_num = idx + 5
+        vacancy_reported = vacancy_data.get(district, 0)
+        applied_from = applied_from_counts.get(district, 0)
+        applied_to_pref1 = applied_to_pref1_counts.get(district, 0)
+        applied_to_other = applied_to_other_counts.get(district, 0)
+        
+        totals['vacancy'] += vacancy_reported
+        totals['from'] += applied_from
+        totals['to_pref1'] += applied_to_pref1
+        totals['to_other'] += applied_to_other
+        
+        row_data = [idx, district, vacancy_reported, applied_from, applied_to_pref1, applied_to_other]
+        
+        if autofill_ran:
+            filled = filled_counts.get(district, 0)
+            cascade = cascade_counts.get(district, 0)
+            displaced = displaced_counts.get(district, 0)
+            total_available = vacancy_reported + cascade
+            remaining = max(0, total_available - filled)
+            
+            totals['displaced'] += displaced
+            totals['cascade'] += cascade
+            totals['available'] += total_available
+            totals['filled'] += filled
+            totals['remaining'] += remaining
+            
+            if remaining == 0 and vacancy_reported > 0:
+                status = 'Filled'
+            elif remaining < 0:
+                status = 'Over'
+            elif vacancy_reported == 0:
+                status = 'No Vacancy'
+            else:
+                status = 'Open'
+            
+            row_data.extend([displaced, cascade, total_available, filled, remaining, status])
+        
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.border = thin_border
+            cell.alignment = center_align
+    
+    # Totals row
+    total_row = len(DISTRICTS) + 6
+    ws.cell(row=total_row, column=1, value='').border = thin_border
+    ws.cell(row=total_row, column=2, value='TOTAL').font = Font(bold=True)
+    ws.cell(row=total_row, column=2).border = thin_border
+    ws.cell(row=total_row, column=3, value=totals['vacancy']).font = Font(bold=True)
+    ws.cell(row=total_row, column=3).border = thin_border
+    ws.cell(row=total_row, column=3).alignment = center_align
+    ws.cell(row=total_row, column=4, value=totals['from']).font = Font(bold=True)
+    ws.cell(row=total_row, column=4).border = thin_border
+    ws.cell(row=total_row, column=4).alignment = center_align
+    ws.cell(row=total_row, column=5, value=totals['to_pref1']).font = Font(bold=True)
+    ws.cell(row=total_row, column=5).border = thin_border
+    ws.cell(row=total_row, column=5).alignment = center_align
+    ws.cell(row=total_row, column=6, value=totals['to_other']).font = Font(bold=True)
+    ws.cell(row=total_row, column=6).border = thin_border
+    ws.cell(row=total_row, column=6).alignment = center_align
+    
+    if autofill_ran:
+        for col, key in [(7, 'displaced'), (8, 'cascade'), (9, 'available'), (10, 'filled'), (11, 'remaining')]:
+            ws.cell(row=total_row, column=col, value=totals[key]).font = Font(bold=True)
+            ws.cell(row=total_row, column=col).border = thin_border
+            ws.cell(row=total_row, column=col).alignment = center_align
+        ws.cell(row=total_row, column=12, value='').border = thin_border
+    
+    # Save to bytes
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f'Vacancy_Report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
 # ==================== TRANSFER APPLICATION ROUTES ====================
 
 @app.route('/application')
