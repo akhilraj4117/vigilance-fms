@@ -1398,7 +1398,7 @@ def applied_employees():
                     OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.)
+    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
     # Otherwise, order by district from South to North (Kerala geography), then Special Priority, Weightage Priority, Duration
     if pref_district:
         query += f""" ORDER BY 
@@ -1413,9 +1413,6 @@ def applied_employees():
                 WHEN t.pref8 = :pref_district THEN 8
                 ELSE 9
             END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
-            COALESCE(j.weightage_priority, 5),
             j.duration_days DESC"""
     else:
         query += """ ORDER BY CASE j.district
@@ -1638,7 +1635,7 @@ def export_applied_excel():
                     OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
         params['pref_district'] = pref_district
     
-    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.)
+    # Order: If filtering by pref_district, order by preference number (1 first, then 2, etc.), then by seniority
     if pref_district:
         query += f""" ORDER BY 
             CASE 
@@ -1652,9 +1649,6 @@ def export_applied_excel():
                 WHEN t.pref8 = :pref_district THEN 8
                 ELSE 9
             END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' THEN 0 ELSE 1 END,
-            COALESCE(j.weightage_priority, 5),
             j.duration_days DESC"""
     else:
         query += """ ORDER BY CASE j.district
