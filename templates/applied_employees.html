@@ -94,9 +94,24 @@
                 </tr>
             </thead>
             <tbody>
+                {% set current_pref = namespace(value=0) %}
+                {% set sl_no = namespace(value=0) %}
                 {% for emp in employees %}
+                {% if pref_district and emp[20] != current_pref.value %}
+                {% set current_pref.value = emp[20] %}
+                <tr class="preference-section-header">
+                    <td colspan="11">
+                        <div class="pref-section-title">
+                            <i class="fas fa-bookmark"></i>
+                            <span>Preference {{ emp[20] }}</span>
+                            <span class="pref-count">({% set count = employees|selectattr('20', 'equalto', emp[20])|list|length %}{{ count }} applicant{{ 's' if count != 1 else '' }})</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% set sl_no.value = sl_no.value + 1 %}
                 <tr class="{% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %}>
-                    <td>{{ loop.index }}</td>
+                    <td>{{ sl_no.value }}</td>
                     <td>{{ emp[0] }}</td>
                     <td>{{ emp[1] }}</td>
                     <td>{{ emp[2] }}</td>
@@ -531,6 +546,35 @@ function clearSearch() {
 }
 .search-box-inline .search-clear:hover {
     color: var(--danger-color);
+}
+
+/* Preference Section Headers */
+.preference-section-header {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
+}
+.preference-section-header td {
+    padding: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+.pref-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #0369a1;
+    font-size: 0.95rem;
+    border-left: 4px solid #0ea5e9;
+}
+.pref-section-title i {
+    color: #0ea5e9;
+}
+.pref-section-title .pref-count {
+    font-weight: normal;
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
 }
 
 /* Edit Modal Styles */
