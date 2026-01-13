@@ -278,7 +278,7 @@
                             <div class="col-md-2">
                                 <label class="form-label small">PEN:</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="multi_pen" placeholder="PEN">
+                                    <input type="text" class="form-control" id="multi_pen" placeholder="PEN" onblur="autoLoadEmployeeForMulti()">
                                     <button type="button" class="btn btn-outline-secondary" onclick="loadEmployeeForMulti()">
                                         <i class="bi bi-search"></i>
                                     </button>
@@ -780,6 +780,39 @@ function loadEmployeeForMulti() {
         .catch(error => {
             console.log('Employee lookup failed:', error);
             alert('Error looking up employee. Please try again.');
+        });
+}
+
+// Auto-load employee when PEN field loses focus (onblur)
+function autoLoadEmployeeForMulti() {
+    const pen = document.getElementById('multi_pen').value.trim();
+    if (!pen) {
+        return; // Don't do anything if PEN is empty
+    }
+    
+    // Only auto-load if name is not already filled
+    const name = document.getElementById('multi_name').value.trim();
+    if (name) {
+        // Name already filled, just check status
+        checkMultiPenStatus(pen);
+        return;
+    }
+    
+    fetch(`/disciplinary/api/get-employee/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.employee) {
+                document.getElementById('multi_name').value = data.employee.name || '';
+                document.getElementById('multi_designation').value = data.employee.designation || '';
+                document.getElementById('multi_institution').value = data.employee.institution || '';
+            }
+            // Always check PEN status
+            checkMultiPenStatus(pen);
+        })
+        .catch(error => {
+            console.log('Auto employee lookup failed:', error);
+            // Still try to check status
+            checkMultiPenStatus(pen);
         });
 }
 
