@@ -2200,7 +2200,7 @@
                                     <div class="col-md-6">
                                         <label for="prelimInquiryDate" class="form-label">Inquiry Date</label>
                                         <input type="date" class="form-control" id="prelimInquiryDate" name="prelim_inquiry_date"
-                                               value="{{ inquiry_details.prelim_inquiry_date if inquiry_details else '' }}">
+                                               value="{{ (inquiry_details.prelim_inquiry_date|format_date_html) if inquiry_details else '' }}">
                                     </div>
                                     <div class="col-md-12">
                                         <label for="prelimVenue" class="form-label">Venue</label>
@@ -2225,7 +2225,7 @@
                                         <div class="col-md-6">
                                             <label for="prelimReportDate" class="form-label">Report Date</label>
                                             <input type="date" class="form-control" id="prelimReportDate" name="prelim_report_date"
-                                                   value="{{ inquiry_details.prelim_report_date if inquiry_details else '' }}">
+                                                   value="{{ (inquiry_details.prelim_report_date|format_date_html) if inquiry_details else '' }}">
                                         </div>
                                     </div>
                                 </div>
@@ -2255,7 +2255,7 @@
                                     <div class="col-md-6">
                                         <label for="rule15InquiryDate" class="form-label">Inquiry Date</label>
                                         <input type="date" class="form-control" id="rule15InquiryDate" name="rule15_inquiry_date"
-                                               value="{{ inquiry_details.rule15_inquiry_date if inquiry_details else '' }}">
+                                               value="{{ (inquiry_details.rule15_inquiry_date|format_date_html) if inquiry_details else '' }}">
                                     </div>
                                     <div class="col-md-12">
                                         <label for="rule15Venue" class="form-label">Venue</label>
@@ -2280,7 +2280,7 @@
                                         <div class="col-md-6">
                                             <label for="rule15ReportDate" class="form-label">Report Date</label>
                                             <input type="date" class="form-control" id="rule15ReportDate" name="rule15_report_date"
-                                                   value="{{ inquiry_details.rule15_report_date if inquiry_details else '' }}">
+                                                   value="{{ (inquiry_details.rule15_report_date|format_date_html) if inquiry_details else '' }}">
                                         </div>
                                     </div>
                                 </div>
