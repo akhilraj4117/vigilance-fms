@@ -1660,9 +1660,16 @@ def api_get_institutions():
 @disciplinary_bp.route('/api/check-pen-status/<pen>')
 @login_required
 def api_check_pen_status(pen):
-    """API endpoint to check if PEN exists in disciplinary proceedings."""
-    # Check if PEN exists in disciplinary_action_details
-    exists = DisciplinaryAction.query.filter_by(pen=pen).first() is not None
+    """API endpoint to check if PEN exists in disciplinary proceedings (not finalized)."""
+    # Check if PEN exists in disciplinary_action_details AND case is NOT finalized
+    # A case is considered "Not Clear" only if finalised_date is empty/null
+    exists = DisciplinaryAction.query.filter(
+        DisciplinaryAction.pen == pen,
+        or_(
+            DisciplinaryAction.finalised_date == None,
+            DisciplinaryAction.finalised_date == ''
+        )
+    ).first() is not None
     return jsonify({'exists': exists})
 
 
