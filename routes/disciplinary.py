@@ -1694,6 +1694,45 @@ def create_remarks_entry():
         return redirect(url_for('disciplinary.index', tab='remarks'))
 
 
+@disciplinary_bp.route('/remarks/create-multiple', methods=['POST'])
+@login_required
+def create_multiple_remarks():
+    """Create multiple remarks entries at once."""
+    try:
+        import json
+        section = request.form.get('section', '')
+        file_no = request.form.get('file_no', '')
+        employees_json = request.form.get('employees', '[]')
+        
+        employees = json.loads(employees_json)
+        
+        if not employees:
+            return jsonify({'success': False, 'message': 'No employees provided'})
+        
+        created_count = 0
+        for emp in employees:
+            entry = RemarksEntry(
+                section=section,
+                remarks_file_no=file_no,
+                pen=emp.get('pen', ''),
+                prefix=emp.get('prefix', ''),
+                name=emp.get('name', ''),
+                designation=emp.get('designation', ''),
+                institution=emp.get('institution', ''),
+                status=emp.get('status', 'Clear'),
+                created_at=datetime.now().isoformat()
+            )
+            db.session.add(entry)
+            created_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'count': created_count})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
 @disciplinary_bp.route('/remarks/<int:id>/json')
 @login_required
 def get_remarks_json(id):

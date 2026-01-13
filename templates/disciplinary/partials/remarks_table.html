@@ -4,6 +4,9 @@
         Remarks Generator
         <span class="badge bg-primary">{{ remarks_pagination.total if remarks_pagination else 0 }}</span>
     </h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#multipleEmployeesModal">
+        <i class="bi bi-people-fill"></i> Multiple Employees
+    </button>
 </div>
 
 <!-- Remarks Entry Form -->
@@ -239,6 +242,147 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Multiple Employees Modal -->
+<div class="modal fade" id="multipleEmployeesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-people-fill"></i> Multiple Employees Remarks</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Common Fields -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small">Section:</label>
+                        <input type="text" class="form-control form-control-sm" id="multi_section" placeholder="Enter section">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">File No:</label>
+                        <input type="text" class="form-control form-control-sm" id="multi_file_no" placeholder="Enter file number">
+                    </div>
+                </div>
+                
+                <!-- Employee Entry Form -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-person-plus"></i> Add Employee</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-2">
+                                <label class="form-label small">PEN:</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" id="multi_pen" placeholder="PEN">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="loadEmployeeForMulti()">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label small">Prefix:</label>
+                                <select class="form-select form-select-sm" id="multi_prefix">
+                                    <option value=""></option>
+                                    <option value="Sri.">Sri.</option>
+                                    <option value="Smt.">Smt.</option>
+                                    <option value="Dr.">Dr.</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Name:</label>
+                                <input type="text" class="form-control form-control-sm" id="multi_name" placeholder="Name">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Designation:</label>
+                                <input type="text" class="form-control form-control-sm" id="multi_designation" placeholder="Designation">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Institution:</label>
+                                <input type="text" class="form-control form-control-sm" id="multi_institution" placeholder="Institution" list="multi_institution_list">
+                                <datalist id="multi_institution_list"></datalist>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Status:</label>
+                                <select class="form-select form-select-sm" id="multi_status">
+                                    <option value="Clear">Clear</option>
+                                    <option value="Not Clear">Not Clear</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-success btn-sm w-100" onclick="addEmployeeToList()">
+                                    <i class="bi bi-plus-lg"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                        <div id="multi_pen_status" class="mt-1 small"></div>
+                    </div>
+                </div>
+                
+                <!-- Employee List -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> Employees List (<span id="employeeCount">0</span>)</h6>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllEmployees()">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                            <table class="table table-sm table-striped mb-0">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;">Sl.</th>
+                                        <th>PEN</th>
+                                        <th>Prefix</th>
+                                        <th>Name</th>
+                                        <th>Designation</th>
+                                        <th>Institution</th>
+                                        <th>Status</th>
+                                        <th style="width: 60px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="multiEmployeesList">
+                                    <tr id="noEmployeesRow">
+                                        <td colspan="8" class="text-center text-muted">No employees added yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Generated Report Preview -->
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="bi bi-file-text"></i> Generated Report Preview</h6>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info btn-sm" onclick="copyMultiRemarks()">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="toggleMultiEdit()">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="multiRemarksDisplay" class="border rounded p-3" style="background: #fff; min-height: 150px;">
+                            <h6 id="multi_heading" class="text-center fw-bold" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14pt; text-decoration: underline;"></h6>
+                            <div id="multi_body" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14pt; margin-top: 10px; white-space: pre-wrap; text-align: justify;"></div>
+                        </div>
+                        <textarea class="form-control d-none" id="multi_remarks_textarea" rows="8" style="font-family: 'Mandaram', 'Meera', Arial, sans-serif; font-size: 14pt;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="generateAndSaveMultiRemarks()">
+                    <i class="bi bi-check-circle"></i> Generate & Save All
+                </button>
             </div>
         </div>
     </div>
@@ -577,6 +721,371 @@ document.addEventListener('DOMContentLoaded', function() {
     if (instField) {
         instField.addEventListener('input', function() {
             updateInstitutionDatalist(this.value);
+        });
+    }
+    
+    // Also populate multi institution datalist
+    const multiInstField = document.getElementById('multi_institution');
+    if (multiInstField) {
+        multiInstField.addEventListener('input', function() {
+            updateMultiInstitutionDatalist(this.value);
+        });
+    }
+});
+
+// Update multi institution datalist
+function updateMultiInstitutionDatalist(searchText) {
+    const datalist = document.getElementById('multi_institution_list');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    
+    const search = searchText.toLowerCase();
+    const filtered = allInstitutions.filter(inst => 
+        inst.toLowerCase().includes(search)
+    );
+    
+    filtered.slice(0, 50).forEach(inst => {
+        const option = document.createElement('option');
+        option.value = inst;
+        datalist.appendChild(option);
+    });
+}
+
+// ==================== Multiple Employees Functions ====================
+
+// Store employees list
+let multiEmployeesList = [];
+
+// Load employee details for multi form
+function loadEmployeeForMulti() {
+    const pen = document.getElementById('multi_pen').value.trim();
+    if (!pen) {
+        alert('Please enter a PEN number');
+        return;
+    }
+    
+    fetch(`/disciplinary/api/get-employee/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.employee) {
+                document.getElementById('multi_name').value = data.employee.name || '';
+                document.getElementById('multi_designation').value = data.employee.designation || '';
+                document.getElementById('multi_institution').value = data.employee.institution || '';
+            } else {
+                alert('No employee found with the given PEN. You can enter details manually.');
+            }
+            // Check PEN status
+            checkMultiPenStatus(pen);
+        })
+        .catch(error => {
+            console.log('Employee lookup failed:', error);
+            alert('Error looking up employee. Please try again.');
+        });
+}
+
+// Check PEN status for multi form
+function checkMultiPenStatus(pen) {
+    if (!pen) {
+        document.getElementById('multi_pen_status').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/disciplinary/api/check-pen-status/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            const statusLabel = document.getElementById('multi_pen_status');
+            const statusSelect = document.getElementById('multi_status');
+            if (data.exists) {
+                statusLabel.innerHTML = '<span class="text-danger fw-bold">NOT CLEAR</span>';
+                statusSelect.value = 'Not Clear';
+            } else {
+                statusLabel.innerHTML = '<span class="text-success fw-bold">CLEAR</span>';
+                statusSelect.value = 'Clear';
+            }
+        })
+        .catch(error => console.log('PEN status check failed:', error));
+}
+
+// Add employee to the list
+function addEmployeeToList() {
+    const pen = document.getElementById('multi_pen').value.trim();
+    const prefix = document.getElementById('multi_prefix').value;
+    const name = document.getElementById('multi_name').value.trim();
+    const designation = document.getElementById('multi_designation').value.trim();
+    const institution = document.getElementById('multi_institution').value.trim();
+    const status = document.getElementById('multi_status').value;
+    
+    if (!name) {
+        alert('Please enter employee name');
+        return;
+    }
+    
+    const employee = {
+        pen: pen,
+        prefix: prefix,
+        name: name,
+        designation: designation,
+        institution: institution,
+        status: status
+    };
+    
+    multiEmployeesList.push(employee);
+    renderEmployeesList();
+    clearMultiEmployeeForm();
+    updateMultiRemarksPreview();
+}
+
+// Remove employee from list
+function removeEmployeeFromList(index) {
+    multiEmployeesList.splice(index, 1);
+    renderEmployeesList();
+    updateMultiRemarksPreview();
+}
+
+// Clear all employees
+function clearAllEmployees() {
+    if (multiEmployeesList.length === 0) return;
+    if (confirm('Are you sure you want to clear all employees?')) {
+        multiEmployeesList = [];
+        renderEmployeesList();
+        updateMultiRemarksPreview();
+    }
+}
+
+// Render employees list in table
+function renderEmployeesList() {
+    const tbody = document.getElementById('multiEmployeesList');
+    const noRow = document.getElementById('noEmployeesRow');
+    const countSpan = document.getElementById('employeeCount');
+    
+    countSpan.textContent = multiEmployeesList.length;
+    
+    if (multiEmployeesList.length === 0) {
+        tbody.innerHTML = '<tr id="noEmployeesRow"><td colspan="8" class="text-center text-muted">No employees added yet</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    multiEmployeesList.forEach((emp, idx) => {
+        const statusBadge = emp.status === 'Clear' 
+            ? '<span class="badge bg-success">Clear</span>' 
+            : '<span class="badge bg-danger">Not Clear</span>';
+        html += `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${emp.pen || '-'}</td>
+                <td>${emp.prefix || '-'}</td>
+                <td>${emp.name || '-'}</td>
+                <td>${emp.designation || '-'}</td>
+                <td>${emp.institution || '-'}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeEmployeeFromList(${idx})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+// Clear the multi employee form fields
+function clearMultiEmployeeForm() {
+    document.getElementById('multi_pen').value = '';
+    document.getElementById('multi_prefix').value = '';
+    document.getElementById('multi_name').value = '';
+    document.getElementById('multi_designation').value = '';
+    document.getElementById('multi_institution').value = '';
+    document.getElementById('multi_status').value = 'Clear';
+    document.getElementById('multi_pen_status').innerHTML = '';
+}
+
+// Update multi remarks preview
+function updateMultiRemarksPreview() {
+    const heading = document.getElementById('multi_heading');
+    const body = document.getElementById('multi_body');
+    const textarea = document.getElementById('multi_remarks_textarea');
+    
+    if (multiEmployeesList.length === 0) {
+        heading.textContent = '';
+        body.innerHTML = '';
+        textarea.value = '';
+        return;
+    }
+    
+    // Separate clear and not clear employees
+    const clearEmployees = multiEmployeesList.filter(e => e.status === 'Clear');
+    const notClearEmployees = multiEmployeesList.filter(e => e.status === 'Not Clear');
+    
+    heading.textContent = 'A6 സെക്ഷൻ';
+    
+    let bodyHtml = '';
+    let textContent = 'A6 സെക്ഷൻ\n\n';
+    
+    // Clear employees section
+    if (clearEmployees.length > 0) {
+        bodyHtml += '<p style="margin-bottom: 10px;">നിലവിലുള്ള രേഖകൾ/ഫയലുകൾ പരിശോധിച്ചതിൽ നിന്നും ചുവടെപ്പറയുന്ന ജീവനക്കാരായ:</p>';
+        bodyHtml += '<ol style="margin-left: 20px; margin-bottom: 10px;">';
+        textContent += 'നിലവിലുള്ള രേഖകൾ/ഫയലുകൾ പരിശോധിച്ചതിൽ നിന്നും ചുവടെപ്പറയുന്ന ജീവനക്കാരായ:\n';
+        
+        clearEmployees.forEach((emp, idx) => {
+            const prefixSpace = emp.prefix ? (emp.prefix + ' ') : '';
+            const penText = emp.pen ? ` (PEN – ${emp.pen})` : '';
+            const empLine = `${prefixSpace}${emp.name}${penText}, ${emp.designation || '___________'}, ${emp.institution || '___________'}`;
+            bodyHtml += `<li>${empLine}</li>`;
+            textContent += `${idx + 1}.\t${empLine}\n`;
+        });
+        
+        bodyHtml += '</ol>';
+        bodyHtml += '<p>എന്നിവർക്കെതിരെ ഈ കാര്യാലയത്തിൽ എ6 സെക്ഷനുമായി ബന്ധപ്പെട്ട് യാതൊരുവിധ അച്ചടക്ക നടപടികളും നിലവിലില്ല എന്ന് അറിയിക്കുന്നു.</p>';
+        textContent += 'എന്നിവർക്കെതിരെ ഈ കാര്യാലയത്തിൽ എ6 സെക്ഷനുമായി ബന്ധപ്പെട്ട് യാതൊരുവിധ അച്ചടക്ക നടപടികളും നിലവിലില്ല എന്ന് അറിയിക്കുന്നു.\n';
+    }
+    
+    // Add separator if both types exist
+    if (clearEmployees.length > 0 && notClearEmployees.length > 0) {
+        bodyHtml += '<hr style="margin: 15px 0;">';
+        textContent += '\n---\n\n';
+    }
+    
+    // Not Clear employees section
+    if (notClearEmployees.length > 0) {
+        bodyHtml += '<p style="margin-bottom: 10px;">നിലവിലുള്ള രേഖകൾ/ഫയലുകൾ പരിശോധിച്ചതിൽ നിന്നും ചുവടെപ്പറയുന്ന ജീവനക്കാരായ:</p>';
+        bodyHtml += '<ol style="margin-left: 20px; margin-bottom: 10px;">';
+        textContent += 'നിലവിലുള്ള രേഖകൾ/ഫയലുകൾ പരിശോധിച്ചതിൽ നിന്നും ചുവടെപ്പറയുന്ന ജീവനക്കാരായ:\n';
+        
+        notClearEmployees.forEach((emp, idx) => {
+            const prefixSpace = emp.prefix ? (emp.prefix + ' ') : '';
+            const penText = emp.pen ? ` (PEN – ${emp.pen})` : '';
+            const empLine = `${prefixSpace}${emp.name}${penText}, ${emp.designation || '___________'}, ${emp.institution || '___________'}`;
+            bodyHtml += `<li>${empLine}</li>`;
+            textContent += `${idx + 1}.\t${empLine}\n`;
+        });
+        
+        bodyHtml += '</ol>';
+        bodyHtml += '<p>എന്നിവർക്കെതിരെ ഈ കാര്യാലയത്തിൽ എ6 സെക്ഷനുമായി ബന്ധപ്പെട്ട് അച്ചടക്ക നടപടികൾ തുടർന്നുവരികയാണ് എന്ന് അറിയിക്കുന്നു.</p>';
+        textContent += 'എന്നിവർക്കെതിരെ ഈ കാര്യാലയത്തിൽ എ6 സെക്ഷനുമായി ബന്ധപ്പെട്ട് അച്ചടക്ക നടപടികൾ തുടർന്നുവരികയാണ് എന്ന് അറിയിക്കുന്നു.\n';
+    }
+    
+    body.innerHTML = bodyHtml;
+    textarea.value = textContent;
+}
+
+// Copy multi remarks to clipboard
+function copyMultiRemarks() {
+    const textarea = document.getElementById('multi_remarks_textarea');
+    const text = textarea.value;
+    
+    if (!text) {
+        alert('No remarks to copy. Please add employees first.');
+        return;
+    }
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-info');
+        }, 2000);
+    }).catch(() => {
+        textarea.classList.remove('d-none');
+        textarea.select();
+        document.execCommand('copy');
+        textarea.classList.add('d-none');
+    });
+}
+
+// Toggle edit mode for multi remarks
+function toggleMultiEdit() {
+    const displayDiv = document.getElementById('multiRemarksDisplay');
+    const textarea = document.getElementById('multi_remarks_textarea');
+    const btn = event.target.closest('button');
+    
+    if (textarea.classList.contains('d-none')) {
+        displayDiv.classList.add('d-none');
+        textarea.classList.remove('d-none');
+        textarea.focus();
+        btn.innerHTML = '<i class="bi bi-eye"></i> Preview';
+    } else {
+        displayDiv.classList.remove('d-none');
+        textarea.classList.add('d-none');
+        btn.innerHTML = '<i class="bi bi-pencil"></i> Edit';
+    }
+}
+
+// Generate and save all employees
+function generateAndSaveMultiRemarks() {
+    if (multiEmployeesList.length === 0) {
+        alert('Please add at least one employee');
+        return;
+    }
+    
+    const section = document.getElementById('multi_section').value.trim();
+    const fileNo = document.getElementById('multi_file_no').value.trim();
+    
+    // Prepare data for POST
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    formData.append('section', section);
+    formData.append('file_no', fileNo);
+    formData.append('employees', JSON.stringify(multiEmployeesList));
+    
+    // Submit to server
+    fetch('/disciplinary/remarks/create-multiple', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Copy to clipboard
+            copyMultiRemarks();
+            
+            // Show success message
+            alert(`Successfully saved ${data.count} employee(s) to database.`);
+            
+            // Close modal and refresh page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('multipleEmployeesModal'));
+            modal.hide();
+            
+            // Clear the list
+            multiEmployeesList = [];
+            renderEmployeesList();
+            updateMultiRemarksPreview();
+            
+            // Refresh the page to show new entries
+            window.location.reload();
+        } else {
+            alert('Error saving entries: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving entries. Please try again.');
+    });
+}
+
+// Initialize multi modal on show
+document.addEventListener('DOMContentLoaded', function() {
+    const multiModal = document.getElementById('multipleEmployeesModal');
+    if (multiModal) {
+        multiModal.addEventListener('show.bs.modal', function() {
+            // Clear form when modal opens
+            document.getElementById('multi_section').value = '';
+            document.getElementById('multi_file_no').value = '';
+            clearMultiEmployeeForm();
+            multiEmployeesList = [];
+            renderEmployeesList();
+            updateMultiRemarksPreview();
+            
+            // Show display, hide textarea
+            document.getElementById('multiRemarksDisplay').classList.remove('d-none');
+            document.getElementById('multi_remarks_textarea').classList.add('d-none');
         });
     }
 });
