@@ -378,11 +378,24 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" onclick="generateAndSaveMultiRemarks()">
-                    <i class="bi bi-check-circle"></i> Generate & Save All
-                </button>
+            <div class="modal-footer justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-outline-primary" onclick="saveDraftMultiRemarks()">
+                        <i class="bi bi-save"></i> Save Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="loadDraftMultiRemarks()">
+                        <i class="bi bi-folder2-open"></i> Load Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="clearDraftMultiRemarks()">
+                        <i class="bi bi-trash"></i> Clear Draft
+                    </button>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" onclick="generateAndSaveMultiRemarks()">
+                        <i class="bi bi-check-circle"></i> Generate & Save All
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1051,6 +1064,107 @@ function toggleMultiEdit() {
     }
 }
 
+// ==================== Draft Save/Load Functions ====================
+
+// Save current entries as draft to localStorage
+function saveDraftMultiRemarks() {
+    if (multiEmployeesList.length === 0) {
+        alert('No employees to save. Please add at least one employee first.');
+        return;
+    }
+    
+    const draft = {
+        section: document.getElementById('multi_section').value.trim(),
+        fileNo: document.getElementById('multi_file_no').value.trim(),
+        employees: multiEmployeesList,
+        savedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('remarks_multi_draft', JSON.stringify(draft));
+    
+    // Show feedback
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i> Draft Saved!';
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    }, 2000);
+}
+
+// Load draft from localStorage
+function loadDraftMultiRemarks() {
+    const draftJson = localStorage.getItem('remarks_multi_draft');
+    
+    if (!draftJson) {
+        alert('No saved draft found.');
+        return;
+    }
+    
+    try {
+        const draft = JSON.parse(draftJson);
+        
+        // Confirm before loading if there are existing entries
+        if (multiEmployeesList.length > 0) {
+            if (!confirm(`Loading draft will replace current ${multiEmployeesList.length} employee(s). Continue?`)) {
+                return;
+            }
+        }
+        
+        // Load draft data
+        document.getElementById('multi_section').value = draft.section || '';
+        document.getElementById('multi_file_no').value = draft.fileNo || '';
+        multiEmployeesList = draft.employees || [];
+        
+        renderEmployeesList();
+        updateMultiRemarksPreview();
+        
+        // Show when draft was saved
+        const savedDate = new Date(draft.savedAt);
+        const formattedDate = savedDate.toLocaleString('en-IN', { 
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+        
+        alert(`Draft loaded successfully!\nSaved on: ${formattedDate}\nEmployees: ${multiEmployeesList.length}`);
+    } catch (error) {
+        console.error('Error loading draft:', error);
+        alert('Error loading draft. The saved data may be corrupted.');
+    }
+}
+
+// Clear draft from localStorage
+function clearDraftMultiRemarks() {
+    const draftJson = localStorage.getItem('remarks_multi_draft');
+    
+    if (!draftJson) {
+        alert('No saved draft found.');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to clear the saved draft? This cannot be undone.')) {
+        localStorage.removeItem('remarks_multi_draft');
+        alert('Draft cleared successfully.');
+    }
+}
+
+// Check if draft exists and show indicator
+function checkDraftExists() {
+    const draftJson = localStorage.getItem('remarks_multi_draft');
+    if (draftJson) {
+        try {
+            const draft = JSON.parse(draftJson);
+            return draft.employees && draft.employees.length > 0;
+        } catch (e) {
+            return false;
+        }
+    }
+    return false;
+}
+
 // Generate and save all employees
 function generateAndSaveMultiRemarks() {
     if (multiEmployeesList.length === 0) {
@@ -1078,6 +1192,9 @@ function generateAndSaveMultiRemarks() {
         if (data.success) {
             // Copy to clipboard
             copyMultiRemarks();
+            
+            // Clear the draft since entries are saved
+            localStorage.removeItem('remarks_multi_draft');
             
             // Show success message
             alert(`Successfully saved ${data.count} employee(s) to database.`);
@@ -1119,6 +1236,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show display, hide textarea
             document.getElementById('multiRemarksDisplay').classList.remove('d-none');
             document.getElementById('multi_remarks_textarea').classList.add('d-none');
+            
+            // Check if draft exists and notify user
+            if (checkDraftExists()) {
+                setTimeout(() => {
+                    if (confirm('A saved draft was found. Would you like to load it?')) {
+                        loadDraftMultiRemarks();
+                    }
+                }, 300);
+            }
         });
     }
 });
