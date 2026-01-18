@@ -1,0 +1,725 @@
+{% extends "base.html" %}
+
+{% block title %}Registers & Committees - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Main Tabs Navigation */
+    .main-tabs-container {
+        padding: 15px 0;
+    }
+    .tab-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 10px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 10px;
+        color: #fff;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        min-height: 80px;
+        box-shadow: 0 3px 10px rgba(30, 60, 114, 0.3);
+    }
+    .tab-card:hover {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        color: #fff;
+        transform: translateY(-3px);
+    }
+    .tab-card.active {
+        background: linear-gradient(135deg, #0f2557 0%, #1e3c72 100%);
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+    }
+    .tab-card i { font-size: 1.5rem; margin-bottom: 5px; }
+    .tab-card span { font-size: 0.75rem; font-weight: 600; text-align: center; }
+    
+    /* Sub Navigation Pills */
+    .sub-nav-pills {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    }
+    .sub-nav-pills .nav-link {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        margin-right: 10px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+        padding: 14px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+    .sub-nav-pills .nav-link:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+    .sub-nav-pills .nav-link.active {
+        background: #ffffff;
+        color: #1e3c72;
+        border-color: #ffffff;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .sub-nav-pills .nav-link i {
+        margin-right: 8px;
+    }
+    
+    /* Info Cards */
+    .info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    .info-card h4 {
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .info-card ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+    .info-card li {
+        margin-bottom: 8px;
+    }
+    
+    /* Member Cards */
+    .member-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    .member-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .member-position {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .member-position.presiding, .member-position.chairperson {
+        background: #1e3c72;
+        color: white;
+    }
+    .member-position.member {
+        background: #6c757d;
+        color: white;
+    }
+    .member-position.external, .member-position.secretary {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    /* Close Button for Cards */
+    .card-close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255,255,255,0.2);
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: inherit;
+    }
+    .card-close-btn:hover {
+        background: rgba(255,255,255,0.4);
+    }
+    .card-header-with-close {
+        position: relative;
+        padding-right: 45px;
+    }
+    
+    @media (max-width: 992px) {
+        .main-tabs-container .col { flex: 0 0 33.33%; max-width: 33.33%; margin-bottom: 8px; }
+        .tab-card { min-height: 70px; padding: 10px 5px; }
+        .tab-card i { font-size: 1.2rem; }
+        .tab-card span { font-size: 0.65rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Main Tabs Navigation -->
+<div class="main-tabs-container mb-4">
+    <div class="row g-2">
+        <div class="col">
+            <a href="{{ url_for('main.dashboard') }}" class="tab-card">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('files.file_management') }}" class="tab-card">
+                <i class="bi bi-folder"></i>
+                <span>File Management</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.index') }}" class="tab-card">
+                <i class="bi bi-arrows-move"></i>
+                <span>File Movements</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('disciplinary.index') }}" class="tab-card">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Disciplinary Action</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('file_movements.follow_up_files') }}" class="tab-card">
+                <i class="bi bi-calendar-check"></i>
+                <span>Follow-up Files</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('employees.list_employees') }}" class="tab-card">
+                <i class="bi bi-people"></i>
+                <span>Employee Details</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('reports.index') }}" class="tab-card">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('committees.index') }}" class="tab-card active">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>Registers & Committees</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
+                <i class="bi bi-building"></i>
+                <span>Institutions</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-bookmark"></i> Registers & Committees</h2>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i> Close
+        </a>
+    </div>
+    
+    <!-- Sub Navigation -->
+    <div class="sub-nav-pills">
+        <ul class="nav nav-pills flex-wrap">
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'rti' %}active{% endif %}" 
+                   href="{{ url_for('committees.index', tab='rti') }}">
+                    <i class="bi bi-info-circle"></i> RTI Info
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'posh' %}active{% endif %}" 
+                   href="{{ url_for('committees.index', tab='posh') }}">
+                    <i class="bi bi-shield-check"></i> ICC (POSH)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'disc_action' %}active{% endif %}" 
+                   href="{{ url_for('committees.index', tab='disc_action') }}">
+                    <i class="bi bi-exclamation-triangle"></i> ICC (Disc. Action)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'suspension' %}active{% endif %}" 
+                   href="{{ url_for('committees.index', tab='suspension') }}">
+                    <i class="bi bi-pause-circle"></i> Suspension Review
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Tab Content -->
+    {% if active_tab == 'rti' %}
+    <!-- RTI Info Tab -->
+    <div class="card">
+        <div class="card-header bg-primary text-white card-header-with-close">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> RTI Information</h5>
+            <a href="{{ url_for('main.dashboard') }}" class="card-close-btn text-white">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        <div class="card-body text-center py-5">
+            <i class="bi bi-info-circle" style="font-size: 4rem; color: #1e3c72;"></i>
+            <h4 class="mt-3">RTI Information Management</h4>
+            <p class="text-muted">Manage RTI applications and related information</p>
+            <a href="{{ url_for('rti.rti_index') }}" class="btn btn-primary btn-lg mt-3">
+                <i class="bi bi-arrow-right-circle"></i> Go to RTI Info
+            </a>
+        </div>
+    </div>
+    
+    {% elif active_tab == 'posh' %}
+    <!-- POSH Committee Tab -->
+    <div class="info-card">
+        <button class="card-close-btn" onclick="window.location.href='{{ url_for('main.dashboard') }}'">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <h4><i class="bi bi-info-circle"></i> About the POSH Act</h4>
+        <p><strong>Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013</strong></p>
+        <p>The POSH Act mandates every employer to constitute an Internal Complaints Committee (ICC) 
+           at every office or branch with 10 or more employees for redressal of complaints of sexual harassment.</p>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6><i class="bi bi-people"></i> Committee Requirements:</h6>
+                <ul>
+                    <li>Presiding Officer - A senior woman employee</li>
+                    <li>At least 2 members from employees committed to women's cause or having legal knowledge/experience</li>
+                    <li>One external member from NGO or association committed to women's issues</li>
+                    <li>At least half of the total members shall be women</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-list-check"></i> Key Provisions:</h6>
+                <ul>
+                    <li>Every organization with 10+ employees must have an ICC</li>
+                    <li>ICC must complete inquiry within 90 days</li>
+                    <li>Report must be submitted to employer within 10 days</li>
+                    <li>Employer must act on recommendations within 60 days</li>
+                    <li>Annual report must be filed by employer</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <span class="badge bg-light text-dark me-3"><i class="bi bi-clock"></i> Tenure: 3 years from the date of constitution</span>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> Non-compliance can result in penalty up to Rs. 50,000</span>
+        </div>
+    </div>
+    
+    <!-- Current Active Committee -->
+    {% if committee %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white card-header-with-close">
+            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Present Committee</h5>
+            <a href="{{ url_for('main.dashboard') }}" class="card-close-btn text-white">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <strong>Order Number:</strong><br>
+                    <span class="text-primary">{{ committee.order_number or 'Not specified' }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Order Date:</strong><br>
+                    {{ committee.order_date or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Formed On:</strong><br>
+                    {{ committee.formed_on or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Expiry Date (3 Years):</strong><br>
+                    <span class="badge bg-warning text-dark">{{ committee.expiry_date or 'Not calculated' }}</span>
+                </div>
+            </div>
+            
+            {% if committee.remarks %}
+            <div class="alert alert-info mb-4">
+                <strong>Remarks:</strong> {{ committee.remarks }}
+            </div>
+            {% endif %}
+            
+            <h6 class="mb-3"><i class="bi bi-people-fill"></i> Committee Members</h6>
+            
+            {% if committee.members.count() > 0 %}
+            <div class="row">
+                {% for member in committee.members.order_by('order_index').all() %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="member-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ member.name }}</h6>
+                            <span class="member-position {% if 'Presiding' in member.position %}presiding{% elif 'External' in member.position %}external{% else %}member{% endif %}">
+                                {{ member.position }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-1"><small>{{ member.designation }}</small></p>
+                        {% if member.official_address %}
+                        <p class="mb-1"><small><i class="bi bi-geo-alt"></i> {{ member.official_address }}</small></p>
+                        {% endif %}
+                        {% if member.contact_number %}
+                        <p class="mb-1"><small><i class="bi bi-telephone"></i> {{ member.contact_number }}</small></p>
+                        {% endif %}
+                        {% if member.email %}
+                        <p class="mb-0"><small><i class="bi bi-envelope"></i> {{ member.email }}</small></p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No members added yet.
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="alert-link">Add members now</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if current_user.is_admin() %}
+            <div class="mt-4">
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-people"></i> Manage Members
+                </a>
+                <a href="{{ url_for('committees.edit_committee', committee_id=committee.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Edit Details
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No active POSH Committee found.
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('committees.create_committee', committee_type='POSH') }}" class="btn btn-primary ms-3">
+            <i class="bi bi-plus-circle"></i> Create Committee
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Committee History -->
+    {% if all_committees and all_committees|length > 0 %}
+    <div class="card">
+        <div class="card-header card-header-with-close">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Committee History</h5>
+            <button class="card-close-btn" onclick="this.closest('.card').style.display='none'">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Formed On</th>
+                            <th>Expiry Date</th>
+                            <th>Members</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in all_committees %}
+                        <tr>
+                            <td>{{ c.order_number or '-' }}</td>
+                            <td>{{ c.formed_on or '-' }}</td>
+                            <td>{{ c.expiry_date or '-' }}</td>
+                            <td>{{ c.members.count() }}</td>
+                            <td>
+                                {% if c.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.is_admin() %}
+                                <a href="{{ url_for('committees.manage_members', committee_id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Manage Members">
+                                    <i class="bi bi-people"></i>
+                                </a>
+                                <a href="{{ url_for('committees.edit_committee', committee_id=c.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.is_admin() and not committee %}
+    {% elif current_user.is_admin() %}
+    <div class="mt-3">
+        <a href="{{ url_for('committees.create_committee', committee_type='POSH') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Committee
+        </a>
+    </div>
+    {% endif %}
+    
+    {% elif active_tab == 'disc_action' %}
+    <!-- Disciplinary Action Committee Tab -->
+    <div class="info-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <button class="card-close-btn" onclick="window.location.href='{{ url_for('main.dashboard') }}'">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <h4><i class="bi bi-info-circle"></i> About the Disciplinary Action Complaints Committee</h4>
+        <p>This committee handles complaints related to disciplinary proceedings against employees. 
+           It ensures fair and transparent handling of complaints as per the applicable service rules.</p>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6><i class="bi bi-check-circle"></i> Responsibilities:</h6>
+                <ul>
+                    <li>Receive and register complaints related to disciplinary matters</li>
+                    <li>Conduct preliminary inquiry</li>
+                    <li>Submit findings and recommendations</li>
+                    <li>Ensure confidentiality of proceedings</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-people"></i> Committee Composition:</h6>
+                <ul>
+                    <li>Chairperson - Senior Officer</li>
+                    <li>Members - Officers of appropriate rank</li>
+                    <li>Secretary - For documentation</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    {% if committee %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white card-header-with-close">
+            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Present Committee</h5>
+            <a href="{{ url_for('main.dashboard') }}" class="card-close-btn text-white">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <strong>Order Number:</strong><br>
+                    <span class="text-primary">{{ committee.order_number or 'Not specified' }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Order Date:</strong><br>
+                    {{ committee.order_date or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Formed On:</strong><br>
+                    {{ committee.formed_on or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Valid Until:</strong><br>
+                    {{ committee.expiry_date or 'Not specified' }}
+                </div>
+            </div>
+            
+            <h6 class="mb-3"><i class="bi bi-people-fill"></i> Committee Members</h6>
+            
+            {% if committee.members.count() > 0 %}
+            <div class="row">
+                {% for member in committee.members.order_by('order_index').all() %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="member-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ member.name }}</h6>
+                            <span class="member-position {% if 'Chairperson' in member.position %}chairperson{% elif 'Secretary' in member.position %}secretary{% else %}member{% endif %}">
+                                {{ member.position }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-1"><small>{{ member.designation }}</small></p>
+                        {% if member.contact_number %}
+                        <p class="mb-1"><small><i class="bi bi-telephone"></i> {{ member.contact_number }}</small></p>
+                        {% endif %}
+                        {% if member.email %}
+                        <p class="mb-0"><small><i class="bi bi-envelope"></i> {{ member.email }}</small></p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No members added yet.
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="alert-link">Add members now</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if current_user.is_admin() %}
+            <div class="mt-4">
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-people"></i> Manage Members
+                </a>
+                <a href="{{ url_for('committees.edit_committee', committee_id=committee.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Edit Details
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No active Disciplinary Action Committee found.
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('committees.create_committee', committee_type='DISC_ACTION') }}" class="btn btn-primary ms-3">
+            <i class="bi bi-plus-circle"></i> Create Committee
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if current_user.is_admin() and committee %}
+    <div class="mt-3">
+        <a href="{{ url_for('committees.create_committee', committee_type='DISC_ACTION') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Committee
+        </a>
+    </div>
+    {% endif %}
+    
+    {% elif active_tab == 'suspension' %}
+    <!-- Suspension Review Committee Tab -->
+    <div class="info-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+        <button class="card-close-btn" onclick="window.location.href='{{ url_for('main.dashboard') }}'">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <h4><i class="bi bi-info-circle"></i> About the Suspension Review Committee</h4>
+        <p>The Suspension Review Committee is responsible for periodically reviewing cases of employees 
+           who are under suspension. It ensures that suspension cases are reviewed timely and 
+           appropriate actions are taken as per rules.</p>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6><i class="bi bi-check-circle"></i> Key Functions:</h6>
+                <ul>
+                    <li>Review all pending suspension cases</li>
+                    <li>Recommend continuation or revocation of suspension</li>
+                    <li>Monitor progress of disciplinary proceedings</li>
+                    <li>Ensure timely disposal of cases</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-calendar-check"></i> Review Timeline:</h6>
+                <ul>
+                    <li>Cases should be reviewed at regular intervals</li>
+                    <li>Suspension beyond 3 months requires special review</li>
+                    <li>Report to be submitted to competent authority</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    {% if committee %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white card-header-with-close">
+            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Present Committee</h5>
+            <a href="{{ url_for('main.dashboard') }}" class="card-close-btn text-white">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <strong>Order Number:</strong><br>
+                    <span class="text-primary">{{ committee.order_number or 'Not specified' }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Order Date:</strong><br>
+                    {{ committee.order_date or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Formed On:</strong><br>
+                    {{ committee.formed_on or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Valid Until:</strong><br>
+                    {{ committee.expiry_date or 'Not specified' }}
+                </div>
+            </div>
+            
+            <h6 class="mb-3"><i class="bi bi-people-fill"></i> Committee Members</h6>
+            
+            {% if committee.members.count() > 0 %}
+            <div class="row">
+                {% for member in committee.members.order_by('order_index').all() %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="member-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ member.name }}</h6>
+                            <span class="member-position {% if 'Chairperson' in member.position %}chairperson{% elif 'Secretary' in member.position %}secretary{% else %}member{% endif %}">
+                                {{ member.position }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-1"><small>{{ member.designation }}</small></p>
+                        {% if member.contact_number %}
+                        <p class="mb-1"><small><i class="bi bi-telephone"></i> {{ member.contact_number }}</small></p>
+                        {% endif %}
+                        {% if member.email %}
+                        <p class="mb-0"><small><i class="bi bi-envelope"></i> {{ member.email }}</small></p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No members added yet.
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="alert-link">Add members now</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if current_user.is_admin() %}
+            <div class="mt-4">
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-people"></i> Manage Members
+                </a>
+                <a href="{{ url_for('committees.edit_committee', committee_id=committee.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Edit Details
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No active Suspension Review Committee found.
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('committees.create_committee', committee_type='SUSPENSION_REVIEW') }}" class="btn btn-primary ms-3">
+            <i class="bi bi-plus-circle"></i> Create Committee
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if current_user.is_admin() and committee %}
+    <div class="mt-3">
+        <a href="{{ url_for('committees.create_committee', committee_type='SUSPENSION_REVIEW') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Committee
+        </a>
+    </div>
+    {% endif %}
+    
+    {% endif %}
+</div>
+{% endblock %}

@@ -28,9 +28,19 @@
     <div class="form-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-plus-circle"></i> Create {{ committee_type_name }}</h2>
-            <a href="{{ url_for('committees.index') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back
+            {% if committee_type == 'POSH' %}
+            <a href="{{ url_for('committees.index', tab='posh') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Close
             </a>
+            {% elif committee_type == 'DISC_ACTION' %}
+            <a href="{{ url_for('committees.index', tab='disc_action') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Close
+            </a>
+            {% else %}
+            <a href="{{ url_for('committees.index', tab='suspension') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg"></i> Close
+            </a>
+            {% endif %}
         </div>
         
         <div class="card">
@@ -89,7 +99,13 @@
                     </div>
                     
                     <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ url_for('committees.index') }}" class="btn btn-secondary">Cancel</a>
+                        {% if committee_type == 'POSH' %}
+                        <a href="{{ url_for('committees.index', tab='posh') }}" class="btn btn-secondary">Cancel</a>
+                        {% elif committee_type == 'DISC_ACTION' %}
+                        <a href="{{ url_for('committees.index', tab='disc_action') }}" class="btn btn-secondary">Cancel</a>
+                        {% else %}
+                        <a href="{{ url_for('committees.index', tab='suspension') }}" class="btn btn-secondary">Cancel</a>
+                        {% endif %}
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Create Committee & Add Members
                         </button>

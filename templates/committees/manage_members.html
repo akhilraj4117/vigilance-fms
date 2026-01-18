@@ -48,16 +48,16 @@
         </div>
         <div>
             {% if committee.committee_type == 'POSH' %}
-            <a href="{{ url_for('committees.posh_committee') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Committee
+            <a href="{{ url_for('committees.index', tab='posh') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back
             </a>
             {% elif committee.committee_type == 'DISC_ACTION' %}
-            <a href="{{ url_for('committees.disc_action_committee') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Committee
+            <a href="{{ url_for('committees.index', tab='disc_action') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back
             </a>
             {% else %}
-            <a href="{{ url_for('committees.suspension_review_committee') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Committee
+            <a href="{{ url_for('committees.index', tab='suspension') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back
             </a>
             {% endif %}
         </div>

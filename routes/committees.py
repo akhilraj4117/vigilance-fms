@@ -55,8 +55,42 @@ POSH_INFO = {
 @committees_bp.route('/')
 @login_required
 def index():
-    """Main committees page."""
-    return redirect(url_for('committees.posh_committee'))
+    """Main committees page with tabs."""
+    tab = request.args.get('tab', 'posh')
+    
+    committee = None
+    all_committees = []
+    
+    if tab == 'posh':
+        committee = Committee.query.filter_by(
+            committee_type='POSH',
+            is_active=True
+        ).first()
+        all_committees = Committee.query.filter_by(
+            committee_type='POSH'
+        ).order_by(Committee.formed_on.desc()).all()
+    elif tab == 'disc_action':
+        committee = Committee.query.filter_by(
+            committee_type='DISC_ACTION',
+            is_active=True
+        ).first()
+        all_committees = Committee.query.filter_by(
+            committee_type='DISC_ACTION'
+        ).order_by(Committee.formed_on.desc()).all()
+    elif tab == 'suspension':
+        committee = Committee.query.filter_by(
+            committee_type='SUSPENSION_REVIEW',
+            is_active=True
+        ).first()
+        all_committees = Committee.query.filter_by(
+            committee_type='SUSPENSION_REVIEW'
+        ).order_by(Committee.formed_on.desc()).all()
+    
+    return render_template('committees/index.html',
+                          active_tab=tab,
+                          committee=committee,
+                          all_committees=all_committees,
+                          committee_types=COMMITTEE_TYPES)
 
 
 @committees_bp.route('/posh')
@@ -314,13 +348,13 @@ def edit_committee(committee_id):
         db.session.commit()
         flash('Committee updated successfully!', 'success')
         
-        # Redirect based on committee type
+        # Redirect based on committee type to main tab
         if committee.committee_type == 'POSH':
-            return redirect(url_for('committees.posh_committee'))
+            return redirect(url_for('committees.index', tab='posh'))
         elif committee.committee_type == 'DISC_ACTION':
-            return redirect(url_for('committees.disc_action_committee'))
+            return redirect(url_for('committees.index', tab='disc_action'))
         else:
-            return redirect(url_for('committees.suspension_review_committee'))
+            return redirect(url_for('committees.index', tab='suspension'))
     
     return render_template('committees/edit.html',
                           committee=committee,
@@ -368,11 +402,11 @@ def delete_committee(committee_id):
     flash('Committee deleted successfully!', 'success')
     
     if committee_type == 'POSH':
-        return redirect(url_for('committees.posh_committee'))
+        return redirect(url_for('committees.index', tab='posh'))
     elif committee_type == 'DISC_ACTION':
-        return redirect(url_for('committees.disc_action_committee'))
+        return redirect(url_for('committees.index', tab='disc_action'))
     else:
-        return redirect(url_for('committees.suspension_review_committee'))
+        return redirect(url_for('committees.index', tab='suspension'))
 
 
 @committees_bp.route('/api/member/<int:member_id>', methods=['GET'])

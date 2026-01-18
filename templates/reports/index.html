@@ -168,36 +168,11 @@
                 <span>Reports</span>
             </a>
         </div>
-        <div class="col tab-card-dropdown">
-            <div class="dropdown">
-                <a href="#" class="tab-card dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                    <i class="bi bi-journal-bookmark"></i>
-                    <span>Registers & Committees</span>
-                </a>
-                <ul class="dropdown-menu">
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('rti.rti_index') }}">
-                            <i class="bi bi-info-circle"></i> RTI Info
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('committees.posh_committee') }}">
-                            <i class="bi bi-shield-check"></i> ICC (POSH)
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('committees.disc_action_committee') }}">
-                            <i class="bi bi-exclamation-triangle"></i> ICC (Disc. Action)
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('committees.suspension_review_committee') }}">
-                            <i class="bi bi-pause-circle"></i> Suspension Review
-                        </a>
-                    </li>
-                </ul>
-            </div>
+        <div class="col">
+            <a href="{{ url_for('committees.index') }}" class="tab-card">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>Registers & Committees</span>
+            </a>
         </div>
         <div class="col">
             <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
