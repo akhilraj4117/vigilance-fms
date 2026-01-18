@@ -3180,6 +3180,19 @@
         return dateStr;
     }
     
+    // Utility function to convert YYYY-MM-DD back to DD-MM-YYYY for storage
+    function formatDateForStorage(dateStr) {
+        if (!dateStr) return '';
+        // If already in DD-MM-YYYY format, return as is
+        if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
+        // Convert YYYY-MM-DD to DD-MM-YYYY
+        const parts = dateStr.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return dateStr;
+    }
+    
     // Toggle file section visibility
     function toggleFileSection(section) {
         const listId = section + 'List';
@@ -3759,9 +3772,9 @@
         const data = {
             file_number: currentFileNumber,
             docket_number: document.getElementById('cmoDocketNumber').value,
-            date_of_receipt: document.getElementById('cmoDateOfReceipt').value,
+            date_of_receipt: formatDateForStorage(document.getElementById('cmoDateOfReceipt').value),
             finalised: document.getElementById('cmoFinalised').checked,
-            finalised_date: document.getElementById('cmoFinalisedDate').value
+            finalised_date: formatDateForStorage(document.getElementById('cmoFinalisedDate').value)
         };
         
         fetch('/files/cmo-portal/save', {
@@ -3852,12 +3865,12 @@
         const data = {
             file_number: currentFileNumber,
             dhs_file_number: document.getElementById('rvuDhsFileNumber').value,
-            receipt_date: document.getElementById('rvuReceiptDate').value,
+            receipt_date: formatDateForStorage(document.getElementById('rvuReceiptDate').value),
             inquiry_status: document.getElementById('rvuInquiryConducted').checked ? 'Conducted' : 'Not Conducted',
-            inquiry_date: document.getElementById('rvuInquiryDate').value,
+            inquiry_date: formatDateForStorage(document.getElementById('rvuInquiryDate').value),
             report_status: document.getElementById('rvuReportSent').checked ? 'Sent' : (document.getElementById('rvuReportInterim').checked ? 'Interim' : ''),
-            interim_report_date: document.getElementById('rvuInterimReportDate').value,
-            sent_date: document.getElementById('rvuSentDate').value
+            interim_report_date: formatDateForStorage(document.getElementById('rvuInterimReportDate').value),
+            sent_date: formatDateForStorage(document.getElementById('rvuSentDate').value)
         };
         fetch('/files/rvu/save', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
             .then(r => r.json())
@@ -3909,12 +3922,12 @@
             file_number: currentFileNumber,
             category: category,
             case_no: document.getElementById(caseNoId).value,
-            receipt_date: document.getElementById(receiptDateId).value,
+            receipt_date: formatDateForStorage(document.getElementById(receiptDateId).value),
             report_status: reportRadio ? reportRadio.value : '',
-            interim_report_date: interimDateId ? document.getElementById(interimDateId).value : '',
-            sent_date: sentDateId ? document.getElementById(sentDateId).value : '',
+            interim_report_date: interimDateId ? formatDateForStorage(document.getElementById(interimDateId).value) : '',
+            sent_date: sentDateId ? formatDateForStorage(document.getElementById(sentDateId).value) : '',
             finalised: finalisedId ? document.getElementById(finalisedId).checked : false,
-            finalised_date: finalisedDateId ? document.getElementById(finalisedDateId).value : ''
+            finalised_date: finalisedDateId ? formatDateForStorage(document.getElementById(finalisedDateId).value) : ''
         };
         fetch('/files/category-details/save', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
             .then(r => r.json())
@@ -3975,9 +3988,9 @@
             body: JSON.stringify({
                 file_number: currentFileNumber,
                 case_no: document.getElementById('vigilanceCaseNo').value,
-                receipt_date: document.getElementById('vigilanceReceiptDate').value,
+                receipt_date: formatDateForStorage(document.getElementById('vigilanceReceiptDate').value),
                 finalised: document.getElementById('vigilanceFinalised').checked,
-                finalised_date: document.getElementById('vigilanceFinalisedDate').value
+                finalised_date: formatDateForStorage(document.getElementById('vigilanceFinalisedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('vigilanceModal')).hide(); }
@@ -4019,11 +4032,11 @@
             body: JSON.stringify({
                 file_number: currentFileNumber,
                 sabha_type: document.getElementById('sabhaSabhaType').value,
-                receipt_date: document.getElementById('sabhaReceiptDate').value,
+                receipt_date: formatDateForStorage(document.getElementById('sabhaReceiptDate').value),
                 report_status: reportRadio ? reportRadio.value : '',
-                sent_date: document.getElementById('sabhaSentDate').value,
+                sent_date: formatDateForStorage(document.getElementById('sabhaSentDate').value),
                 finalised: document.getElementById('sabhaFinalised').checked,
-                finalised_date: document.getElementById('sabhaFinalisedDate').value
+                finalised_date: formatDateForStorage(document.getElementById('sabhaFinalisedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('rajyaLokModal')).hide(); }
@@ -4339,9 +4352,9 @@
             body: JSON.stringify({
                 file_number: currentFileNumber,
                 icc_report_attached: document.getElementById('whIccAttachedYes').checked,
-                icc_report_date: document.getElementById('whIccReportDate').value,
+                icc_report_date: formatDateForStorage(document.getElementById('whIccReportDate').value),
                 finalised: document.getElementById('whFinalisedYes').checked,
-                finalised_date: document.getElementById('whFinalisedDate').value
+                finalised_date: formatDateForStorage(document.getElementById('whFinalisedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('womenHarassmentModal')).hide(); }
@@ -4389,13 +4402,13 @@
                 file_number: currentFileNumber,
                 case_no: document.getElementById('pcCaseNo').value,
                 fir_no: document.getElementById('pcFirNo').value,
-                case_date: document.getElementById('pcDate').value,
+                case_date: formatDateForStorage(document.getElementById('pcDate').value),
                 police_station: document.getElementById('pcPoliceStation').value,
                 detained_over_48_hours: document.getElementById('pcDetainedYes').checked ? 'Yes' : 'No',
                 suspended_from_service: document.getElementById('pcSuspendedYes').checked ? 'Yes' : 'No',
                 present_status: document.getElementById('pcPresentStatus').value,
                 finalised: document.getElementById('pcFinalisedYes').checked ? 'Yes' : 'No',
-                finalised_date: document.getElementById('pcFinalisedDate').value
+                finalised_date: formatDateForStorage(document.getElementById('pcFinalisedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('policeCaseModal')).hide(); }
@@ -4434,7 +4447,7 @@
                 file_number: currentFileNumber,
                 police_informed: document.getElementById('aodPoliceInformedYes').checked ? 'Yes' : 'No',
                 police_station: document.getElementById('aodPoliceStation').value,
-                reported_date: document.getElementById('aodReportedDate').value
+                reported_date: formatDateForStorage(document.getElementById('aodReportedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('attackDoctorsModal')).hide(); }
@@ -4473,7 +4486,7 @@
                 file_number: currentFileNumber,
                 police_informed: document.getElementById('aosPoliceInformedYes').checked ? 'Yes' : 'No',
                 police_station: document.getElementById('aosPoliceStation').value,
-                reported_date: document.getElementById('aosReportedDate').value
+                reported_date: formatDateForStorage(document.getElementById('aosReportedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('attackStaffsModal')).hide(); }
@@ -4529,10 +4542,10 @@
                 refunded_status: document.getElementById('sspRefundedStatus').value,
                 refunded_amount: parseFloat(document.getElementById('sspRefundedAmount').value) || 0,
                 letter_no: document.getElementById('sspLetterNo').value,
-                letter_date: document.getElementById('sspLetterDate').value,
+                letter_date: formatDateForStorage(document.getElementById('sspLetterDate').value),
                 receipt_no: document.getElementById('sspReceiptNo').value,
                 finalised: document.getElementById('sspFinalised').checked ? 'Yes' : 'No',
-                finalised_date: document.getElementById('sspFinalisedDate').value
+                finalised_date: formatDateForStorage(document.getElementById('sspFinalisedDate').value)
             })
         }).then(r => r.json()).then(result => {
             if (result.success) { alert('Saved!'); bootstrap.Modal.getInstance(document.getElementById('socialSecurityModal')).hide(); }
