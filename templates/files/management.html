@@ -3167,6 +3167,19 @@
 
 {% block extra_js %}
 <script>
+    // Utility function to convert DD-MM-YYYY to YYYY-MM-DD for HTML date inputs
+    function formatDateForInput(dateStr) {
+        if (!dateStr) return '';
+        // If already in YYYY-MM-DD format, return as is
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        // Convert DD-MM-YYYY or DD/MM/YYYY to YYYY-MM-DD
+        const parts = dateStr.split(/[-\/]/);
+        if (parts.length === 3 && parts[0].length <= 2) {
+            return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+        return dateStr;
+    }
+    
     // Toggle file section visibility
     function toggleFileSection(section) {
         const listId = section + 'List';
@@ -3721,9 +3734,9 @@
             .then(data => {
                 if (data.success && data.data) {
                     document.getElementById('cmoDocketNumber').value = data.data.docket_number || '';
-                    document.getElementById('cmoDateOfReceipt').value = data.data.date_of_receipt || '';
+                    document.getElementById('cmoDateOfReceipt').value = formatDateForInput(data.data.date_of_receipt);
                     document.getElementById('cmoFinalised').checked = data.data.finalised;
-                    document.getElementById('cmoFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('cmoFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                     toggleCmoFinalisedDate();
                 } else {
                     // Clear form for new entry
@@ -3817,18 +3830,18 @@
             .then(data => {
                 if (data.success && data.data) {
                     document.getElementById('rvuDhsFileNumber').value = data.data.dhs_file_number || '';
-                    document.getElementById('rvuReceiptDate').value = data.data.receipt_date || '';
+                    document.getElementById('rvuReceiptDate').value = formatDateForInput(data.data.receipt_date);
                     if (data.data.inquiry_status === 'Conducted') {
                         document.getElementById('rvuInquiryConducted').checked = true;
-                        document.getElementById('rvuInquiryDate').value = data.data.inquiry_date || '';
+                        document.getElementById('rvuInquiryDate').value = formatDateForInput(data.data.inquiry_date);
                         document.getElementById('rvuInquiryDate').disabled = false;
                     }
                     if (data.data.report_status === 'Sent') {
                         document.getElementById('rvuReportSent').checked = true;
-                        document.getElementById('rvuSentDate').value = data.data.sent_date || '';
+                        document.getElementById('rvuSentDate').value = formatDateForInput(data.data.sent_date);
                     } else if (data.data.report_status === 'Interim') {
                         document.getElementById('rvuReportInterim').checked = true;
-                        document.getElementById('rvuInterimReportDate').value = data.data.interim_report_date || '';
+                        document.getElementById('rvuInterimReportDate').value = formatDateForInput(data.data.interim_report_date);
                     }
                 }
             }).catch(err => console.error('Error loading RVU:', err));
@@ -3875,15 +3888,15 @@
                 .then(data => {
                     if (data.success && data.data) {
                         document.getElementById(caseNoId).value = data.data.case_no || '';
-                        document.getElementById(receiptDateId).value = data.data.receipt_date || '';
+                        document.getElementById(receiptDateId).value = formatDateForInput(data.data.receipt_date);
                         const radios = document.querySelectorAll(`input[name="${reportStatusName}"]`);
                         radios.forEach(r => {
                             if (r.value === data.data.report_status) r.checked = true;
                         });
-                        if (interimDateId) document.getElementById(interimDateId).value = data.data.interim_report_date || '';
-                        if (sentDateId) document.getElementById(sentDateId).value = data.data.sent_date || '';
+                        if (interimDateId) document.getElementById(interimDateId).value = formatDateForInput(data.data.interim_report_date);
+                        if (sentDateId) document.getElementById(sentDateId).value = formatDateForInput(data.data.sent_date);
                         if (finalisedId) document.getElementById(finalisedId).checked = data.data.finalised;
-                        if (finalisedDateId) document.getElementById(finalisedDateId).value = data.data.finalised_date || '';
+                        if (finalisedDateId) document.getElementById(finalisedDateId).value = formatDateForInput(data.data.finalised_date);
                     }
                 }).catch(err => console.error('Error:', err));
         });
@@ -3948,9 +3961,9 @@
             .then(data => {
                 if (data.success && data.data) {
                     document.getElementById('vigilanceCaseNo').value = data.data.case_no || '';
-                    document.getElementById('vigilanceReceiptDate').value = data.data.receipt_date || '';
+                    document.getElementById('vigilanceReceiptDate').value = formatDateForInput(data.data.receipt_date);
                     document.getElementById('vigilanceFinalised').checked = data.data.finalised;
-                    document.getElementById('vigilanceFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('vigilanceFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                 }
             }).catch(err => console.error('Error:', err));
     });
@@ -3988,12 +4001,12 @@
             .then(data => {
                 if (data.success && data.data) {
                     document.getElementById('sabhaSabhaType').value = data.data.sabha_type || '';
-                    document.getElementById('sabhaReceiptDate').value = data.data.receipt_date || '';
+                    document.getElementById('sabhaReceiptDate').value = formatDateForInput(data.data.receipt_date);
                     const radios = document.querySelectorAll('input[name="sabhaReportStatus"]');
                     radios.forEach(r => { if (r.value === data.data.report_status) r.checked = true; });
-                    document.getElementById('sabhaSentDate').value = data.data.sent_date || '';
+                    document.getElementById('sabhaSentDate').value = formatDateForInput(data.data.sent_date);
                     document.getElementById('sabhaFinalised').checked = data.data.finalised;
-                    document.getElementById('sabhaFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('sabhaFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                 }
             }).catch(err => console.error('Error:', err));
     });
@@ -4309,10 +4322,10 @@
                 if (data.success && data.data) {
                     if (data.data.icc_report_attached) document.getElementById('whIccAttachedYes').checked = true;
                     else document.getElementById('whIccAttachedNo').checked = true;
-                    document.getElementById('whIccReportDate').value = data.data.icc_report_date || '';
+                    document.getElementById('whIccReportDate').value = formatDateForInput(data.data.icc_report_date);
                     if (data.data.finalised) document.getElementById('whFinalisedYes').checked = true;
                     else document.getElementById('whFinalisedNo').checked = true;
-                    document.getElementById('whFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('whFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                     toggleWhIccDate();
                     toggleWhFinalisedDate();
                 }
@@ -4352,7 +4365,7 @@
                 if (data.success && data.data) {
                     document.getElementById('pcCaseNo').value = data.data.case_no || '';
                     document.getElementById('pcFirNo').value = data.data.fir_no || '';
-                    document.getElementById('pcDate').value = data.data.case_date || '';
+                    document.getElementById('pcDate').value = formatDateForInput(data.data.case_date);
                     document.getElementById('pcPoliceStation').value = data.data.police_station || '';
                     if (data.data.detained_over_48_hours === 'Yes') document.getElementById('pcDetainedYes').checked = true;
                     else document.getElementById('pcDetainedNo').checked = true;
@@ -4361,7 +4374,7 @@
                     document.getElementById('pcPresentStatus').value = data.data.present_status || '';
                     if (data.data.finalised === 'Yes') document.getElementById('pcFinalisedYes').checked = true;
                     else document.getElementById('pcFinalisedNo').checked = true;
-                    document.getElementById('pcFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('pcFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                     togglePcSuspended();
                     togglePcFinalisedDate();
                 }
@@ -4407,7 +4420,7 @@
                     if (data.data.police_informed === 'Yes') document.getElementById('aodPoliceInformedYes').checked = true;
                     else document.getElementById('aodPoliceInformedNo').checked = true;
                     document.getElementById('aodPoliceStation').value = data.data.police_station || '';
-                    document.getElementById('aodReportedDate').value = data.data.reported_date || '';
+                    document.getElementById('aodReportedDate').value = formatDateForInput(data.data.reported_date);
                     toggleAodPoliceFields();
                 }
             }).catch(err => console.error('Error loading attack on doctors:', err));
@@ -4446,7 +4459,7 @@
                     if (data.data.police_informed === 'Yes') document.getElementById('aosPoliceInformedYes').checked = true;
                     else document.getElementById('aosPoliceInformedNo').checked = true;
                     document.getElementById('aosPoliceStation').value = data.data.police_station || '';
-                    document.getElementById('aosReportedDate').value = data.data.reported_date || '';
+                    document.getElementById('aosReportedDate').value = formatDateForInput(data.data.reported_date);
                     toggleAosPoliceFields();
                 }
             }).catch(err => console.error('Error loading attack on staffs:', err));
@@ -4491,10 +4504,10 @@
                     document.getElementById('sspRefundedStatus').value = data.data.refunded_status || 'No';
                     document.getElementById('sspRefundedAmount').value = data.data.refunded_amount || '';
                     document.getElementById('sspLetterNo').value = data.data.letter_no || '';
-                    document.getElementById('sspLetterDate').value = data.data.letter_date || '';
+                    document.getElementById('sspLetterDate').value = formatDateForInput(data.data.letter_date);
                     document.getElementById('sspReceiptNo').value = data.data.receipt_no || '';
                     document.getElementById('sspFinalised').checked = data.data.finalised === 'Yes';
-                    document.getElementById('sspFinalisedDate').value = data.data.finalised_date || '';
+                    document.getElementById('sspFinalisedDate').value = formatDateForInput(data.data.finalised_date);
                     toggleSspRefundedAmount();
                     toggleSspFinalisedDate();
                 }
