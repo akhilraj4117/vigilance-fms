@@ -1054,6 +1054,65 @@ def update_communication_name():
         return jsonify({'success': False, 'message': str(e)})
 
 
+@file_movements_bp.route('/communications/migrate', methods=['POST'])
+@csrf.exempt
+@login_required
+def migrate_communication_content():
+    """Migrate communication content from local database - admin only."""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required.'})
+    
+    data = request.get_json()
+    migrations = data.get('communications', [])
+    
+    results = {'migrated': 0, 'skipped': 0, 'not_found': 0, 'errors': []}
+    
+    for local in migrations:
+        try:
+            file_number = local.get('file_number')
+            document_title = local.get('document_title')
+            content = local.get('content', '')
+            malayalam_content = local.get('malayalam_content', '')
+            
+            # Find matching communication by file_number and document_title
+            remote_comm = Communication.query.filter_by(
+                file_number=file_number,
+                document_title=document_title
+            ).first()
+            
+            if not remote_comm:
+                # Try by communication_name
+                remote_comm = Communication.query.filter_by(
+                    file_number=file_number,
+                    communication_name=local.get('communication_name')
+                ).first()
+            
+            if remote_comm:
+                # Check if remote already has content
+                remote_has_content = bool(remote_comm.content and len(remote_comm.content) > 0)
+                remote_has_malayalam = bool(remote_comm.malayalam_content and len(remote_comm.malayalam_content) > 0)
+                
+                if remote_has_content or remote_has_malayalam:
+                    results['skipped'] += 1
+                else:
+                    # Update with local content
+                    if content:
+                        remote_comm.content = content
+                    if malayalam_content:
+                        remote_comm.malayalam_content = malayalam_content
+                    remote_comm.modified_date = datetime.now().isoformat()
+                    
+                    db.session.commit()
+                    results['migrated'] += 1
+            else:
+                results['not_found'] += 1
+        except Exception as e:
+            results['errors'].append(f"{file_number}: {str(e)}")
+            db.session.rollback()
+    
+    return jsonify({'success': True, 'results': results})
+
+
 @file_movements_bp.route('/communications/delete', methods=['POST'])
 @csrf.exempt
 @login_required
