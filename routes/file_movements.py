@@ -908,13 +908,18 @@ def list_communications():
     })
 
 
-@file_movements_bp.route('/communications/debug/<file_number>')
+@file_movements_bp.route('/communications/debug')
 @login_required
-def debug_communications(file_number):
+def debug_communications():
     """Debug endpoint to see raw communication data."""
+    file_number = request.args.get('file', '').strip()
+    if not file_number:
+        return jsonify({'error': 'No file number provided. Use ?file=YOUR_FILE_NUMBER'})
+    
     comms = Communication.query.filter_by(file_number=file_number).all()
     return jsonify({
         'count': len(comms),
+        'file_number': file_number,
         'communications': [{
             'id': c.id,
             'communication_name': repr(c.communication_name),
