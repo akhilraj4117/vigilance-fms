@@ -5654,13 +5654,21 @@
         fetch(`/file-movements/communications/content/${id}`)
             .then(response => response.json())
             .then(data => {
+                console.log('Communication content response:', data);
+                console.log('Content length:', data.content ? data.content.length : 0);
                 if (data.success) {
-                    document.getElementById('commContentEditor').innerHTML = data.content || '';
+                    const editor = document.getElementById('commContentEditor');
+                    console.log('Editor element:', editor);
+                    editor.innerHTML = data.content || '';
+                    console.log('Editor innerHTML set, length:', editor.innerHTML.length);
                     document.getElementById('commNameDisplay').textContent = '- ' + data.name;
                     currentCommId = id;
                     commIsModified = false;
                     updateCommButtons();
                 }
+            })
+            .catch(error => {
+                console.error('Error loading communication:', error);
             });
     }
     
