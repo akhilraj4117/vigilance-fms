@@ -4,6 +4,18 @@ Configuration settings for the Flask application.
 import os
 from datetime import timedelta
 
+
+def add_prepare_threshold(url):
+    """Add prepare_threshold=0 to database URL for psycopg3 pooled connections."""
+    if not url:
+        return url
+    # Add prepare_threshold=0 to disable prepared statements (required for pooled connections)
+    if '?' in url:
+        return url + '&prepare_threshold=0'
+    else:
+        return url + '?prepare_threshold=0'
+
+
 class Config:
     """Base configuration class."""
     
@@ -11,16 +23,15 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
     
     # Database configuration - Supabase PostgreSQL (Session Pooler - IPv4 compatible)
-    SUPABASE_DB_URL = 'postgresql+psycopg://postgres.qkhpacqsztvpnkrfmwgz:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or SUPABASE_DB_URL
+    # Add prepare_threshold=0 to disable prepared statements for pooled connections
+    SUPABASE_DB_URL = 'postgresql+psycopg://postgres.qkhpacqsztvpnkrfmwgz:Revathyr%40j6123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?prepare_threshold=0'
+    SQLALCHEMY_DATABASE_URI = add_prepare_threshold(os.environ.get('DATABASE_URL')) or SUPABASE_DB_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # SSL mode for PostgreSQL connections
-    # Disable prepared statements to avoid conflicts with connection pooling
     SQLALCHEMY_ENGINE_OPTIONS = {
         'connect_args': {
-            'sslmode': 'require',
-            'prepare_threshold': 0  # Disable prepared statements for pooled connections
+            'sslmode': 'require'
         }
     }
     
@@ -48,14 +59,17 @@ class ProductionConfig(Config):
     DEBUG = False
     
     # Use DATABASE_URL from environment or fall back to Supabase
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or Config.SUPABASE_DB_URL
+    _raw_db_url = os.environ.get('DATABASE_URL') or Config.SUPABASE_DB_URL
     
     # Fix for PostgreSQL URL format (Render uses postgres://)
-    if SQLALCHEMY_DATABASE_URI:
-        if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql+psycopg://', 1)
-        elif SQLALCHEMY_DATABASE_URI.startswith('postgresql://') and '+psycopg' not in SQLALCHEMY_DATABASE_URI:
-            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg://', 1)
+    if _raw_db_url:
+        if _raw_db_url.startswith('postgres://'):
+            _raw_db_url = _raw_db_url.replace('postgres://', 'postgresql+psycopg://', 1)
+        elif _raw_db_url.startswith('postgresql://') and '+psycopg' not in _raw_db_url:
+            _raw_db_url = _raw_db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
+    # Add prepare_threshold for pooled connections
+    SQLALCHEMY_DATABASE_URI = add_prepare_threshold(_raw_db_url)
 
 
 class TestingConfig(Config):
