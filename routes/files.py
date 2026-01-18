@@ -180,15 +180,28 @@ def file_management_action():
         return redirect(url_for('files.file_management', file=file_number))
     
     elif action == 'update':
-        file = File.query.filter_by(file_number=file_number).first()
+        # Use original_file_number to find the file (in case file number is being changed)
+        original_file_number = request.form.get('original_file_number', '').strip()
+        lookup_number = original_file_number if original_file_number else file_number
+        
+        file = File.query.filter_by(file_number=lookup_number).first()
         if not file:
-            flash(f'File "{file_number}" not found.', 'danger')
+            flash(f'File "{lookup_number}" not found.', 'danger')
             return redirect(url_for('files.file_management'))
+        
+        # Check if new file number already exists (if changing file number)
+        if file_number != lookup_number:
+            existing = File.query.filter_by(file_number=file_number).first()
+            if existing:
+                flash(f'Cannot change file number: "{file_number}" already exists.', 'danger')
+                return redirect(url_for('files.file_management', file=lookup_number))
         
         # Update file
         selected_types = request.form.getlist('type_of_file')
         selected_categories = request.form.getlist('category')
         
+        # Update file number if changed
+        file.file_number = file_number
         file.file_type = request.form.get('file_type', file.file_type)
         file.subject = request.form.get('subject', '').strip()
         file.details_of_file = request.form.get('details_of_file', '').strip()

@@ -500,6 +500,7 @@
                             </button>
                         </div>
                         <input type="hidden" name="file_number" id="fullFileNumber" value="{{ current_file.file_number if current_file else '' }}">
+                        <input type="hidden" name="original_file_number" id="originalFileNumber" value="{{ current_file.file_number if current_file else '' }}">
                         <small class="text-muted mt-1 d-block" id="fileNumberPreview">
                             Full: <strong id="fullFileNumberPreview">{{ current_file.file_number if current_file else 'DMOH-TVM//2025-' }}</strong>
                         </small>

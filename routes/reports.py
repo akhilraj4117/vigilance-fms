@@ -1175,6 +1175,220 @@ def api_files_by_year(year):
     })
 
 
+@reports_bp.route('/api/files-by-status/<status>')
+@login_required
+def api_files_by_status(status):
+    """API endpoint to get files for a specific status."""
+    files_query = db.session.execute(db.text("""
+        SELECT file_number, subject, COALESCE(is_closed, 0) as is_closed, status
+        FROM files
+        WHERE status = :status OR (:status = 'Unknown' AND (status IS NULL OR status = ''))
+    """), {'status': status})
+    files_data = files_query.fetchall()
+    
+    matching_files = []
+    for row in files_data:
+        matching_files.append({
+            'file_number': row[0],
+            'subject': (row[1] or '')[:100],
+            'is_closed': row[2] == 1,
+            'status': row[3] or 'Unknown'
+        })
+    
+    return jsonify({
+        'status': status,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
+@reports_bp.route('/api/files-by-category/<category>')
+@login_required
+def api_files_by_category(category):
+    """API endpoint to get files for a specific category."""
+    import json
+    
+    files_query = db.session.execute(db.text("""
+        SELECT file_number, category, subject, COALESCE(is_closed, 0) as is_closed, status
+        FROM files
+        WHERE category IS NOT NULL AND category != ''
+    """))
+    files_data = files_query.fetchall()
+    
+    matching_files = []
+    for row in files_data:
+        category_str = row[1]
+        try:
+            categories = json.loads(category_str) if category_str else []
+            if isinstance(categories, str):
+                categories = [categories]
+            elif not isinstance(categories, list):
+                categories = []
+        except json.JSONDecodeError:
+            categories = [category_str] if category_str else []
+        
+        if category in categories:
+            matching_files.append({
+                'file_number': row[0],
+                'subject': (row[2] or '')[:100],
+                'is_closed': row[3] == 1,
+                'status': row[4] or 'Unknown'
+            })
+    
+    return jsonify({
+        'category': category,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
+@reports_bp.route('/api/files-by-type/<file_type>')
+@login_required
+def api_files_by_type(file_type):
+    """API endpoint to get files for a specific type_of_file."""
+    import json
+    
+    files_query = db.session.execute(db.text("""
+        SELECT file_number, type_of_file, subject, COALESCE(is_closed, 0) as is_closed, status
+        FROM files
+        WHERE type_of_file IS NOT NULL AND type_of_file != ''
+    """))
+    files_data = files_query.fetchall()
+    
+    matching_files = []
+    for row in files_data:
+        type_str = row[1]
+        try:
+            file_types = json.loads(type_str) if type_str else []
+            if isinstance(file_types, str):
+                file_types = [file_types]
+            elif not isinstance(file_types, list):
+                file_types = []
+        except json.JSONDecodeError:
+            file_types = [type_str] if type_str else []
+        
+        if file_type in file_types:
+            matching_files.append({
+                'file_number': row[0],
+                'subject': (row[2] or '')[:100],
+                'is_closed': row[3] == 1,
+                'status': row[4] or 'Unknown'
+            })
+    
+    return jsonify({
+        'file_type': file_type,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
+@reports_bp.route('/api/files-by-eoffice-physical/<file_type>/<status>')
+@login_required
+def api_files_by_eoffice_physical(file_type, status):
+    """API endpoint to get files for E-Office/Physical and Active/Closed."""
+    if status == 'Active':
+        files_query = db.session.execute(db.text("""
+            SELECT file_number, subject, COALESCE(is_closed, 0) as is_closed, status
+            FROM files
+            WHERE file_type = :file_type AND is_closed = 0 AND (status != 'Handed Over' OR status IS NULL)
+        """), {'file_type': file_type})
+    else:  # Closed
+        files_query = db.session.execute(db.text("""
+            SELECT file_number, subject, COALESCE(is_closed, 0) as is_closed, status
+            FROM files
+            WHERE file_type = :file_type AND (is_closed = 1 OR status = 'Handed Over')
+        """), {'file_type': file_type})
+    
+    files_data = files_query.fetchall()
+    matching_files = []
+    for row in files_data:
+        matching_files.append({
+            'file_number': row[0],
+            'subject': (row[1] or '')[:100],
+            'is_closed': row[2] == 1,
+            'status': row[3] or 'Unknown'
+        })
+    
+    return jsonify({
+        'file_type': file_type,
+        'status': status,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
+@reports_bp.route('/api/files-da/<status>')
+@login_required
+def api_files_da(status):
+    """API endpoint to get files with Disciplinary Action (Active/Closed)."""
+    if status == 'Active':
+        files_query = db.session.execute(db.text("""
+            SELECT file_number, subject, COALESCE(is_closed, 0) as is_closed, status
+            FROM files
+            WHERE disciplinary_action = 'Yes' AND is_closed = 0 AND (status != 'Handed Over' OR status IS NULL)
+        """))
+    else:  # Closed
+        files_query = db.session.execute(db.text("""
+            SELECT file_number, subject, COALESCE(is_closed, 0) as is_closed, status
+            FROM files
+            WHERE disciplinary_action = 'Yes' AND (is_closed = 1 OR status = 'Handed Over')
+        """))
+    
+    files_data = files_query.fetchall()
+    matching_files = []
+    for row in files_data:
+        matching_files.append({
+            'file_number': row[0],
+            'subject': (row[1] or '')[:100],
+            'is_closed': row[2] == 1,
+            'status': row[3] or 'Unknown'
+        })
+    
+    return jsonify({
+        'status': status,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
+@reports_bp.route('/api/files-by-institution/<inst_type>')
+@login_required
+def api_files_by_institution(inst_type):
+    """API endpoint to get files for a specific institution type."""
+    if inst_type == '(Unregistered Institutions)':
+        files_query = db.session.execute(db.text("""
+            SELECT f.file_number, f.subject, COALESCE(f.is_closed, 0) as is_closed, f.status, f.institution_name
+            FROM files f
+            LEFT JOIN institutions i ON f.institution_name = i.name
+            WHERE i.id IS NULL
+            AND f.institution_name IS NOT NULL AND f.institution_name != ''
+        """))
+    else:
+        files_query = db.session.execute(db.text("""
+            SELECT f.file_number, f.subject, COALESCE(f.is_closed, 0) as is_closed, f.status, f.institution_name
+            FROM files f
+            INNER JOIN institutions i ON f.institution_name = i.name
+            WHERE i.category = :inst_type
+        """), {'inst_type': inst_type})
+    
+    files_data = files_query.fetchall()
+    matching_files = []
+    for row in files_data:
+        matching_files.append({
+            'file_number': row[0],
+            'subject': (row[1] or '')[:100],
+            'is_closed': row[2] == 1,
+            'status': row[3] or 'Unknown',
+            'institution': row[4] or ''
+        })
+    
+    return jsonify({
+        'institution_type': inst_type,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
 @reports_bp.route('/export-da-overview/<year>')
 @login_required
 def export_da_overview(year):

@@ -70,6 +70,28 @@
         color: white;
     }
     
+    /* Dropdown Tab Card */
+    .tab-card-dropdown {
+        position: relative;
+    }
+    .tab-card-dropdown .dropdown-menu {
+        min-width: 200px;
+        padding: 8px 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .tab-card-dropdown .dropdown-item {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+    .tab-card-dropdown .dropdown-item:hover {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+    }
+    .tab-card-dropdown .dropdown-item i {
+        margin-right: 8px;
+    }
+    
     /* Stats Table */
     .stats-table th { background-color: #1e3c72; color: white; }
     .stats-table td { vertical-align: middle; }
@@ -146,11 +168,21 @@
                 <span>Reports</span>
             </a>
         </div>
-        <div class="col">
-            <a href="{{ url_for('rti.rti_index') }}" class="tab-card">
-                <i class="bi bi-info-circle"></i>
-                <span>RTI Info</span>
-            </a>
+        <div class="col tab-card-dropdown">
+            <div class="dropdown">
+                <a href="#" class="tab-card dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Registers & Committees</span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('rti.rti_index') }}">
+                            <i class="bi bi-info-circle"></i> RTI Info
+                        </a>
+                    </li>
+                    <!-- Add more items here later -->
+                </ul>
+            </div>
         </div>
         <div class="col">
             <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
@@ -271,8 +303,16 @@
                     {% for file_type, counts in stats.eoffice_physical.items() %}
                     <tr>
                         <td>{{ file_type }}</td>
-                        <td>{{ counts.Active }}</td>
-                        <td>{{ counts.Closed }}</td>
+                        <td>
+                            {% if file_type != 'Total' %}
+                            <a href="#" onclick="showFilesForEOfficePhysical('{{ file_type }}', 'Active'); return false;">{{ counts.Active }}</a>
+                            {% else %}{{ counts.Active }}{% endif %}
+                        </td>
+                        <td>
+                            {% if file_type != 'Total' %}
+                            <a href="#" onclick="showFilesForEOfficePhysical('{{ file_type }}', 'Closed'); return false;">{{ counts.Closed }}</a>
+                            {% else %}{{ counts.Closed }}{% endif %}
+                        </td>
                         <td><strong>{{ counts.Total }}</strong></td>
                     </tr>
                     {% endfor %}
@@ -282,11 +322,19 @@
             {% elif subtab == 'status_distribution' %}
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Status</th><th>Count</th></tr>
+                    <tr><th>Status</th><th>Count</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for status, count in stats.status_distribution.items() %}
-                    <tr><td>{{ status }}</td><td>{{ count }}</td></tr>
+                    <tr>
+                        <td>{{ status }}</td>
+                        <td>{{ count }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForStatus('{{ status }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -299,8 +347,8 @@
                 <tbody>
                     <tr>
                         <td>Files with Disciplinary Action</td>
-                        <td>{{ stats.da_files.Active }}</td>
-                        <td>{{ stats.da_files.Closed }}</td>
+                        <td><a href="#" onclick="showFilesDA('Active'); return false;">{{ stats.da_files.Active }}</a></td>
+                        <td><a href="#" onclick="showFilesDA('Closed'); return false;">{{ stats.da_files.Closed }}</a></td>
                         <td><strong>{{ stats.da_files.Total }}</strong></td>
                     </tr>
                 </tbody>
@@ -309,7 +357,7 @@
             {% elif subtab == 'category_by_status' %}
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Category</th><th>Active</th><th>Closed</th><th>Total</th></tr>
+                    <tr><th>Category</th><th>Active</th><th>Closed</th><th>Total</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for cat, counts in stats.category_by_status.items() %}
@@ -318,6 +366,11 @@
                         <td>{{ counts.Active }}</td>
                         <td>{{ counts.Closed }}</td>
                         <td><strong>{{ counts.Total }}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForCategory('{{ cat }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -326,7 +379,7 @@
             {% elif subtab == 'type_by_status' %}
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Type of File</th><th>Active</th><th>Closed</th><th>Total</th></tr>
+                    <tr><th>Type of File</th><th>Active</th><th>Closed</th><th>Total</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for type, counts in stats.type_by_status.items() %}
@@ -335,6 +388,11 @@
                         <td>{{ counts.Active }}</td>
                         <td>{{ counts.Closed }}</td>
                         <td><strong>{{ counts.Total }}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForType('{{ type }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -346,11 +404,19 @@
             <h5 class="mb-3"><i class="bi bi-tags"></i> Category Distribution</h5>
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Category</th><th>Count</th></tr>
+                    <tr><th>Category</th><th>Count</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for cat, count in stats.categories.items() %}
-                    <tr><td>{{ cat }}</td><td>{{ count }}</td></tr>
+                    <tr>
+                        <td>{{ cat }}</td>
+                        <td>{{ count }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForCategory('{{ cat }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -360,11 +426,19 @@
             <h5 class="mb-3"><i class="bi bi-file-earmark"></i> File Type Distribution</h5>
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Type of File</th><th>Count</th></tr>
+                    <tr><th>Type of File</th><th>Count</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for type, count in stats.file_types.items() %}
-                    <tr><td>{{ type }}</td><td>{{ count }}</td></tr>
+                    <tr>
+                        <td>{{ type }}</td>
+                        <td>{{ count }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForType('{{ type }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -459,7 +533,7 @@
             <h5 class="mb-3"><i class="bi bi-building"></i> Files by Institution Type</h5>
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th style="width: 40px;"></th><th>Institution Type</th><th>Files Count</th></tr>
+                    <tr><th style="width: 40px;"></th><th>Institution Type</th><th>Files Count</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for inst_type, data in stats.institution_types.items() %}
@@ -472,6 +546,11 @@
                         </td>
                         <td><strong>{{ inst_type }}</strong></td>
                         <td><strong>{{ data.count }}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForInstitution('{{ inst_type }}')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
                     </tr>
                     <!-- Sub-institutions (hidden by default) -->
                     {% for inst_name, inst_count in data.institutions.items() %}
@@ -481,6 +560,7 @@
                             <i class="bi bi-arrow-return-right text-muted me-2"></i>{{ inst_name }}
                         </td>
                         <td>{{ inst_count }}</td>
+                        <td></td>
                     </tr>
                     {% endfor %}
                     {% endfor %}
@@ -530,80 +610,9 @@
                 </tbody>
             </table>
             
-            <!-- Modal for showing files by year -->
-            <div class="modal fade" id="filesYearModal" tabindex="-1">
-                <div class="modal-dialog modal-xl">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title"><i class="bi bi-folder"></i> Files for Year: <span id="modalYearTitle"></span></h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div id="filesYearLoading" class="text-center py-4">
-                                <div class="spinner-border text-primary" role="status"></div>
-                                <p class="mt-2">Loading files...</p>
-                            </div>
-                            <div id="filesYearContent" style="display:none;">
-                                <p class="mb-2"><strong>Total: <span id="filesYearCount"></span> files</strong></p>
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-sm table-striped">
-                                        <thead class="table-dark sticky-top">
-                                            <tr>
-                                                <th>Sl.No</th>
-                                                <th>File Number</th>
-                                                <th>File Year</th>
-                                                <th>Subject</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="filesYearTable"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <script>
             function showFilesForYear(year) {
-                document.getElementById('modalYearTitle').textContent = year;
-                document.getElementById('filesYearLoading').style.display = 'block';
-                document.getElementById('filesYearContent').style.display = 'none';
-                
-                const modal = new bootstrap.Modal(document.getElementById('filesYearModal'));
-                modal.show();
-                
-                fetch(`/reports/api/files-by-year/${year}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('filesYearLoading').style.display = 'none';
-                        document.getElementById('filesYearContent').style.display = 'block';
-                        document.getElementById('filesYearCount').textContent = data.count;
-                        
-                        let html = '';
-                        data.files.forEach((file, idx) => {
-                            const statusBadge = file.is_closed ? 
-                                '<span class="badge bg-success">Closed</span>' : 
-                                '<span class="badge bg-warning text-dark">Active</span>';
-                            html += `<tr>
-                                <td>${idx + 1}</td>
-                                <td><a href="/files?file=${encodeURIComponent(file.file_number)}" target="_blank">${file.file_number}</a></td>
-                                <td>${file.file_year || '-'}</td>
-                                <td>${file.subject || '-'}</td>
-                                <td>${statusBadge}</td>
-                            </tr>`;
-                        });
-                        document.getElementById('filesYearTable').innerHTML = html;
-                    })
-                    .catch(err => {
-                        console.error('Error:', err);
-                        document.getElementById('filesYearLoading').innerHTML = 
-                            '<p class="text-danger">Error loading files. Please try again.</p>';
-                    });
+                showFilesModal(`Files for Year: ${year}`, `/reports/api/files-by-year/${year}`, 'File Year');
             }
             </script>
             
@@ -808,9 +817,126 @@
     </div>
 </div>
 
+<!-- Shared Files View Modal -->
+<div class="modal fade" id="filesViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder"></i> <span id="modalFilesTitle">Files</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="filesViewLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Loading files...</p>
+                </div>
+                <div id="filesViewContent" style="display:none;">
+                    <p class="mb-2"><strong>Total: <span id="filesViewCount"></span> files</strong></p>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Sl.No</th>
+                                    <th>File Number</th>
+                                    <th id="filesViewExtraHeader" style="display:none;"></th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filesViewTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function changeYear(year) {
     window.location.href = "{{ url_for('reports.index', tab='da_overview') }}" + "&year=" + year;
+}
+
+// Shared function to show files modal
+function showFilesModal(title, apiUrl, extraColumn = null) {
+    document.getElementById('modalFilesTitle').textContent = title;
+    document.getElementById('filesViewLoading').style.display = 'block';
+    document.getElementById('filesViewContent').style.display = 'none';
+    
+    const extraHeader = document.getElementById('filesViewExtraHeader');
+    if (extraColumn) {
+        extraHeader.textContent = extraColumn;
+        extraHeader.style.display = '';
+    } else {
+        extraHeader.style.display = 'none';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('filesViewModal'));
+    modal.show();
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('filesViewLoading').style.display = 'none';
+            document.getElementById('filesViewContent').style.display = 'block';
+            document.getElementById('filesViewCount').textContent = data.count;
+            
+            let html = '';
+            data.files.forEach((file, idx) => {
+                const statusBadge = file.is_closed ? 
+                    '<span class="badge bg-success">Closed</span>' : 
+                    '<span class="badge bg-warning text-dark">Active</span>';
+                const extraCell = extraColumn && file.institution ? 
+                    `<td>${file.institution}</td>` : 
+                    (extraColumn && file.file_year ? `<td>${file.file_year || '-'}</td>` : '');
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td><a href="/files?file=${encodeURIComponent(file.file_number)}" target="_blank">${file.file_number}</a></td>
+                    ${extraColumn ? extraCell : ''}
+                    <td>${file.subject || '-'}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+            });
+            document.getElementById('filesViewTable').innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById('filesViewLoading').innerHTML = 
+                '<p class="text-danger">Error loading files. Please try again.</p>';
+        });
+}
+
+// Show files for Status Distribution
+function showFilesForStatus(status) {
+    showFilesModal(`Files with Status: ${status}`, `/reports/api/files-by-status/${encodeURIComponent(status)}`);
+}
+
+// Show files for Category
+function showFilesForCategory(category) {
+    showFilesModal(`Files in Category: ${category}`, `/reports/api/files-by-category/${encodeURIComponent(category)}`);
+}
+
+// Show files for Type of File
+function showFilesForType(fileType) {
+    showFilesModal(`Files of Type: ${fileType}`, `/reports/api/files-by-type/${encodeURIComponent(fileType)}`);
+}
+
+// Show files for E-Office/Physical
+function showFilesForEOfficePhysical(fileType, status) {
+    showFilesModal(`${fileType} Files - ${status}`, `/reports/api/files-by-eoffice-physical/${encodeURIComponent(fileType)}/${encodeURIComponent(status)}`);
+}
+
+// Show files with Disciplinary Action
+function showFilesDA(status) {
+    showFilesModal(`DA Files - ${status}`, `/reports/api/files-da/${encodeURIComponent(status)}`);
+}
+
+// Show files for Institution Type
+function showFilesForInstitution(instType) {
+    showFilesModal(`Files in ${instType}`, `/reports/api/files-by-institution/${encodeURIComponent(instType)}`, 'Institution');
 }
 </script>
 {% endblock %}

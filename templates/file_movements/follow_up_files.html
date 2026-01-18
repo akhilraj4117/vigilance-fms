@@ -197,11 +197,20 @@
                 <span>Reports</span>
             </a>
         </div>
-        <div class="col">
-            <a href="{{ url_for('rti.rti_index') }}" class="tab-card">
-                <i class="bi bi-info-circle"></i>
-                <span>RTI Info</span>
-            </a>
+        <div class="col tab-card-dropdown">
+            <div class="dropdown">
+                <a href="#" class="tab-card dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Registers & Committees</span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('rti.rti_index') }}">
+                            <i class="bi bi-info-circle"></i> RTI Info
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="col">
             <a href="{{ url_for('institutions.list_institutions') }}" class="tab-card">
