@@ -889,7 +889,8 @@ def list_communications():
     
     def get_comm_name(c):
         """Get communication name from available fields."""
-        if c.communication_name and c.communication_name.strip():
+        # Skip 'Untitled Communication' and prefer document_title
+        if c.communication_name and c.communication_name.strip() and c.communication_name.strip() != 'Untitled Communication':
             return c.communication_name.strip()
         if c.document_title and c.document_title.strip():
             return c.document_title.strip()
@@ -936,10 +937,19 @@ def debug_communications():
 def get_communication_content(id):
     """Get communication content via AJAX."""
     comm = Communication.query.get_or_404(id)
+    # Get the best available name (skip 'Untitled Communication')
+    name = 'Untitled'
+    if comm.communication_name and comm.communication_name.strip() and comm.communication_name.strip() != 'Untitled Communication':
+        name = comm.communication_name.strip()
+    elif comm.document_title and comm.document_title.strip():
+        name = comm.document_title.strip()
+    elif comm.document_type and comm.document_type.strip():
+        name = comm.document_type.strip()
+    
     return jsonify({
         'success': True,
         'content': comm.content or '',
-        'name': comm.communication_name or comm.document_title or comm.document_type or 'Untitled'
+        'name': name
     })
 
 
