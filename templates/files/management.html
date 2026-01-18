@@ -614,7 +614,7 @@
                         <div class="mb-3">
                             <label for="followUpDate" class="form-label">Follow up needed Date</label>
                             <input type="date" class="form-control" id="followUpDate" name="follow_up_date" 
-                                   value="{{ current_file.follow_up_date if current_file else '' }}">
+                                   value="{{ (current_file.follow_up_date|format_date_html) if current_file else '' }}">
                         </div>
                     </div>
                     
