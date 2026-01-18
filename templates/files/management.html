@@ -6372,9 +6372,27 @@ let selectedPRRowId = null;
 
 // Initialize PR Modal when shown
 document.getElementById('prEntriesModal')?.addEventListener('shown.bs.modal', function() {
-    loadPREntries();
-    initPRFieldToggles();
+    // Load entries first, then auto-number after entries are loaded
+    loadPREntries().then(() => {
+        initPRFieldToggles();
+        // Auto-enable and auto-number the serial number field
+        autoEnableSerialNumber();
+    });
 });
+
+// Auto-enable and auto-number the serial number field
+function autoEnableSerialNumber() {
+    const serialCheckbox = document.querySelector('.pr-field-toggle[data-target="pr_serial_number"]');
+    const serialInput = document.getElementById('pr_serial_number');
+    const entryId = document.getElementById('pr_entry_id')?.value;
+    
+    // Only auto-enable for new entries
+    if (!entryId && serialCheckbox && serialInput) {
+        serialCheckbox.checked = true;
+        serialInput.disabled = false;
+        autoNumberPRSerialNumber();
+    }
+}
 
 // Initialize field toggle checkboxes
 function initPRFieldToggles() {
@@ -6423,9 +6441,9 @@ function autoNumberPRSerialNumber() {
 // Load PR entries for current file
 function loadPREntries() {
     const fileNumber = document.getElementById('pr_file_number')?.value;
-    if (!fileNumber) return;
+    if (!fileNumber) return Promise.resolve();
     
-    fetch(`/files/pr-entries/${encodeURIComponent(fileNumber)}/json`)
+    return fetch(`/files/pr-entries/${encodeURIComponent(fileNumber)}/json`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
