@@ -7,6 +7,18 @@ from flask import Flask
 from config import config
 from extensions import db, login_manager, csrf
 from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+
+# Register event listener globally BEFORE any engine is created
+# This disables prepared statements for psycopg3 connections (required for connection pooling)
+@event.listens_for(Engine, "connect")
+def set_prepare_threshold(dbapi_connection, connection_record):
+    """Disable prepared statements for psycopg3 connections."""
+    try:
+        dbapi_connection.prepare_threshold = 0
+    except AttributeError:
+        pass  # Not a psycopg3 connection
 
 
 def create_app(config_name=None):
@@ -22,16 +34,6 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
-    
-    # Set up event listener to disable prepared statements for pooled connections
-    with app.app_context():
-        @event.listens_for(db.engine, "connect")
-        def set_prepare_threshold(dbapi_connection, connection_record):
-            """Disable prepared statements for psycopg3 connections."""
-            try:
-                dbapi_connection.prepare_threshold = 0
-            except AttributeError:
-                pass
     
     # Configure login manager
     login_manager.login_view = 'auth.login'
