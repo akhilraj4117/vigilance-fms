@@ -511,7 +511,7 @@
             <h5 class="mb-3"><i class="bi bi-calendar-range"></i> Files by Year</h5>
             <table class="table table-striped table-hover stats-table">
                 <thead>
-                    <tr><th>Year</th><th>Active</th><th>Closed</th><th>Total</th></tr>
+                    <tr><th>Year</th><th>Active</th><th>Closed</th><th>Total</th><th>Action</th></tr>
                 </thead>
                 <tbody>
                     {% for year, counts in stats.files_by_year.items() %}
@@ -520,10 +520,92 @@
                         <td>{{ counts.Active }}</td>
                         <td>{{ counts.Closed }}</td>
                         <td><strong>{{ counts.Total }}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showFilesForYear('{{ year }}')">
+                                <i class="bi bi-eye"></i> View Files
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            
+            <!-- Modal for showing files by year -->
+            <div class="modal fade" id="filesYearModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-folder"></i> Files for Year: <span id="modalYearTitle"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="filesYearLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2">Loading files...</p>
+                            </div>
+                            <div id="filesYearContent" style="display:none;">
+                                <p class="mb-2"><strong>Total: <span id="filesYearCount"></span> files</strong></p>
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-sm table-striped">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th>Sl.No</th>
+                                                <th>File Number</th>
+                                                <th>File Year</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="filesYearTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            function showFilesForYear(year) {
+                document.getElementById('modalYearTitle').textContent = year;
+                document.getElementById('filesYearLoading').style.display = 'block';
+                document.getElementById('filesYearContent').style.display = 'none';
+                
+                const modal = new bootstrap.Modal(document.getElementById('filesYearModal'));
+                modal.show();
+                
+                fetch(`/reports/api/files-by-year/${year}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('filesYearLoading').style.display = 'none';
+                        document.getElementById('filesYearContent').style.display = 'block';
+                        document.getElementById('filesYearCount').textContent = data.count;
+                        
+                        let html = '';
+                        data.files.forEach((file, idx) => {
+                            const statusBadge = file.is_closed ? 
+                                '<span class="badge bg-success">Closed</span>' : 
+                                '<span class="badge bg-warning text-dark">Active</span>';
+                            html += `<tr>
+                                <td>${idx + 1}</td>
+                                <td><a href="/files?file=${encodeURIComponent(file.file_number)}" target="_blank">${file.file_number}</a></td>
+                                <td>${file.file_year || '-'}</td>
+                                <td>${file.subject || '-'}</td>
+                                <td>${statusBadge}</td>
+                            </tr>`;
+                        });
+                        document.getElementById('filesYearTable').innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        document.getElementById('filesYearLoading').innerHTML = 
+                            '<p class="text-danger">Error loading files. Please try again.</p>';
+                    });
+            }
+            </script>
             
             {% elif tab == 'ua_stats' %}
             <!-- Unauthorised Absence Tab -->

@@ -1111,6 +1111,70 @@ def api_da_monthly_stats(year):
     return jsonify(stats)
 
 
+@reports_bp.route('/api/files-by-year/<year>')
+@login_required
+def api_files_by_year(year):
+    """API endpoint to get files for a specific year."""
+    import re
+    year_pattern = re.compile(r"(19|20)\d{2}")
+    current_year = datetime.now().year
+    
+    files_query = db.session.execute(db.text("""
+        SELECT file_number, COALESCE(file_year, '') as file_year, 
+               subject, COALESCE(is_closed, 0) as is_closed,
+               status
+        FROM files
+    """))
+    files_data = files_query.fetchall()
+    
+    matching_files = []
+    
+    for row in files_data:
+        file_number = row[0]
+        fy = row[1] or file_number
+        subject = row[2] or ''
+        is_closed = row[3]
+        status = row[4] or ''
+        
+        if not fy:
+            continue
+        
+        extracted_year = None
+        fy_str = str(fy)
+        
+        # First try: if file_year is a 4-digit year
+        if fy_str.isdigit() and len(fy_str) == 4:
+            y = int(fy_str)
+            if 1900 <= y <= (current_year + 1):
+                extracted_year = fy_str
+        else:
+            # Extract from file_number using regex
+            matches = [m.group(0) for m in year_pattern.finditer(str(file_number))]
+            for token in reversed(matches):
+                try:
+                    y = int(token)
+                    if 1900 <= y <= (current_year + 1):
+                        extracted_year = str(y)
+                        break
+                except:
+                    continue
+        
+        if extracted_year == year:
+            matching_files.append({
+                'file_number': file_number,
+                'file_year': row[1],
+                'subject': subject[:100],
+                'is_closed': is_closed == 1,
+                'status': status
+            })
+    
+    return jsonify({
+        'year': year,
+        'count': len(matching_files),
+        'files': matching_files
+    })
+
+
 @reports_bp.route('/export-da-overview/<year>')
 @login_required
 def export_da_overview(year):
