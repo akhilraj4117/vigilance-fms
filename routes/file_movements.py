@@ -1478,8 +1478,11 @@ def randomize_exceeded_dates():
     """Randomize follow-up dates for Date Exceeded files in batches of 10."""
     exceeded_files = get_files_by_followup_status('exceeded')
     
+    # Exclude files that have remarks (details already recorded)
+    exceeded_files = [f for f in exceeded_files if not f.remarks or f.remarks.strip() == '']
+    
     if not exceeded_files:
-        flash('No files found in Date Exceeded tab.', 'warning')
+        flash('No files found in Date Exceeded tab (excluding files with remarks).', 'warning')
         return redirect(url_for('file_movements.follow_up_files', tab='exceeded'))
     
     base_date = datetime.now().date() + timedelta(days=1)
@@ -1502,16 +1505,17 @@ def randomize_exceeded_dates():
 @login_required
 def randomize_all_files():
     """Randomize follow-up dates for ALL active files with max 25 per day."""
-    # Get all non-closed files (excluding Handed Over files)
+    # Get all non-closed files (excluding Handed Over files and files with remarks)
     active_files = File.query.filter(
         and_(
             or_(File.is_closed == 0, File.is_closed == None),
-            or_(File.status != 'Handed Over', File.status == None)
+            or_(File.status != 'Handed Over', File.status == None),
+            or_(File.remarks == None, File.remarks == '')
         )
     ).all()
     
     if not active_files:
-        flash('No active files found.', 'warning')
+        flash('No active files found (excluding files with remarks).', 'warning')
         return redirect(url_for('file_movements.follow_up_files', tab='exceeded'))
     
     # Shuffle files randomly

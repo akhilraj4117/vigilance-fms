@@ -6385,9 +6385,39 @@ function initPRFieldToggles() {
             targetInput.disabled = !this.checked;
             if (!this.checked) {
                 targetInput.value = '';
+            } else if (targetId === 'pr_serial_number') {
+                // Auto-number the serial number field when enabled
+                autoNumberPRSerialNumber();
             }
         });
     });
+}
+
+// Auto-number the PR serial number field
+function autoNumberPRSerialNumber() {
+    const serialInput = document.getElementById('pr_serial_number');
+    const entryId = document.getElementById('pr_entry_id').value;
+    
+    // Only auto-number for new entries, not when editing existing ones
+    if (entryId) return;
+    
+    // Get existing serial numbers from the table
+    const tbody = document.getElementById('prEntriesBody');
+    const rows = tbody.querySelectorAll('tr[data-id]');
+    
+    let maxSerialNumber = 0;
+    rows.forEach(row => {
+        const serialCell = row.querySelector('td:first-child');
+        if (serialCell && serialCell.textContent.trim()) {
+            const serialNum = parseInt(serialCell.textContent.trim(), 10);
+            if (!isNaN(serialNum) && serialNum > maxSerialNumber) {
+                maxSerialNumber = serialNum;
+            }
+        }
+    });
+    
+    // Set the next serial number
+    serialInput.value = maxSerialNumber + 1;
 }
 
 // Load PR entries for current file
