@@ -16,9 +16,11 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # SSL mode for PostgreSQL connections
+    # Disable prepared statements to avoid conflicts with connection pooling
     SQLALCHEMY_ENGINE_OPTIONS = {
         'connect_args': {
-            'sslmode': 'require'
+            'sslmode': 'require',
+            'prepare_threshold': 0  # Disable prepared statements for pooled connections
         }
     }
     
