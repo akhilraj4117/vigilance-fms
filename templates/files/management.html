@@ -5651,10 +5651,11 @@
         }
         
         // Load content
+        console.log('Fetching communication ID:', id);
         fetch(`/file-movements/communications/content/${id}`)
             .then(response => response.json())
             .then(data => {
-                console.log('Communication content response:', data);
+                console.log('Communication content response for ID ' + id + ':', JSON.stringify(data));
                 console.log('Content length:', data.content ? data.content.length : 0);
                 if (data.success) {
                     const editor = document.getElementById('commContentEditor');
