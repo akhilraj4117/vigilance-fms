@@ -276,8 +276,8 @@ def save_employee_ajax():
             existing.name = name
             existing.designation = data.get('designation', '')
             existing.institution_name = data.get('institution_name', '')
-            existing.date_of_birth = data.get('date_of_birth', '')
-            existing.joining_date = data.get('joining_date', '')
+            existing.date_of_birth = convert_date_format(data.get('date_of_birth', ''))
+            existing.joining_date = convert_date_format(data.get('joining_date', ''))
             existing.permanent_address = data.get('permanent_address', '')
             existing.communication_address = data.get('communication_address', '')
             
@@ -290,8 +290,8 @@ def save_employee_ajax():
                 name=name,
                 designation=data.get('designation', ''),
                 institution_name=data.get('institution_name', ''),
-                date_of_birth=data.get('date_of_birth', ''),
-                joining_date=data.get('joining_date', ''),
+                date_of_birth=convert_date_format(data.get('date_of_birth', '')),
+                joining_date=convert_date_format(data.get('joining_date', '')),
                 permanent_address=data.get('permanent_address', ''),
                 communication_address=data.get('communication_address', '')
             )

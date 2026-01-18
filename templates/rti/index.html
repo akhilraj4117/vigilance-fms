@@ -149,7 +149,7 @@
                                 <tr>
                                     <td>{{ loop.index }}</td>
                                     <td>{{ app.original_application_no or '-' }}</td>
-                                    <td>{{ app.date_of_receipt or '-' }}</td>
+                                    <td>{{ app.date_of_receipt|format_date }}</td>
                                     <td>{{ app.applicant_prefix or '' }} {{ app.applicant_name or '-' }}</td>
                                     <td {% if app.address and app.address|length > 30 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ app.address }}"{% endif %}>
                                         {{ (app.address or '-')[:30] }}{{ '...' if app.address and app.address|length > 30 else '' }}
@@ -159,8 +159,8 @@
                                     </td>
                                     <td>{{ app.fee_paid or '-' }}</td>
                                     <td>{{ app.mode_of_payment or '-' }}</td>
-                                    <td>{{ app.date_of_acknowledgment or '-' }}</td>
-                                    <td>{{ app.date_of_disposal or '-' }}</td>
+                                    <td>{{ app.date_of_acknowledgment|format_date }}</td>
+                                    <td>{{ app.date_of_disposal|format_date }}</td>
                                     <td>
                                         {% if app.status == 'Replied' %}
                                         <span class="badge bg-success">Replied</span>
@@ -278,11 +278,11 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ appeal.appeal_no or '-' }}</td>
                                     <td>{{ appeal.original_application_no or '-' }}</td>
-                                    <td>{{ appeal.date_of_receipt or '-' }}</td>
+                                    <td>{{ appeal.date_of_receipt|format_date }}</td>
                                     <td>{{ appeal.appellant_prefix or '' }} {{ appeal.appellant_name or '-' }}</td>
-                                    <td>{{ appeal.date_of_spio_response or '-' }}</td>
-                                    <td>{{ appeal.date_of_hearing or '-' }}</td>
-                                    <td>{{ appeal.date_of_disposal or '-' }}</td>
+                                    <td>{{ appeal.date_of_spio_response|format_date }}</td>
+                                    <td>{{ appeal.date_of_hearing|format_date }}</td>
+                                    <td>{{ appeal.date_of_disposal|format_date }}</td>
                                     <td>
                                         {% if appeal.outcome == 'Allowed' %}
                                         <span class="badge bg-success">Allowed</span>
@@ -404,7 +404,7 @@
                                     <td>{{ fee.applicant_prefix or '' }} {{ fee.applicant_name or '-' }}</td>
                                     <td>{{ fee.fee_paid or '-' }}</td>
                                     <td>{{ fee.mode_of_payment or '-' }}</td>
-                                    <td>{{ fee.date_of_receipt or '-' }}</td>
+                                    <td>{{ fee.date_of_receipt|format_date }}</td>
                                     <td>{{ fee.receipt_no or '-' }}</td>
                                     <td>{{ fee.additional_amount_paid or '-' }}</td>
                                     <td {% if fee.subject_of_information and fee.subject_of_information|length > 20 %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ fee.subject_of_information }}"{% endif %}>

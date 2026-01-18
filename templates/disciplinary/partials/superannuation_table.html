@@ -90,8 +90,8 @@
                 <td><strong>{{ item.pen or '-' }}</strong></td>
                 <td>{{ item.name or '-' }}</td>
                 <td>{{ item.designation or '-' }}</td>
-                <td>{{ item.date_of_birth or '-' }}</td>
-                <td>{{ item.superannuation_date or '-' }}</td>
+                <td>{{ item.date_of_birth|format_date }}</td>
+                <td>{{ item.superannuation_date|format_date }}</td>
                 <td>{{ item.institution or '-' }}</td>
                 <td>
                     {% if inner_tab == 'retired' %}

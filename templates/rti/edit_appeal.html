@@ -40,7 +40,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="date_of_receipt" class="form-label fw-bold">Date of Receipt <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" value="{{ appeal.date_of_receipt or '' }}" required>
+                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" value="{{ appeal.date_of_receipt|format_date_html }}" required>
                 </div>
             </div>
             
@@ -66,21 +66,21 @@
                         <input type="checkbox" class="form-check-input" id="spio_response_checkbox" name="spio_response_checkbox" {% if appeal.date_of_spio_response %}checked{% endif %} onchange="toggleSpioResponseDate()">
                         Date of SPIO Response
                     </label>
-                    <input type="date" class="form-control" id="date_of_spio_response" name="date_of_spio_response" value="{{ appeal.date_of_spio_response or '' }}" {% if not appeal.date_of_spio_response %}disabled{% endif %}>
+                    <input type="date" class="form-control" id="date_of_spio_response" name="date_of_spio_response" value="{{ appeal.date_of_spio_response|format_date_html }}" {% if not appeal.date_of_spio_response %}disabled{% endif %}>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">
                         <input type="checkbox" class="form-check-input" id="hearing_checkbox" name="hearing_checkbox" {% if appeal.date_of_hearing %}checked{% endif %} onchange="toggleHearingDate()">
                         Date of Hearing
                     </label>
-                    <input type="date" class="form-control" id="date_of_hearing" name="date_of_hearing" value="{{ appeal.date_of_hearing or '' }}" {% if not appeal.date_of_hearing %}disabled{% endif %}>
+                    <input type="date" class="form-control" id="date_of_hearing" name="date_of_hearing" value="{{ appeal.date_of_hearing|format_date_html }}" {% if not appeal.date_of_hearing %}disabled{% endif %}>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">
                         <input type="checkbox" class="form-check-input" id="disposal_checkbox" name="disposal_checkbox" {% if appeal.date_of_disposal %}checked{% endif %} onchange="toggleAppealDisposalDate()">
                         Date of Disposal
                     </label>
-                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" value="{{ appeal.date_of_disposal or '' }}" {% if not appeal.date_of_disposal %}disabled{% endif %}>
+                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" value="{{ appeal.date_of_disposal|format_date_html }}" {% if not appeal.date_of_disposal %}disabled{% endif %}>
                 </div>
             </div>
             

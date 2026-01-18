@@ -175,7 +175,7 @@
                         <tbody>
                             {% for pr in pr_entries %}
                             <tr>
-                                <td>{{ pr.pr_date or '-' }}</td>
+                                <td>{{ pr.pr_date|format_date }}</td>
                                 <td>{{ pr.pr_number or '-' }}</td>
                                 <td>{{ pr.to_whom or '-' }}</td>
                                 <td>{{ pr.purpose[:50] + '...' if pr.purpose and pr.purpose|length > 50 else pr.purpose or '-' }}</td>

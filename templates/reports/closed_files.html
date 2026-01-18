@@ -81,8 +81,8 @@
                         </td>
                         <td>{{ file.category }}</td>
                         <td>{{ file.name_of_petitioner[:30] }}{% if file.name_of_petitioner|length > 30 %}...{% endif %}</td>
-                        <td>{{ file.date_received or '-' }}</td>
-                        <td>{{ file.disposal_date or '-' }}</td>
+                        <td>{{ file.date_received|format_date }}</td>
+                        <td>{{ file.disposal_date|format_date }}</td>
                         <td class="text-center">
                             {% if file.duration %}
                             <span class="badge {% if file.duration < 30 %}bg-success{% elif file.duration < 90 %}bg-info{% elif file.duration < 180 %}bg-warning text-dark{% else %}bg-danger{% endif %}">

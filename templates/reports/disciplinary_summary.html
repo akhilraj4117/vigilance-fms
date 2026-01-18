@@ -205,7 +205,7 @@
                             <span class="badge bg-warning text-dark">Minor</span>
                             {% endif %}
                         </td>
-                        <td>{{ action.action_date or '-' }}</td>
+                        <td>{{ action.action_date|format_date }}</td>
                         <td>
                             {% if action.status == 'Pending' %}
                             <span class="badge bg-warning text-dark">{{ action.status }}</span>

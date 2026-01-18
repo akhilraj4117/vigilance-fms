@@ -125,8 +125,8 @@
                         <td>{{ ua.pen or '-' }}</td>
                         <td>{{ ua.designation or '-' }}</td>
                         <td>{{ ua.institution[:25] if ua.institution else '-' }}{% if ua.institution and ua.institution|length > 25 %}...{% endif %}</td>
-                        <td>{{ ua.absence_from or '-' }}</td>
-                        <td>{{ ua.absence_to or '-' }}</td>
+                        <td>{{ ua.absence_from|format_date }}</td>
+                        <td>{{ ua.absence_to|format_date }}</td>
                         <td class="text-center">
                             {% if ua.total_days %}
                             <span class="badge {% if ua.total_days > 30 %}bg-danger{% elif ua.total_days > 10 %}bg-warning text-dark{% else %}bg-info{% endif %}">

@@ -58,7 +58,7 @@
                         </td>
                         <td>{{ file.category or '-' }}</td>
                         <td>{{ file.subject[:50] + '...' if file.subject and file.subject|length > 50 else file.subject or '-' }}</td>
-                        <td>{{ file.date_of_receipt or '-' }}</td>
+                        <td>{{ file.date_of_receipt|format_date }}</td>
                         <td>{{ file.from_whom_received[:30] + '...' if file.from_whom_received and file.from_whom_received|length > 30 else file.from_whom_received or '-' }}</td>
                     </tr>
                     {% else %}

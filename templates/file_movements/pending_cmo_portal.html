@@ -167,7 +167,7 @@
                                 </a>
                             </td>
                             <td>{{ file.docket_number or '-' }}</td>
-                            <td>{{ file.date_of_receipt or '-' }}</td>
+                            <td>{{ file.date_of_receipt|format_date }}</td>
                             <td>
                                 {% if file.finalised == 'Yes' %}
                                 <span class="badge bg-success">Yes</span>
@@ -175,7 +175,7 @@
                                 <span class="badge bg-danger">No</span>
                                 {% endif %}
                             </td>
-                            <td>{{ file.finalised_date or '-' }}</td>
+                            <td>{{ file.finalised_date|format_date }}</td>
                         </tr>
                         {% else %}
                         <tr>

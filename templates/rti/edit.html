@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="date_of_receipt" class="form-label fw-bold">Date of Receipt <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" value="{{ application.date_of_receipt or '' }}" required>
+                    <input type="date" class="form-control" id="date_of_receipt" name="date_of_receipt" value="{{ application.date_of_receipt|format_date_html }}" required>
                 </div>
                 <div class="col-md-3">
                     <label for="status" class="form-label fw-bold">Status</label>
@@ -94,14 +94,14 @@
                         <input type="checkbox" class="form-check-input" id="acknowledgment_checkbox" {% if application.date_of_acknowledgment %}checked{% endif %} onchange="toggleAcknowledgmentDate()">
                         Acknowledgment Date
                     </label>
-                    <input type="date" class="form-control" id="date_of_acknowledgment" name="date_of_acknowledgment" value="{{ application.date_of_acknowledgment or '' }}" {% if not application.date_of_acknowledgment %}disabled{% endif %}>
+                    <input type="date" class="form-control" id="date_of_acknowledgment" name="date_of_acknowledgment" value="{{ application.date_of_acknowledgment|format_date_html }}" {% if not application.date_of_acknowledgment %}disabled{% endif %}>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">
                         <input type="checkbox" class="form-check-input" id="disposal_checkbox" {% if application.date_of_disposal %}checked{% endif %} onchange="toggleDisposalDate()">
                         Disposal Date
                     </label>
-                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" value="{{ application.date_of_disposal or '' }}" {% if not application.date_of_disposal %}disabled{% endif %}>
+                    <input type="date" class="form-control" id="date_of_disposal" name="date_of_disposal" value="{{ application.date_of_disposal|format_date_html }}" {% if not application.date_of_disposal %}disabled{% endif %}>
                 </div>
             </div>
             

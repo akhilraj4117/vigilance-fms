@@ -166,17 +166,17 @@
                                         <tr>
                                             <td>{{ entry.serial_number or '-' }}</td>
                                             <td>{{ entry.current_number or '-' }}</td>
-                                            <td>{{ entry.date_receipt_clerk or '-' }}</td>
+                                            <td>{{ entry.date_receipt_clerk|format_date }}</td>
                                             <td title="{{ entry.title or '' }}">{{ (entry.title or '-')[:30] }}{{ '...' if entry.title and entry.title|length > 30 else '' }}</td>
                                             <td>{{ entry.from_whom_outside_name or '-' }}</td>
                                             <td>{{ entry.from_whom_outside_number or '-' }}</td>
-                                            <td>{{ entry.from_whom_outside_date or '-' }}</td>
-                                            <td>{{ entry.submitted_by_clerk_date or '-' }}</td>
-                                            <td>{{ entry.return_to_clerk_date or '-' }}</td>
+                                            <td>{{ entry.from_whom_outside_date|format_date }}</td>
+                                            <td>{{ entry.submitted_by_clerk_date|format_date }}</td>
+                                            <td>{{ entry.return_to_clerk_date|format_date }}</td>
                                             <td>{{ entry.reference_issued_to_whom or '-' }}</td>
-                                            <td>{{ entry.reference_issued_date or '-' }}</td>
+                                            <td>{{ entry.reference_issued_date|format_date }}</td>
                                             <td>{{ entry.disposal_nature or '-' }}</td>
-                                            <td>{{ entry.disposal_date or '-' }}</td>
+                                            <td>{{ entry.disposal_date|format_date }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

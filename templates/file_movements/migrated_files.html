@@ -116,8 +116,8 @@
                             <td title="{{ migration.details or '' }}">
                                 {{ (migration.details or '-')[:50] }}{{ '...' if migration.details and migration.details|length > 50 else '' }}
                             </td>
-                            <td title="Migration Date: {{ migration.migration_date }}&#10;From: {{ migration.physical_file_number }}&#10;To: {{ migration.eoffice_file_number }}">
-                                {{ migration.migration_date or '-' }}
+                            <td title="Migration Date: {{ migration.migration_date|format_date }}&#10;From: {{ migration.physical_file_number }}&#10;To: {{ migration.eoffice_file_number }}">
+                                {{ migration.migration_date|format_date }}
                             </td>
                         </tr>
                         {% else %}

@@ -110,7 +110,7 @@
                             {% endif %}
                         </td>
                         <td>{{ inquiry.prelim_io_name or inquiry.rule15_io_name or '-' }}</td>
-                        <td>{{ inquiry.prelim_inquiry_date or inquiry.rule15_inquiry_date or '-' }}</td>
+                        <td>{{ (inquiry.prelim_inquiry_date or inquiry.rule15_inquiry_date)|format_date }}</td>
                         <td>{{ inquiry.prelim_venue or inquiry.rule15_venue or '-' }}</td>
                         <td>
                             {% if inquiry.prelim_report_submitted or inquiry.rule15_report_submitted %}

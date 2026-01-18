@@ -215,7 +215,7 @@ document.addEventListener('keydown', function(e) {
                         <tr data-id="{{ app.id }}">
                             <td>{{ app.sl_no or '-' }}</td>
                             <td>{{ app.original_application_no }}</td>
-                            <td>{{ app.date_of_receipt or '-' }}</td>
+                            <td>{{ app.date_of_receipt|format_date }}</td>
                             <td>{{ app.applicant_prefix }} {{ app.applicant_name }}</td>
                             <td>
                                 {% if app.status == 'Not replied' %}

@@ -171,11 +171,11 @@
                                 </a>
                             </td>
                             <td>{{ rti.original_application_no or '-' }}</td>
-                            <td>{{ rti.date_of_receipt or '-' }}</td>
+                            <td>{{ rti.date_of_receipt|format_date }}</td>
                             <td>{{ rti.applicant_name or '-' }}</td>
                             <td title="{{ rti.subject_of_information or '' }}">{{ (rti.subject_of_information or '-')[:30] }}{{ '...' if rti.subject_of_information and rti.subject_of_information|length > 30 else '' }}</td>
-                            <td>{{ rti.date_of_acknowledgment or '-' }}</td>
-                            <td>{{ rti.date_of_disposal or '-' }}</td>
+                            <td>{{ rti.date_of_acknowledgment|format_date }}</td>
+                            <td>{{ rti.date_of_disposal|format_date }}</td>
                             <td>
                                 {% if rti.status %}
                                 <span class="badge bg-{{ 'success' if rti.status == 'Closed' else 'warning' }}">

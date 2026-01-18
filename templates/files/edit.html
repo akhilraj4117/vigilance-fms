@@ -101,7 +101,7 @@
                 <div class="col-md-4">
                     <label for="follow_up_date" class="form-label">Follow Up Date</label>
                     <input type="date" class="form-control" id="follow_up_date" name="follow_up_date"
-                           value="{{ file.follow_up_date or '' }}">
+                           value="{{ file.follow_up_date|format_date_html }}">
                 </div>
                 
                 <div class="col-12">

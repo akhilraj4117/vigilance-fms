@@ -156,7 +156,7 @@
                     <span class="badge bg-secondary">{{ action.major_minor or '-' }}</span>
                     {% endif %}
                 </td>
-                <td>{{ action.finalised_date or '-' }}</td>
+                <td>{{ action.finalised_date|format_date }}</td>
                 <td>
                     <a href="{{ url_for('disciplinary.view_action', id=action.id) }}" 
                        class="btn btn-sm btn-info" title="View">

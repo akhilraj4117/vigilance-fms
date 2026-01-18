@@ -140,7 +140,7 @@
                             {% endif %}
                         </td>
                         <td>{{ file.institution_name[:25] + '...' if file.institution_name and file.institution_name|length > 25 else file.institution_name or '-' }}</td>
-                        <td>{{ file.follow_up_date or '-' }}</td>
+                        <td>{{ file.follow_up_date|format_date }}</td>
                         <td>
                             <a href="{{ url_for('files.view_file', file_number=file.file_number) }}" 
                                class="btn btn-sm btn-info" title="View">

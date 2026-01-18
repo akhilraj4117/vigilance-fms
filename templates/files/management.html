@@ -2341,7 +2341,7 @@
                                         {% for rs in report_sought_list %}
                                         <tr>
                                             <td>{{ rs.body or '-' }}</td>
-                                            <td>{{ rs.report_sought_date or '-' }}</td>
+                                            <td>{{ rs.report_sought_date|format_date }}</td>
                                             <td>{{ rs.institution or '-' }}</td>
                                             <td><span class="badge {{ 'bg-success' if rs.submitted == 'Yes' else 'bg-warning' }}">{{ rs.submitted or 'No' }}</span></td>
                                             <td>
@@ -2573,9 +2573,9 @@
                                         {% for ra in report_asked_list %}
                                         <tr>
                                             <td>{{ ra.institution_name or '-' }}</td>
-                                            <td>{{ ra.asked_date or '-' }}</td>
+                                            <td>{{ ra.asked_date|format_date }}</td>
                                             <td><span class="badge {{ 'bg-success' if ra.report_submitted == 'Yes' else 'bg-warning' }}">{{ ra.report_submitted or 'No' }}</span></td>
-                                            <td>{{ ra.received_date or '-' }}</td>
+                                            <td>{{ ra.received_date|format_date }}</td>
                                             <td>
                                                 <a href="{{ url_for('files.edit_report_asked', id=ra.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                                     <i class="bi bi-pencil"></i>
@@ -4064,7 +4064,7 @@
                     document.getElementById('courtForumSpecify').value = d.forum_specify || '';
                     document.getElementById('courtMonth').value = d.month || '';
                     document.getElementById('courtYear').value = d.year || '';
-                    document.getElementById('courtReceiptDate').value = d.receipt_date || '';
+                    document.getElementById('courtReceiptDate').value = formatDateForInput(d.receipt_date);
                     // Related to MO
                     if (d.related_to_mo === 'Yes') {
                         document.getElementById('courtRelatedToMOYes').checked = true;
@@ -4079,7 +4079,7 @@
                     } else {
                         document.getElementById('courtSFForwardedNo').checked = true;
                     }
-                    document.getElementById('courtSFForwardingDate').value = d.sf_forwarding_date || '';
+                    document.getElementById('courtSFForwardingDate').value = formatDateForInput(d.sf_forwarding_date);
                     toggleCourtSFDate();
                     // Affidavit Filed
                     if (d.affidavit_filed === 'Yes') {
@@ -4087,7 +4087,7 @@
                     } else {
                         document.getElementById('courtAffidavitFiledNo').checked = true;
                     }
-                    document.getElementById('courtAffidavitFiledDate').value = d.affidavit_filed_date || '';
+                    document.getElementById('courtAffidavitFiledDate').value = formatDateForInput(d.affidavit_filed_date);
                     toggleCourtAffidavitDate();
                     // Present Status
                     const presentStatusEl = document.getElementById('courtPresentStatus');
@@ -4098,7 +4098,7 @@
                     } else {
                         document.getElementById('courtDisposedAgainstDHSNo').checked = true;
                     }
-                    document.getElementById('courtDisposalDate').value = d.disposal_date || '';
+                    document.getElementById('courtDisposalDate').value = formatDateForInput(d.disposal_date);
                     toggleCourtDisposalDate();
                     // Remarks
                     const remarksEl = document.getElementById('courtCasenotes');

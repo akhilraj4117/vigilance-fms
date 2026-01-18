@@ -46,7 +46,7 @@
                     <table class="table table-bordered">
                         <tr>
                             <th>Created Date</th>
-                            <td>{{ communication.created_date or '-' }}</td>
+                            <td>{{ communication.created_date|format_date }}</td>
                         </tr>
                         <tr>
                             <th>Created By</th>
@@ -54,7 +54,7 @@
                         </tr>
                         <tr>
                             <th>Last Modified</th>
-                            <td>{{ communication.last_modified or communication.modified_date or '-' }}</td>
+                            <td>{{ communication.last_modified|format_date }}</td>
                         </tr>
                         <tr>
                             <th>Status</th>

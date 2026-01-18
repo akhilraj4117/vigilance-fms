@@ -173,7 +173,7 @@
                             </td>
                             <td title="{{ report.subject or '' }}">{{ (report.subject or '-')[:40] }}{{ '...' if report.subject and report.subject|length > 40 else '' }}</td>
                             <td>{{ report.body or '-' }}</td>
-                            <td>{{ report.report_sought_date or '-' }}</td>
+                            <td>{{ report.report_sought_date|format_date }}</td>
                             <td>{{ report.status or '-' }}</td>
                             <td>{{ report.institution or '-' }}</td>
                             <td title="{{ report.details or '' }}">{{ (report.details or '-')[:30] }}{{ '...' if report.details and report.details|length > 30 else '' }}</td>

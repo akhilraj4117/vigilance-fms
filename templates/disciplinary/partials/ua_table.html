@@ -178,7 +178,7 @@
                         <td>{{ da.pen or '-' }}</td>
                         <td>{{ da.designation or '-' }}</td>
                         <td>{{ da.institution or '-' }}</td>
-                        <td>{{ ua.date_from_ua or '-' }}</td>
+                        <td>{{ ua.date_from_ua|format_date }}</td>
                         <td>
                             {% if ua.present_status %}
                                 {% if ua.present_status == 'Rejoined' %}
@@ -227,7 +227,7 @@
                     <td>{{ da.pen or '-' }}</td>
                     <td>{{ da.designation or '-' }}</td>
                     <td>{{ da.institution or '-' }}</td>
-                    <td>{{ ua.date_from_ua or '-' }}</td>
+                    <td>{{ ua.date_from_ua|format_date }}</td>
                     <td>
                         {% if ua.present_status %}
                             {% if ua.present_status == 'Rejoined' %}

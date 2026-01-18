@@ -171,7 +171,7 @@
                                 </a>
                             </td>
                             <td title="{{ subject or '' }}">{{ (subject or '-')[:50] }}{{ '...' if subject and subject|length > 50 else '' }}</td>
-                            <td>{{ report.asked_date or '-' }}</td>
+                            <td>{{ report.asked_date|format_date }}</td>
                             <td>{{ report.institution_name or '-' }}</td>
                             <td>
                                 {% if report.report_submitted == 'Yes' %}
@@ -180,7 +180,7 @@
                                 <span class="badge bg-danger">No</span>
                                 {% endif %}
                             </td>
-                            <td>{{ report.received_date or '-' }}</td>
+                            <td>{{ report.received_date|format_date }}</td>
                         </tr>
                         {% else %}
                         <tr>

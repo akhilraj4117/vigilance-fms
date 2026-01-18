@@ -36,7 +36,7 @@
                 <div class="col-md-6 mb-3">
                     <label for="date_of_birth" class="form-label">Date of Birth</label>
                     <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
-                           value="{{ employee.date_of_birth or '' }}">
+                           value="{{ employee.date_of_birth|format_date_html }}">
                 </div>
             </div>
 
@@ -72,12 +72,12 @@
                 <div class="col-md-6 mb-3">
                     <label for="date_of_joining" class="form-label">Date of Joining</label>
                     <input type="date" class="form-control" id="date_of_joining" name="date_of_joining" 
-                           value="{{ employee.date_of_joining or '' }}">
+                           value="{{ employee.date_of_joining|format_date_html }}">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="date_of_retirement" class="form-label">Date of Retirement</label>
                     <input type="date" class="form-control" id="date_of_retirement" name="date_of_retirement" 
-                           value="{{ employee.date_of_retirement or '' }}">
+                           value="{{ employee.date_of_retirement|format_date_html }}">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="is_active" class="form-label">Status</label>

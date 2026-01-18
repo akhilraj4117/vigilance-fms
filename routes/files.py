@@ -1178,12 +1178,12 @@ def save_report_sought():
                     file_number=file_number,
                     subject=subject,
                     body=body_data.get('body', ''),
-                    report_sought_date=body_data.get('sought_date', ''),
+                    report_sought_date=convert_date_format(body_data.get('sought_date', '')),
                     status='Pending' if body_data.get('submitted') != 'Yes' else 'Submitted',
                     institution=institution,
                     details=body_data.get('details', ''),
                     submitted=body_data.get('submitted', 'No'),
-                    submitted_date=body_data.get('submitted_date', '')
+                    submitted_date=convert_date_format(body_data.get('submitted_date', ''))
                 )
                 db.session.add(report_sought)
                 records_added += 1
@@ -1863,9 +1863,9 @@ def save_cmo_portal():
             return jsonify({'success': False, 'message': 'File number is required.'})
         
         docket_number = data.get('docket_number', '').strip()
-        date_of_receipt = data.get('date_of_receipt', '').strip()
+        date_of_receipt = convert_date_format(data.get('date_of_receipt', '').strip())
         finalised = 'Yes' if data.get('finalised') else 'No'
-        finalised_date = data.get('finalised_date', '').strip()
+        finalised_date = convert_date_format(data.get('finalised_date', '').strip())
         
         # Check if record exists
         cmo_details = CMOPortalDetails.query.filter_by(file_number=file_number).first()
@@ -1954,22 +1954,22 @@ def save_rvu():
         details = RVUDetails.query.filter_by(file_number=file_number).first()
         if details:
             details.dhs_file_number = data.get('dhs_file_number', '')
-            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date = convert_date_format(data.get('receipt_date', ''))
             details.receipt_date_inquiry_status = data.get('inquiry_status', '')
-            details.receipt_date_inquiry_date = data.get('inquiry_date', '')
+            details.receipt_date_inquiry_date = convert_date_format(data.get('inquiry_date', ''))
             details.report_status = data.get('report_status', '')
-            details.interim_report_date = data.get('interim_report_date', '')
-            details.sent_date = data.get('sent_date', '')
+            details.interim_report_date = convert_date_format(data.get('interim_report_date', ''))
+            details.sent_date = convert_date_format(data.get('sent_date', ''))
         else:
             details = RVUDetails(
                 file_number=file_number,
                 dhs_file_number=data.get('dhs_file_number', ''),
-                receipt_date=data.get('receipt_date', ''),
+                receipt_date=convert_date_format(data.get('receipt_date', '')),
                 receipt_date_inquiry_status=data.get('inquiry_status', ''),
-                receipt_date_inquiry_date=data.get('inquiry_date', ''),
+                receipt_date_inquiry_date=convert_date_format(data.get('inquiry_date', '')),
                 report_status=data.get('report_status', ''),
-                interim_report_date=data.get('interim_report_date', ''),
-                sent_date=data.get('sent_date', '')
+                interim_report_date=convert_date_format(data.get('interim_report_date', '')),
+                sent_date=convert_date_format(data.get('sent_date', ''))
             )
             db.session.add(details)
         db.session.commit()
@@ -2040,21 +2040,21 @@ def save_category_details():
         
         if details:
             setattr(details, case_no_field, data.get('case_no', ''))
-            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date = convert_date_format(data.get('receipt_date', ''))
             details.report_status = data.get('report_status', '')
-            details.interim_report_date = data.get('interim_report_date', '')
-            details.sent_date = data.get('sent_date', '')
+            details.interim_report_date = convert_date_format(data.get('interim_report_date', ''))
+            details.sent_date = convert_date_format(data.get('sent_date', ''))
             details.finalised = 'Yes' if data.get('finalised') else 'No'
-            details.finalised_date = data.get('finalised_date', '')
+            details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         else:
             details = Model(file_number=file_number)
             setattr(details, case_no_field, data.get('case_no', ''))
-            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date = convert_date_format(data.get('receipt_date', ''))
             details.report_status = data.get('report_status', '')
-            details.interim_report_date = data.get('interim_report_date', '')
-            details.sent_date = data.get('sent_date', '')
+            details.interim_report_date = convert_date_format(data.get('interim_report_date', ''))
+            details.sent_date = convert_date_format(data.get('sent_date', ''))
             details.finalised = 'Yes' if data.get('finalised') else 'No'
-            details.finalised_date = data.get('finalised_date', '')
+            details.finalised_date = convert_date_format(data.get('finalised_date', ''))
             db.session.add(details)
         
         db.session.commit()
@@ -2127,16 +2127,16 @@ def save_vigilance():
         details = VigilanceACDetails.query.filter_by(file_number=file_number).first()
         if details:
             details.vigilance_ac_case_no = data.get('case_no', '')
-            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date = convert_date_format(data.get('receipt_date', ''))
             details.finalised = 'Yes' if data.get('finalised') else 'No'
-            details.finalised_date = data.get('finalised_date', '')
+            details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         else:
             details = VigilanceACDetails(
                 file_number=file_number,
                 vigilance_ac_case_no=data.get('case_no', ''),
-                receipt_date=data.get('receipt_date', ''),
+                receipt_date=convert_date_format(data.get('receipt_date', '')),
                 finalised='Yes' if data.get('finalised') else 'No',
-                finalised_date=data.get('finalised_date', '')
+                finalised_date=convert_date_format(data.get('finalised_date', ''))
             )
             db.session.add(details)
         db.session.commit()
@@ -2191,20 +2191,20 @@ def save_sabha():
         details = RajyaLokNiyamasabhaDetails.query.filter_by(file_number=file_number).first()
         if details:
             details.sabha_type = data.get('sabha_type', '')
-            details.receipt_date = data.get('receipt_date', '')
+            details.receipt_date = convert_date_format(data.get('receipt_date', ''))
             details.report_status = data.get('report_status', '')
-            details.sent_date = data.get('sent_date', '')
+            details.sent_date = convert_date_format(data.get('sent_date', ''))
             details.finalised = 'Yes' if data.get('finalised') else 'No'
-            details.finalised_date = data.get('finalised_date', '')
+            details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         else:
             details = RajyaLokNiyamasabhaDetails(
                 file_number=file_number,
                 sabha_type=data.get('sabha_type', ''),
-                receipt_date=data.get('receipt_date', ''),
+                receipt_date=convert_date_format(data.get('receipt_date', '')),
                 report_status=data.get('report_status', ''),
-                sent_date=data.get('sent_date', ''),
+                sent_date=convert_date_format(data.get('sent_date', '')),
                 finalised='Yes' if data.get('finalised') else 'No',
-                finalised_date=data.get('finalised_date', '')
+                finalised_date=convert_date_format(data.get('finalised_date', ''))
             )
             db.session.add(details)
         db.session.commit()
@@ -2250,16 +2250,16 @@ def save_court_case():
         details.case_no = data.get('case_no', '')
         details.month = data.get('month', '')
         details.year = data.get('year', '')
-        details.receipt_date = data.get('receipt_date', '')
+        details.receipt_date = convert_date_format(data.get('receipt_date', ''))
         details.related_to_mo = data.get('related_to_mo', '')
         details.mo_pen = data.get('mo_pen', '')
         details.sf_forwarded = data.get('sf_forwarded', '')
-        details.sf_forwarding_date = data.get('sf_forwarding_date', '')
+        details.sf_forwarding_date = convert_date_format(data.get('sf_forwarding_date', ''))
         details.affidavit_filed = data.get('affidavit_filed', '')
-        details.affidavit_filed_date = data.get('affidavit_filed_date', '')
+        details.affidavit_filed_date = convert_date_format(data.get('affidavit_filed_date', ''))
         details.present_status = data.get('present_status', '')
         details.disposed_against_dhs = data.get('disposed_against_dhs', '')
-        details.disposal_date = data.get('disposal_date', '')
+        details.disposal_date = convert_date_format(data.get('disposal_date', ''))
         details.remarks = data.get('remarks', '')
         db.session.commit()
         return jsonify({'success': True, 'message': 'Court case saved.'})
@@ -2429,9 +2429,9 @@ def save_women_harassment():
             details = WomenHarassmentCase(file_number=file_number)
             db.session.add(details)
         details.icc_report_attached = 1 if data.get('icc_report_attached', False) else 0
-        details.icc_report_date = data.get('icc_report_date', '')
+        details.icc_report_date = convert_date_format(data.get('icc_report_date', ''))
         details.finalised = 1 if data.get('finalised', False) else 0
-        details.finalised_date = data.get('finalised_date', '')
+        details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         db.session.commit()
         return jsonify({'success': True, 'message': 'Women harassment details saved.'})
     except Exception as e:
@@ -2487,13 +2487,13 @@ def save_police_case():
             db.session.add(details)
         details.case_no = data.get('case_no', '')
         details.fir_no = data.get('fir_no', '')
-        details.case_date = data.get('case_date', '')
+        details.case_date = convert_date_format(data.get('case_date', ''))
         details.police_station = data.get('police_station', '')
         details.detained_over_48_hours = data.get('detained_over_48_hours', '')
         details.suspended_from_service = data.get('suspended_from_service', '')
         details.present_status = data.get('present_status', '')
         details.finalised = data.get('finalised', '')
-        details.finalised_date = data.get('finalised_date', '')
+        details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         db.session.commit()
         return jsonify({'success': True, 'message': 'Police case saved.'})
     except Exception as e:
@@ -2554,7 +2554,7 @@ def save_attack_doctors():
             db.session.add(details)
         details.police_informed = data.get('police_informed', '')
         details.police_station = data.get('police_station', '')
-        details.reported_date = data.get('reported_date', '')
+        details.reported_date = convert_date_format(data.get('reported_date', ''))
         db.session.commit()
         return jsonify({'success': True, 'message': 'Attack on doctors details saved.'})
     except Exception as e:
@@ -2609,7 +2609,7 @@ def save_attack_staffs():
             db.session.add(details)
         details.police_informed = data.get('police_informed', '')
         details.police_station = data.get('police_station', '')
-        details.reported_date = data.get('reported_date', '')
+        details.reported_date = convert_date_format(data.get('reported_date', ''))
         db.session.commit()
         return jsonify({'success': True, 'message': 'Attack on staffs details saved.'})
     except Exception as e:
@@ -2671,10 +2671,10 @@ def save_social_security():
         details.refunded_status = data.get('refunded_status', '')
         details.refunded_amount = float(data.get('refunded_amount', 0) or 0)
         details.letter_no = data.get('letter_no', '')
-        details.letter_date = data.get('letter_date', '')
+        details.letter_date = convert_date_format(data.get('letter_date', ''))
         details.receipt_no = data.get('receipt_no', '')
         details.finalised = data.get('finalised', '')
-        details.finalised_date = data.get('finalised_date', '')
+        details.finalised_date = convert_date_format(data.get('finalised_date', ''))
         db.session.commit()
         return jsonify({'success': True, 'message': 'Social security pension details saved.'})
     except Exception as e:

@@ -276,7 +276,7 @@
                                 </td>
                                 <td>{{ file.subject[:30] + '...' if file.subject and file.subject|length > 30 else file.subject or '-' }}</td>
                                 <td><small class="text-muted">{{ file.last_modified or '-' }}</small></td>
-                                <td>{{ file.follow_up_date or '-' }}</td>
+                                <td>{{ file.follow_up_date|format_date }}</td>
                                 <td>
                                     {% if file.is_closed == 1 %}
                                     <span class="badge bg-success">Closed</span>

@@ -87,11 +87,11 @@
                             {% endif %}
                         </td>
                         <td><strong>{{ app.original_application_no }}</strong></td>
-                        <td>{{ app.date_of_receipt or '-' }}</td>
+                        <td>{{ app.date_of_receipt|format_date }}</td>
                         <td>{{ app.applicant_prefix }} {{ app.applicant_name or '-' }}</td>
                         <td>{{ app.subject_of_information[:30] + '...' if app.subject_of_information and app.subject_of_information|length > 30 else app.subject_of_information or '-' }}</td>
-                        <td>{{ app.date_of_acknowledgment or '-' }}</td>
-                        <td>{{ app.date_of_disposal or '-' }}</td>
+                        <td>{{ app.date_of_acknowledgment|format_date }}</td>
+                        <td>{{ app.date_of_disposal|format_date }}</td>
                         <td>
                             {% if app.status == 'Replied' %}
                             <span class="badge bg-success">Replied</span>

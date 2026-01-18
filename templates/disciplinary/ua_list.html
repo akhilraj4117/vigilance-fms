@@ -51,7 +51,7 @@
                         <td>{{ da.employee_name or '-' }}</td>
                         <td>{{ da.pen or '-' }}</td>
                         <td>{{ da.institution[:30] if da.institution else '-' }}{% if da.institution and da.institution|length > 30 %}...{% endif %}</td>
-                        <td>{{ ua.date_from_ua or '-' }}</td>
+                        <td>{{ ua.date_from_ua|format_date }}</td>
                         <td>
                             {% if ua.present_status %}
                             <span class="badge bg-info">{{ ua.present_status }}</span>

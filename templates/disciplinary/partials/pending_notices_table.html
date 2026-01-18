@@ -81,8 +81,8 @@
                 <td>{{ item.employee_name or '-' }}</td>
                 <td>{{ item.designation or '-' }}</td>
                 <td>{{ item.institution or '-' }}</td>
-                <td>{{ item.issued_date or '-' }}</td>
-                <td>{{ item.due_date or '-' }}</td>
+                <td>{{ item.issued_date|format_date }}</td>
+                <td>{{ item.due_date|format_date }}</td>
                 <td>
                     {% if item.is_overdue %}
                         <span class="badge bg-danger">{{ item.days_overdue }} days</span>

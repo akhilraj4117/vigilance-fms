@@ -180,7 +180,7 @@
                                 </td>
                                 <td title="{{ file.subject or '' if file else '' }}">{{ (file.subject or '-')[:40] if file else '-' }}{{ '...' if file and file.subject and file.subject|length > 40 else '' }}</td>
                                 <td title="{{ file.details_of_file or '' if file else '' }}">{{ (file.details_of_file or '-')[:30] if file else '-' }}{{ '...' if file and file.details_of_file and file.details_of_file|length > 30 else '' }}</td>
-                                <td>{{ inquiry.prelim_inquiry_date or '-' }}</td>
+                                <td>{{ inquiry.prelim_inquiry_date|format_date }}</td>
                                 <td>{{ inquiry.prelim_io_name or '-' }}</td>
                             </tr>
                             {% else %}
@@ -200,7 +200,7 @@
                                 </td>
                                 <td title="{{ file.subject or '' if file else '' }}">{{ (file.subject or '-')[:40] if file else '-' }}{{ '...' if file and file.subject and file.subject|length > 40 else '' }}</td>
                                 <td title="{{ file.details_of_file or '' if file else '' }}">{{ (file.details_of_file or '-')[:30] if file else '-' }}{{ '...' if file and file.details_of_file and file.details_of_file|length > 30 else '' }}</td>
-                                <td>{{ inquiry.rule15_inquiry_date or '-' }}</td>
+                                <td>{{ inquiry.rule15_inquiry_date|format_date }}</td>
                                 <td>{{ inquiry.rule15_io_name or '-' }}</td>
                             </tr>
                             {% else %}

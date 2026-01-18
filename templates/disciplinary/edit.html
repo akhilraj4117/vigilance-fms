@@ -67,7 +67,7 @@
                 <div class="col-md-4 mb-3">
                     <label for="action_date" class="form-label">Action Date</label>
                     <input type="date" class="form-control" id="action_date" name="action_date" 
-                           value="{{ action.action_date or '' }}">
+                           value="{{ action.action_date|format_date_html }}">
                 </div>
             </div>
 
@@ -87,7 +87,7 @@
                 <div class="col-md-6 mb-3">
                     <label for="order_date" class="form-label">Order Date</label>
                     <input type="date" class="form-control" id="order_date" name="order_date" 
-                           value="{{ action.order_date or '' }}">
+                           value="{{ action.order_date|format_date_html }}">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="status" class="form-label">Status</label>
