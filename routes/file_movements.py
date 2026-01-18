@@ -891,7 +891,7 @@ def list_communications():
         'success': True,
         'communications': [{
             'id': c.id,
-            'name': c.communication_name or 'Untitled',
+            'name': c.communication_name or c.document_title or c.document_type or 'Untitled',
             'created_date': c.created_date,
             'modified_date': c.modified_date
         } for c in comms]
@@ -906,7 +906,7 @@ def get_communication_content(id):
     return jsonify({
         'success': True,
         'content': comm.content or '',
-        'name': comm.communication_name or 'Untitled'
+        'name': comm.communication_name or comm.document_title or comm.document_type or 'Untitled'
     })
 
 
