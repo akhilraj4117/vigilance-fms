@@ -1085,6 +1085,8 @@ def save_communication_content():
     comm_id = data.get('id')
     content = data.get('content', '')
     
+    print(f"[COMM SAVE] ID: {comm_id}, Content length: {len(content) if content else 0}")
+    
     if not comm_id:
         return jsonify({'success': False, 'message': 'ID is required.'})
     
@@ -1094,9 +1096,11 @@ def save_communication_content():
         comm.content = content
         comm.modified_date = datetime.now().isoformat()
         db.session.commit()
+        print(f"[COMM SAVE] Success - ID: {comm_id}")
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
+        print(f"[COMM SAVE] Error - ID: {comm_id}, Error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 

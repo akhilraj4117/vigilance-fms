@@ -5598,6 +5598,22 @@
         loadCommunicationsList();
     });
     
+    // Warn about unsaved changes when modal closes
+    document.getElementById('communicationsModal').addEventListener('hide.bs.modal', function(e) {
+        if (commIsModified) {
+            if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
+                e.preventDefault();
+                return false;
+            }
+            commIsModified = false;
+        }
+        // Reset state when closing
+        currentCommId = null;
+        document.getElementById('commContentEditor').innerHTML = '';
+        document.getElementById('commNameDisplay').textContent = '';
+        updateCommButtons();
+    });
+    
     // Load communications list
     function loadCommunicationsList() {
         if (!currentFileNumber) return;
@@ -5856,9 +5872,13 @@
     
     // Save communication
     function saveCommunication() {
-        if (!currentCommId) return;
+        if (!currentCommId) {
+            alert('No communication selected.');
+            return;
+        }
         
         const content = document.getElementById('commContentEditor').innerHTML;
+        console.log('Saving communication ID:', currentCommId, 'Content length:', content.length);
         
         fetch('/file-movements/communications/save', {
             method: 'POST',
@@ -5867,12 +5887,27 @@
         })
         .then(response => response.json())
         .then(data => {
+            console.log('Save response:', data);
             if (data.success) {
                 commIsModified = false;
-                alert('Saved successfully!');
+                // Show brief success message
+                const btn = document.getElementById('commSaveBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check"></i> Saved!';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-outline-success');
+                    btn.classList.add('btn-success');
+                }, 2000);
             } else {
                 alert(data.message || 'Failed to save.');
             }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            alert('Error saving: ' + error.message);
         });
     }
     
