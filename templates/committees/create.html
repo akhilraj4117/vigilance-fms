@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Create {{ committee_type_name }} - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-section h6 {
+        color: #1e3c72;
+        border-bottom: 2px solid #1e3c72;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="form-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-plus-circle"></i> Create {{ committee_type_name }}</h2>
+            <a href="{{ url_for('committees.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('committees.create_committee', committee_type=committee_type) }}">
+                    <div class="form-section">
+                        <h6><i class="bi bi-file-text"></i> Order Details</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="order_number" class="form-label">Order Number</label>
+                                <input type="text" class="form-control" id="order_number" name="order_number"
+                                       placeholder="e.g., GO(P)No.123/2024/H&FWD">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="order_date" class="form-label">Order Date</label>
+                                <input type="date" class="form-control" id="order_date" name="order_date">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h6><i class="bi bi-calendar"></i> Committee Duration</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="formed_on" class="form-label">Committee Formed On <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="formed_on" name="formed_on" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="expiry_date" class="form-label">
+                                    Expiry Date 
+                                    {% if is_posh %}
+                                    <span class="text-muted">(Auto: 3 years as per POSH Act)</span>
+                                    {% endif %}
+                                </label>
+                                {% if is_posh %}
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date" 
+                                       readonly style="background-color: #e9ecef;">
+                                <small class="text-muted">Automatically calculated: 3 years from formation date</small>
+                                {% else %}
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h6><i class="bi bi-chat-left-text"></i> Additional Information</h6>
+                        
+                        <div class="mb-3">
+                            <label for="remarks" class="form-label">Remarks</label>
+                            <textarea class="form-control" id="remarks" name="remarks" rows="3"
+                                      placeholder="Any additional notes about the committee..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('committees.index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Committee & Add Members
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_posh %}
+<script>
+document.getElementById('formed_on').addEventListener('change', function() {
+    const formedDate = new Date(this.value);
+    if (!isNaN(formedDate.getTime())) {
+        // Add 3 years
+        formedDate.setFullYear(formedDate.getFullYear() + 3);
+        document.getElementById('expiry_date').value = formedDate.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

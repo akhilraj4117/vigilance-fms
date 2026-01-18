@@ -51,6 +51,7 @@ def create_app(config_name=None):
     from routes.employees import employees_bp
     from routes.api import api_bp
     from routes.file_movements import file_movements_bp
+    from routes.committees import committees_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -62,6 +63,7 @@ def create_app(config_name=None):
     app.register_blueprint(employees_bp, url_prefix='/employees')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(file_movements_bp, url_prefix='/file-movements')
+    app.register_blueprint(committees_bp)
     
     # Create database tables only for new tables (users)
     with app.app_context():
@@ -86,6 +88,17 @@ def create_app(config_name=None):
             from models import FileType
             FileType.__table__.create(db.engine)
             print("Created file_types table")
+        
+        # Create committees and committee_members tables if they don't exist
+        if 'committees' not in existing_tables:
+            from models import Committee
+            Committee.__table__.create(db.engine)
+            print("Created committees table")
+        
+        if 'committee_members' not in existing_tables:
+            from models import CommitteeMember
+            CommitteeMember.__table__.create(db.engine)
+            print("Created committee_members table")
         
         # Initialize default categories and file types
         from models import Category, FileType

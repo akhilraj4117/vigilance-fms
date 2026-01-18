@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Complaints Committee (POSH) - Vigilance FMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    .info-card h4 {
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .info-card ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+    .info-card li {
+        margin-bottom: 8px;
+    }
+    .committee-card {
+        border-left: 4px solid #1e3c72;
+        background: #f8f9fa;
+        border-radius: 0 10px 10px 0;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .committee-card.active {
+        border-left-color: #28a745;
+        background: #e8f5e9;
+    }
+    .committee-card.expired {
+        border-left-color: #dc3545;
+        background: #ffebee;
+    }
+    .member-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    .member-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .member-position {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .member-position.presiding {
+        background: #1e3c72;
+        color: white;
+    }
+    .member-position.member {
+        background: #6c757d;
+        color: white;
+    }
+    .member-position.external {
+        background: #17a2b8;
+        color: white;
+    }
+    .expiry-badge {
+        font-size: 0.9rem;
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+    .expiry-badge.valid {
+        background: #28a745;
+        color: white;
+    }
+    .expiry-badge.warning {
+        background: #ffc107;
+        color: black;
+    }
+    .expiry-badge.expired {
+        background: #dc3545;
+        color: white;
+    }
+    .nav-pills-committee .nav-link {
+        background: #e9ecef;
+        color: #495057;
+        margin-right: 5px;
+        border-radius: 20px;
+        padding: 8px 20px;
+    }
+    .nav-pills-committee .nav-link.active {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-shield-check"></i> Internal Complaints Committee (POSH)</h2>
+            <p class="text-muted mb-0">{{ posh_info.act_name }}</p>
+        </div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('committees.create_committee', committee_type='POSH') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Committee
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Committee Tabs -->
+    <ul class="nav nav-pills nav-pills-committee mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('committees.posh_committee') }}">
+                <i class="bi bi-shield-check"></i> POSH Committee
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('committees.disc_action_committee') }}">
+                <i class="bi bi-exclamation-triangle"></i> Disc. Action Committee
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('committees.suspension_review_committee') }}">
+                <i class="bi bi-pause-circle"></i> Suspension Review
+            </a>
+        </li>
+    </ul>
+    
+    <!-- POSH Act Information -->
+    <div class="info-card">
+        <h4><i class="bi bi-info-circle"></i> About the POSH Act</h4>
+        <p><strong>{{ posh_info.short_name }}</strong></p>
+        <p>{{ posh_info.purpose }}</p>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6><i class="bi bi-people"></i> Committee Requirements:</h6>
+                <ul>
+                    {% for req in posh_info.committee_requirements %}
+                    <li>{{ req }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="bi bi-list-check"></i> Key Provisions:</h6>
+                <ul>
+                    {% for provision in posh_info.key_provisions %}
+                    <li>{{ provision }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <span class="badge bg-light text-dark me-3"><i class="bi bi-clock"></i> Tenure: {{ posh_info.tenure }}</span>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> {{ posh_info.penalties }}</span>
+        </div>
+    </div>
+    
+    <!-- Current Active Committee -->
+    {% if committee %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Present Committee</h5>
+        </div>
+        <div class="card-body">
+            <!-- Committee Duration Info -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <strong>Order Number:</strong><br>
+                    <span class="text-primary">{{ committee.order_number or 'Not specified' }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Order Date:</strong><br>
+                    {{ committee.order_date or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Formed On:</strong><br>
+                    {{ committee.formed_on or 'Not specified' }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Expiry Date:</strong><br>
+                    {% if committee.expiry_date %}
+                        {% set today = None %}
+                        {% set expiry_parts = committee.expiry_date.split('-') %}
+                        <span class="expiry-badge valid">
+                            {{ committee.expiry_date }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">Not calculated</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if committee.remarks %}
+            <div class="alert alert-info mb-4">
+                <strong>Remarks:</strong> {{ committee.remarks }}
+            </div>
+            {% endif %}
+            
+            <!-- Committee Members -->
+            <h6 class="mb-3"><i class="bi bi-people-fill"></i> Committee Members</h6>
+            
+            {% if committee.members.count() > 0 %}
+            <div class="row">
+                {% for member in committee.members.order_by('order_index').all() %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="member-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ member.name }}</h6>
+                            <span class="member-position {% if 'Presiding' in member.position %}presiding{% elif 'External' in member.position %}external{% else %}member{% endif %}">
+                                {{ member.position }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-1"><small>{{ member.designation }}</small></p>
+                        {% if member.official_address %}
+                        <p class="mb-1"><small><i class="bi bi-geo-alt"></i> {{ member.official_address }}</small></p>
+                        {% endif %}
+                        {% if member.contact_number %}
+                        <p class="mb-1"><small><i class="bi bi-telephone"></i> {{ member.contact_number }}</small></p>
+                        {% endif %}
+                        {% if member.email %}
+                        <p class="mb-0"><small><i class="bi bi-envelope"></i> {{ member.email }}</small></p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No members added yet.
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="alert-link">Add members now</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if current_user.is_admin() %}
+            <div class="mt-4">
+                <a href="{{ url_for('committees.manage_members', committee_id=committee.id) }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-people"></i> Manage Members
+                </a>
+                <a href="{{ url_for('committees.edit_committee', committee_id=committee.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Edit Details
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No active POSH Committee found.
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('committees.create_committee', committee_type='POSH') }}" class="alert-link">Create one now</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Committee History -->
+    {% if all_committees|length > 1 or (all_committees|length == 1 and not committee) %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Committee History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Formed On</th>
+                            <th>Expiry Date</th>
+                            <th>Members</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in all_committees %}
+                        <tr>
+                            <td>{{ c.order_number or '-' }}</td>
+                            <td>{{ c.formed_on or '-' }}</td>
+                            <td>{{ c.expiry_date or '-' }}</td>
+                            <td>{{ c.members.count() }}</td>
+                            <td>
+                                {% if c.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.is_admin() %}
+                                <a href="{{ url_for('committees.manage_members', committee_id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Manage Members">
+                                    <i class="bi bi-people"></i>
+                                </a>
+                                <a href="{{ url_for('committees.edit_committee', committee_id=c.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if not c.is_active %}
+                                <form action="{{ url_for('committees.toggle_active', committee_id=c.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Set as Active">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

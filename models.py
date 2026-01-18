@@ -926,3 +926,45 @@ class Category(db.Model):
     
     def __repr__(self):
         return f'<Category {self.name}>'
+
+
+class Committee(db.Model):
+    """Committee model for managing various committees."""
+    __tablename__ = 'committees'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    committee_type = db.Column(db.String(50), nullable=False)  # POSH, DISC_ACTION, SUSPENSION_REVIEW
+    order_number = db.Column(db.String(100))
+    order_date = db.Column(db.String(20))  # DD-MM-YYYY format
+    formed_on = db.Column(db.String(20))  # DD-MM-YYYY format
+    expiry_date = db.Column(db.String(20))  # DD-MM-YYYY format (auto-calculated for POSH: 3 years)
+    remarks = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to members
+    members = db.relationship('CommitteeMember', backref='committee', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Committee {self.committee_type} - {self.order_number}>'
+
+
+class CommitteeMember(db.Model):
+    """Committee member model."""
+    __tablename__ = 'committee_members'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    committee_id = db.Column(db.Integer, db.ForeignKey('committees.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    designation = db.Column(db.String(200))
+    official_address = db.Column(db.Text)
+    position = db.Column(db.String(100))  # Chairperson, Member, External Member, etc.
+    contact_number = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+    order_index = db.Column(db.Integer, default=0)  # For ordering members
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<CommitteeMember {self.name} - {self.position}>'
+
