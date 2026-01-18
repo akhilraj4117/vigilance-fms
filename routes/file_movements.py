@@ -887,13 +887,41 @@ def list_communications():
         Communication.modified_date.desc()
     ).all()
     
+    def get_comm_name(c):
+        """Get communication name from available fields."""
+        if c.communication_name and c.communication_name.strip():
+            return c.communication_name.strip()
+        if c.document_title and c.document_title.strip():
+            return c.document_title.strip()
+        if c.document_type and c.document_type.strip():
+            return c.document_type.strip()
+        return 'Untitled'
+    
     return jsonify({
         'success': True,
         'communications': [{
             'id': c.id,
-            'name': c.communication_name or c.document_title or c.document_type or 'Untitled',
+            'name': get_comm_name(c),
             'created_date': c.created_date,
             'modified_date': c.modified_date
+        } for c in comms]
+    })
+
+
+@file_movements_bp.route('/communications/debug/<file_number>')
+@login_required
+def debug_communications(file_number):
+    """Debug endpoint to see raw communication data."""
+    comms = Communication.query.filter_by(file_number=file_number).all()
+    return jsonify({
+        'count': len(comms),
+        'communications': [{
+            'id': c.id,
+            'communication_name': repr(c.communication_name),
+            'document_title': repr(c.document_title),
+            'document_type': repr(c.document_type),
+            'content_length': len(c.content) if c.content else 0,
+            'malayalam_content_length': len(c.malayalam_content) if c.malayalam_content else 0
         } for c in comms]
     })
 
