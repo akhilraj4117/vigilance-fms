@@ -946,10 +946,28 @@ def get_communication_content(id):
     elif comm.document_type and comm.document_type.strip():
         name = comm.document_type.strip()
     
+    # Check both content fields
+    content = comm.content or comm.malayalam_content or ''
+    
     return jsonify({
         'success': True,
-        'content': comm.content or '',
+        'content': content,
         'name': name
+    })
+
+
+@file_movements_bp.route('/communications/content-debug/<int:id>')
+@login_required
+def get_communication_content_debug(id):
+    """Debug endpoint to see all content fields."""
+    comm = Communication.query.get_or_404(id)
+    return jsonify({
+        'id': comm.id,
+        'content_length': len(comm.content) if comm.content else 0,
+        'content_preview': (comm.content[:500] if comm.content else '')[:500],
+        'malayalam_content_length': len(comm.malayalam_content) if comm.malayalam_content else 0,
+        'malayalam_content_preview': (comm.malayalam_content[:500] if comm.malayalam_content else '')[:500],
+        'english_summary_length': len(comm.english_summary) if comm.english_summary else 0,
     })
 
 
