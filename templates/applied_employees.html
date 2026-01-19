@@ -104,12 +104,12 @@
             <tbody>
                 {% set current_pref = namespace(value=0) %}
                 {% for emp in employees %}
-                {% if pref_district and emp[21] != current_pref.value %}
-                {% set current_pref.value = emp[21] %}
+                {% if pref_district and emp[22] != current_pref.value %}
+                {% set current_pref.value = emp[22] %}
                 <tr class="pref-section-header">
                     <td colspan="10" class="pref-heading">
-                        <i class="fas fa-bookmark"></i> Preference {{ emp[21] }}
-                        <span class="pref-count">({{ pref_counts.get(emp[21], 0) }} employee{% if pref_counts.get(emp[21], 0) != 1 %}s{% endif %})</span>
+                        <i class="fas fa-bookmark"></i> Preference {{ emp[22] }}
+                        <span class="pref-count">({{ pref_counts.get(emp[22], 0) }} employee{% if pref_counts.get(emp[22], 0) != 1 %}s{% endif %})</span>
                     </td>
                     <td class="action-cell"></td>
                 </tr>
@@ -148,7 +148,7 @@
                     </td>
                     {% if pref_district %}
                     <td class="pref-cell">
-                        <span class="badge {% if emp[21] == 1 %}badge-success{% elif emp[21] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[21] }}</span>
+                        <span class="badge {% if emp[22] == 1 %}badge-success{% elif emp[22] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[22] }}</span>
                     </td>
                     {% else %}
                     <td class="pref-cell">{{ emp[11] or '-' }}</td>
