@@ -2687,7 +2687,7 @@
                     </div>
                     <div class="col-md-6">
                         <label for="sspPen" class="form-label">PEN</label>
-                        <input type="text" class="form-control" id="sspPen" name="ssp_pen" placeholder="Enter PEN">
+                        <input type="text" class="form-control" id="sspPen" name="ssp_pen" placeholder="Enter PEN" onblur="autoLoadSSPEmployee()">
                     </div>
                     <div class="col-md-6">
                         <label for="sspName" class="form-label">Name</label>
@@ -4504,6 +4504,32 @@
     // =====================================================
     // SOCIAL SECURITY PENSION SAVE/DELETE/LOAD HANDLERS
     // =====================================================
+    
+    // Auto-load employee details when PEN is entered
+    function autoLoadSSPEmployee() {
+        const pen = document.getElementById('sspPen').value.trim();
+        if (!pen) {
+            return; // Don't do anything if PEN is empty
+        }
+        
+        // Only auto-load if name is not already filled
+        const name = document.getElementById('sspName').value.trim();
+        if (name) {
+            return; // Name already filled, don't overwrite
+        }
+        
+        fetch(`/disciplinary/api/get-employee/${pen}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.employee) {
+                    document.getElementById('sspName').value = data.employee.name || '';
+                }
+            })
+            .catch(error => {
+                console.log('Auto employee lookup failed:', error);
+            });
+    }
+    
     document.getElementById('socialSecurityModal')?.addEventListener('show.bs.modal', function() {
         if (!currentFileNumber) return;
         fetch('/files/social-security/get/' + encodeURIComponent(currentFileNumber))
