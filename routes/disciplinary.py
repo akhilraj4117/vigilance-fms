@@ -1840,6 +1840,80 @@ def export_remarks():
     )
 
 
+@disciplinary_bp.route('/ssp/export')
+@login_required
+def export_ssp():
+    """Export Social Security Pension data to CSV/Excel format."""
+    search_query = request.args.get('q', '')
+    refunded_filter = request.args.get('refunded', '')
+    finalised_filter = request.args.get('finalised', '')
+    
+    # Build query with filters
+    query = db.session.query(
+        SocialSecurityPension,
+        File.institution_name
+    ).outerjoin(File, SocialSecurityPension.file_number == File.file_number)
+    
+    if search_query:
+        query = query.filter(
+            or_(
+                SocialSecurityPension.pen.ilike(f'%{search_query}%'),
+                SocialSecurityPension.name.ilike(f'%{search_query}%'),
+                SocialSecurityPension.file_number.ilike(f'%{search_query}%')
+            )
+        )
+    
+    if refunded_filter:
+        query = query.filter(SocialSecurityPension.refunded_status == refunded_filter)
+    if finalised_filter:
+        query = query.filter(SocialSecurityPension.finalised == finalised_filter)
+    
+    query = query.order_by(SocialSecurityPension.id.desc())
+    entries = query.all()
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    # Add UTF-8 BOM for Excel to recognize Unicode characters
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        'Sl. No.', 'Main List Sl. No.', 'Name', 'PEN', 'File Number', 'Institution',
+        'Sevana ID', 'Aadhar No', 'Amount', 'Refunded Status', 'Refunded Amount',
+        'Letter No', 'Letter Date', 'Receipt No', 'Finalised', 'Finalised Date'
+    ])
+    
+    # Write data
+    for idx, (ssp, institution_name) in enumerate(entries, 1):
+        writer.writerow([
+            idx,
+            ssp.main_list_sl_no or '',
+            ssp.name or '',
+            ssp.pen or '',
+            ssp.file_number or '',
+            institution_name or '',
+            ssp.sevana_pensioner_id or '',
+            ssp.aadhar_no or '',
+            ssp.amount or '',
+            ssp.refunded_status or '',
+            ssp.refunded_amount or '',
+            ssp.letter_no or '',
+            ssp.letter_date or '',
+            ssp.receipt_no or '',
+            ssp.finalised or '',
+            ssp.finalised_date or ''
+        ])
+    
+    # Create response
+    output.seek(0)
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv; charset=utf-8-sig',
+        headers={'Content-Disposition': f'attachment; filename=SSP_Export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'}
+    )
+
+
 @disciplinary_bp.route('/superannuation/export')
 @login_required
 def export_superannuation():

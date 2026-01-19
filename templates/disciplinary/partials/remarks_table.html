@@ -605,11 +605,19 @@ function clearRemarksForm() {
 function generateAndSaveRemarks() {
     updateRemarksPreview();
     
-    // Copy to clipboard
-    const textarea = document.getElementById('remarks_message');
-    textarea.select();
-    textarea.setSelectionRange(0, 99999);
-    document.execCommand('copy');
+    // Copy to clipboard using modern API
+    const heading = document.getElementById('remarks_heading').textContent;
+    const body = document.getElementById('remarks_body').textContent;
+    const text = heading + '\n\n' + body;
+    
+    navigator.clipboard.writeText(text).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.getElementById('remarks_message');
+        textarea.classList.remove('d-none');
+        textarea.select();
+        document.execCommand('copy');
+        textarea.classList.add('d-none');
+    });
     
     // Show brief notification that it was copied
     const generateBtn = document.querySelector('button[onclick="generateAndSaveRemarks()"]');

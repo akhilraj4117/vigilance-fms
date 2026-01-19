@@ -136,6 +136,13 @@
     </table>
 </div>
 
+<!-- Export Button -->
+<div class="d-flex justify-content-end mt-3">
+    <a href="{{ url_for('disciplinary.export_ssp', q=search_query, refunded=refunded_filter, finalised=finalised_filter) }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export to Excel
+    </a>
+</div>
+
 <!-- Pagination -->
 {% if pagination.pages > 1 %}
 <nav>
