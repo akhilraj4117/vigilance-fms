@@ -56,8 +56,7 @@ class Config:
     
     # Valid users (change in production!)
     VALID_USERS = {
-        'admin': 'admin123',
-        'user1': 'password1'
+        'revathy': '4117'
     }
 
 
