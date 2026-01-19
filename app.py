@@ -230,6 +230,7 @@ def ensure_tables():
         special_priority TEXT DEFAULT 'No',
         special_priority_reason TEXT,
         locked TEXT DEFAULT 'No',
+        weightage_consider TEXT DEFAULT 'Yes',
         last_modified TEXT
     );
     
@@ -282,6 +283,16 @@ def ensure_tables():
     except Exception as e:
         db.session.rollback()
         print(f"Note: locked column may already exist or couldn't be added: {e}")
+    
+    # Ensure weightage_consider column exists in transfer_applied (for existing databases)
+    try:
+        db.session.execute(db.text(f"""
+            ALTER TABLE {prefix}transfer_applied ADD COLUMN IF NOT EXISTS weightage_consider TEXT DEFAULT 'Yes'
+        """))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Note: weightage_consider column may already exist or couldn't be added: {e}")
 
 
 def calculate_duration(join_date_str):
@@ -1638,7 +1649,8 @@ def applied_employees():
                j.district_join_date, j.weightage, j.weightage_details,
                t.receipt_numbers, t.applied_date, t.special_priority,
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
-               j.weightage_priority, COALESCE(t.locked, 'No') as locked
+               j.weightage_priority, COALESCE(t.locked, 'No') as locked,
+               COALESCE(t.weightage_consider, 'Yes') as weightage_consider
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
         WHERE 1=1
@@ -1929,6 +1941,39 @@ def unlock_all_applied():
         db.session.commit()
         
         return jsonify({'success': True, 'count': count})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/applied/toggle-weightage-consider/<pen>', methods=['POST'])
+@login_required
+@requires_transfer_session
+def toggle_weightage_consider(pen):
+    """Toggle weightage consideration status of an applied employee"""
+    prefix = get_table_prefix()
+    
+    try:
+        # Get current weightage_consider status
+        result = db.session.execute(db.text(f"""
+            SELECT COALESCE(weightage_consider, 'Yes') FROM {prefix}transfer_applied WHERE pen = :pen
+        """), {'pen': pen})
+        row = result.fetchone()
+        
+        if not row:
+            return jsonify({'success': False, 'error': 'Employee not found'})
+        
+        current_status = row[0]
+        new_status = 'No' if current_status == 'Yes' else 'Yes'
+        
+        db.session.execute(db.text(f"""
+            UPDATE {prefix}transfer_applied 
+            SET weightage_consider = :status, last_modified = :now 
+            WHERE pen = :pen
+        """), {'status': new_status, 'now': datetime.now().isoformat(), 'pen': pen})
+        db.session.commit()
+        
+        return jsonify({'success': True, 'consider': new_status == 'Yes'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
@@ -2567,6 +2612,7 @@ def auto_fill_vacancies():
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE j.weightage = 'Yes'
+            AND COALESCE(t.weightage_consider, 'Yes') = 'Yes'
             AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
@@ -2591,12 +2637,14 @@ def auto_fill_vacancies():
                 not_allocated_count += 1
         
         # STEP 2: Process NORMAL employees (senior first)
+        # This includes employees without weightage OR employees with weightage but weightage_consider = 'No'
         normal_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            WHERE (j.weightage IS NULL OR j.weightage != 'Yes')
+            WHERE ((j.weightage IS NULL OR j.weightage != 'Yes') 
+                   OR (j.weightage = 'Yes' AND COALESCE(t.weightage_consider, 'Yes') = 'No'))
             AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)

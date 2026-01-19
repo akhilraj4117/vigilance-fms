@@ -114,7 +114,7 @@
                     <td class="action-cell"></td>
                 </tr>
                 {% endif %}
-                <tr class="{% if emp[20] == 'Yes' %}row-locked{% endif %} {% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %} data-pen="{{ emp[0] }}" data-locked="{{ emp[20] }}">
+                <tr class="{% if emp[20] == 'Yes' %}row-locked{% endif %} {% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %} data-pen="{{ emp[0] }}" data-locked="{{ emp[20] }}" data-weightage="{{ emp[6] }}" data-weightage-consider="{{ emp[21] }}">
                     <td>{{ loop.index }}</td>
                     <td>
                         {{ emp[0] }}
@@ -126,9 +126,15 @@
                     <td>{{ emp[2] }}</td>
                     <td>{{ emp[3] }}</td>
                     <td>{{ format_duration(emp[4]) }}</td>
-                    <td>
+                    <td class="weightage-cell" oncontextmenu="showWeightageMenu(event, '{{ emp[0] }}', '{{ emp[6] }}', '{{ emp[21] }}')" title="Right-click to toggle Consider/Not Consider">
                         {% if emp[6] == 'Yes' %}
-                        <span class="badge badge-warning" title="{{ emp[7] or '' }}">Yes</span>
+                            {% if emp[21] == 'No' %}
+                            <span class="badge badge-danger weightage-not-consider" title="{{ emp[7] or '' }} - NOT CONSIDERED for weightage priority">
+                                <i class="fas fa-times-circle"></i> Yes (Not Consider)
+                            </span>
+                            {% else %}
+                            <span class="badge badge-warning" title="{{ emp[7] or '' }}">Yes</span>
+                            {% endif %}
                         {% else %}
                         <span class="badge badge-secondary">No</span>
                         {% endif %}
@@ -189,6 +195,18 @@
     <div class="table-footer">
         <span class="record-count">Total: {{ employees|length }} employee(s)</span>
     </div>
+</div>
+
+<!-- Weightage Context Menu -->
+<div id="weightageContextMenu" class="context-menu">
+    <ul>
+        <li id="menuConsider" onclick="setWeightageConsider(true)">
+            <i class="fas fa-check-circle text-success"></i> Consider
+        </li>
+        <li id="menuNotConsider" onclick="setWeightageConsider(false)">
+            <i class="fas fa-times-circle text-danger"></i> Not Consider
+        </li>
+    </ul>
 </div>
 
 <!-- Details Modal -->
@@ -394,6 +412,93 @@
 
 {% block extra_js %}
 <script>
+// Weightage Context Menu Variables
+let contextMenuPen = null;
+let contextMenuHasWeightage = false;
+let contextMenuConsider = true;
+
+function showWeightageMenu(e, pen, hasWeightage, consider) {
+    e.preventDefault();
+    
+    // Only show context menu for employees with weightage
+    if (hasWeightage !== 'Yes') {
+        return;
+    }
+    
+    contextMenuPen = pen;
+    contextMenuHasWeightage = hasWeightage === 'Yes';
+    contextMenuConsider = consider !== 'No';
+    
+    const menu = document.getElementById('weightageContextMenu');
+    const menuConsider = document.getElementById('menuConsider');
+    const menuNotConsider = document.getElementById('menuNotConsider');
+    
+    // Highlight current selection
+    if (contextMenuConsider) {
+        menuConsider.classList.add('active');
+        menuNotConsider.classList.remove('active');
+    } else {
+        menuConsider.classList.remove('active');
+        menuNotConsider.classList.add('active');
+    }
+    
+    // Position the menu
+    menu.style.display = 'block';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+    
+    // Close menu when clicking elsewhere
+    document.addEventListener('click', hideWeightageMenu);
+}
+
+function hideWeightageMenu() {
+    document.getElementById('weightageContextMenu').style.display = 'none';
+    document.removeEventListener('click', hideWeightageMenu);
+}
+
+function setWeightageConsider(consider) {
+    if (!contextMenuPen) return;
+    
+    // If clicking on the same state, just close menu
+    if (consider === contextMenuConsider) {
+        hideWeightageMenu();
+        return;
+    }
+    
+    fetch(`/applied/toggle-weightage-consider/${contextMenuPen}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Find the row and update it
+            const row = document.querySelector(`tr[data-pen="${contextMenuPen}"]`);
+            if (row) {
+                const weightageCell = row.querySelector('.weightage-cell');
+                row.dataset.weightageConsider = data.consider ? 'Yes' : 'No';
+                
+                if (data.consider) {
+                    // Show as "Yes" (Consider)
+                    weightageCell.innerHTML = '<span class="badge badge-warning">Yes</span>';
+                } else {
+                    // Show as "Yes (Not Consider)" with different styling
+                    weightageCell.innerHTML = '<span class="badge badge-danger weightage-not-consider" title="NOT CONSIDERED for weightage priority"><i class="fas fa-times-circle"></i> Yes (Not Consider)</span>';
+                }
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+    
+    hideWeightageMenu();
+}
+
 function showDetails(pen, name, p1, p2, p3, p4, p5, p6, p7, p8) {
     const prefs = [p1, p2, p3, p4, p5, p6, p7, p8].filter(p => p && p !== 'None');
     let html = `<h3>${name} (${pen})</h3><div class="pref-list">`;
@@ -615,6 +720,62 @@ function unlockAll() {
 </script>
 
 <style>
+/* Context Menu Styles */
+.context-menu {
+    display: none;
+    position: absolute;
+    z-index: 10000;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    overflow: hidden;
+}
+.context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.context-menu li {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+.context-menu li:hover {
+    background: var(--bg-hover, #f5f5f5);
+}
+.context-menu li.active {
+    background: var(--primary-light, #e3f2fd);
+    font-weight: 600;
+}
+.context-menu li i {
+    font-size: 1.1rem;
+}
+.text-success {
+    color: #27ae60 !important;
+}
+
+/* Weightage Cell Styles */
+.weightage-cell {
+    cursor: context-menu;
+}
+.weightage-not-consider {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    color: white !important;
+    animation: pulse-warning 2s infinite;
+}
+.weightage-not-consider i {
+    margin-right: 3px;
+}
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
 /* Active button state for sort buttons */
 .header-actions .btn.active {
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
