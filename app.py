@@ -2590,7 +2590,7 @@ def auto_fill_vacancies():
             else:
                 not_allocated_count += 1
         
-        # STEP 2: Process NORMAL employees (junior first)
+        # STEP 2: Process NORMAL employees (senior first)
         normal_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -2602,7 +2602,7 @@ def auto_fill_vacancies():
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
-            ORDER BY j.duration_days ASC
+            ORDER BY j.duration_days DESC
         """))
         
         for row in normal_result.fetchall():
