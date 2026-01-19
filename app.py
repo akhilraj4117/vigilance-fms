@@ -2393,20 +2393,25 @@ def auto_fill_vacancies():
             flash('No employees have set their district preferences yet. Please ensure employees have filled their preferences before auto-filling.', 'warning')
             return redirect(url_for('applied_employees'))
         
-        # Get vacancy status
+        # Get vacancy status - optimized to 2 queries instead of 28
         vacancy_status = {}
+        
+        # Fetch all vacancy data in one query
+        v_result = db.session.execute(db.text(f"""
+            SELECT district, vacancy_reported FROM {prefix}vacancy
+        """))
+        vacancy_data = {row[0]: row[1] or 0 for row in v_result.fetchall()}
+        
+        # Fetch all filled counts in one query
+        f_result = db.session.execute(db.text(f"""
+            SELECT transfer_to_district, COUNT(*) FROM {prefix}transfer_draft 
+            GROUP BY transfer_to_district
+        """))
+        filled_data = {row[0]: row[1] for row in f_result.fetchall()}
+        
         for district in DISTRICTS:
-            v_result = db.session.execute(db.text(f"""
-                SELECT vacancy_reported FROM {prefix}vacancy WHERE district = :district
-            """), {'district': district})
-            v_row = v_result.fetchone()
-            vacancy_reported = v_row[0] if v_row else 0
-            
-            f_result = db.session.execute(db.text(f"""
-                SELECT COUNT(*) FROM {prefix}transfer_draft WHERE transfer_to_district = :district
-            """), {'district': district})
-            filled = f_result.fetchone()[0] or 0
-            
+            vacancy_reported = vacancy_data.get(district, 0)
+            filled = filled_data.get(district, 0)
             vacancy_status[district] = {
                 'reported': vacancy_reported,
                 'filled': filled,
@@ -2422,14 +2427,17 @@ def auto_fill_vacancies():
         against_count = 0
         not_allocated_count = 0
         
+        # Pre-fetch all already allocated PENs to avoid per-employee database queries
+        allocated_pens_result = db.session.execute(db.text(f"""
+            SELECT pen FROM {prefix}transfer_draft
+        """))
+        allocated_pens = set(row[0] for row in allocated_pens_result.fetchall())
+        
         def allocate(pen, name, current_district, to_district, remarks=None):
             nonlocal allocated_count, cascade_count
             
-            # Check if already allocated (ON CONFLICT DO NOTHING handles this but we need accurate count)
-            check_result = db.session.execute(db.text(f"""
-                SELECT 1 FROM {prefix}transfer_draft WHERE pen = :pen
-            """), {'pen': pen})
-            if check_result.fetchone():
+            # Check if already allocated using in-memory set
+            if pen in allocated_pens:
                 return False
             
             # Determine if it's a cascade allocation
@@ -2460,6 +2468,8 @@ def auto_fill_vacancies():
                 if current_district in vacancy_status:
                     vacancy_status[current_district]['cascade'] += 1
             
+            # Track allocation in memory to avoid duplicate checks
+            allocated_pens.add(pen)
             allocated_count += 1
             return True
         

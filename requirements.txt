@@ -1,12 +1,12 @@
 # JPHN Transfer Web Application - Dependencies
 
 # Flask web framework
-flask==3.0.0
-flask-login==0.6.3
-flask-sqlalchemy==3.1.1
+Flask==3.0.0
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
 
 # Database
-psycopg[binary]==3.1.18
+psycopg2-binary==2.9.9
 
 # Utilities
 python-dotenv==1.0.0
@@ -15,6 +15,9 @@ Werkzeug==3.0.1
 # File Import/Export
 pdfplumber==0.10.3
 openpyxl==3.1.2
+python-docx==1.1.0
+reportlab==4.0.7
 
 # Production server
 gunicorn==21.2.0
+SQLAlchemy==2.0.23
