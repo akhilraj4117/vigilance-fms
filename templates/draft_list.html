@@ -174,6 +174,25 @@
     </div>
 </div>
 
+<!-- Right-click Context Menu for Manual Assignment -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-header">
+        <i class="fas fa-exchange-alt"></i> Reassign <span id="contextEmpName"></span>
+    </div>
+    <div class="context-menu-body">
+        <label>Select New District:</label>
+        <select id="contextDistrictSelect" class="form-control">
+            {% for d in districts %}
+            <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="context-menu-footer">
+        <button class="btn btn-sm btn-secondary" onclick="hideContextMenu()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmReassign()">Reassign</button>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -242,61 +261,18 @@ function exportCSV() {
 }
 
 function exportExcel() {
-    const wb = XLSX.utils.book_new();
+    // Use server-side Excel export with current filters
+    const fromDistrict = document.getElementById('from_district').value;
+    const toDistrict = document.getElementById('to_district').value;
+    const sortBy = '{{ sort_by or "" }}';
     
-    // Create data grouped by district
-    const groupedData = {};
-    transferData.forEach(t => {
-        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
-        groupedData[t.fromDistrict].push(t);
-    });
+    let url = '/draft/export-excel?';
+    const params = [];
+    if (fromDistrict) params.push('from_district=' + encodeURIComponent(fromDistrict));
+    if (toDistrict) params.push('to_district=' + encodeURIComponent(toDistrict));
+    if (sortBy) params.push('sort=' + encodeURIComponent(sortBy));
     
-    // Create worksheet data
-    const wsData = [];
-    
-    // Header rows
-    wsData.push(['Government of Kerala']);
-    wsData.push(['Department: Health Services']);
-    let titleText = transferType === 'regular' 
-        ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
-        : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
-    wsData.push([titleText]);
-    wsData.push([`${listType} Transfer List`]);
-    wsData.push([]);
-    
-    let slNo = 1;
-    const headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 'From District', 'To District', 'Protection If Any'];
-    
-    districts.forEach(district => {
-        if (!groupedData[district]) return;
-        
-        wsData.push([`District: ${district.toUpperCase()}`]);
-        wsData.push(headers);
-        
-        groupedData[district].forEach(t => {
-            wsData.push([
-                slNo++,
-                t.pen,
-                t.name,
-                'JPHN Gr I',
-                t.institution,
-                t.fromDistrict,
-                t.toDistrict,
-                t.weightage === 'Yes' ? (t.weightageDetails || '') : ''
-            ]);
-        });
-        wsData.push([]);
-    });
-    
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    
-    // Set column widths
-    ws['!cols'] = [
-        {wch: 8}, {wch: 12}, {wch: 25}, {wch: 15}, {wch: 35}, {wch: 15}, {wch: 15}, {wch: 20}
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, ws, 'Draft Transfer List');
-    XLSX.writeFile(wb, getFileName('xlsx'));
+    window.location.href = url + params.join('&');
 }
 
 function exportPDF() {
@@ -960,6 +936,62 @@ window.onclick = function(e) {
     display: none;
 }
 
+/* Context Menu Styles */
+.context-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1100;
+    min-width: 280px;
+    overflow: hidden;
+}
+.context-menu.show {
+    display: block;
+}
+.context-menu-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.context-menu-header i {
+    margin-right: 8px;
+}
+.context-menu-body {
+    padding: 15px;
+}
+.context-menu-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.context-menu-body select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+.context-menu-footer {
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* Highlight row on right-click */
+tr.context-active {
+    background: rgba(52, 152, 219, 0.15) !important;
+}
+
 /* Excluded Modal Styles */
 .excluded-modal-overlay {
     display: none;
@@ -1153,6 +1185,165 @@ function exportExcludedExcel() {
 document.getElementById('excludedModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeExcludedModal();
+    }
+});
+
+// ========== Context Menu for Manual Assignment ==========
+let contextMenuPen = null;
+let contextMenuRow = null;
+
+// Add right-click event listeners to employee name cells
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('draftTable');
+    if (table) {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            // Skip "no data" rows
+            if (row.querySelector('.no-data')) return;
+            
+            const nameCell = row.cells[2]; // Name column (index 2)
+            const penCell = row.cells[1];  // PEN column (index 1)
+            const toDistrictCell = row.cells[5]; // To District column (index 5)
+            
+            if (nameCell && penCell) {
+                nameCell.style.cursor = 'context-menu';
+                nameCell.title = 'Right-click to reassign district';
+                
+                nameCell.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showContextMenu(e, penCell.textContent.trim(), nameCell.textContent.trim(), toDistrictCell.textContent.trim(), row);
+                });
+            }
+        });
+    }
+});
+
+function showContextMenu(e, pen, name, currentDistrict, row) {
+    // Remove previous highlight
+    if (contextMenuRow) {
+        contextMenuRow.classList.remove('context-active');
+    }
+    
+    contextMenuPen = pen;
+    contextMenuRow = row;
+    row.classList.add('context-active');
+    
+    const menu = document.getElementById('contextMenu');
+    const select = document.getElementById('contextDistrictSelect');
+    
+    // Set current district as selected
+    select.value = currentDistrict;
+    
+    // Update header with employee name
+    document.getElementById('contextEmpName').textContent = name;
+    
+    // Position the menu
+    let x = e.pageX;
+    let y = e.pageY;
+    
+    // Ensure menu doesn't go off screen
+    const menuWidth = 280;
+    const menuHeight = 200;
+    
+    if (x + menuWidth > window.innerWidth + window.scrollX) {
+        x = window.innerWidth + window.scrollX - menuWidth - 10;
+    }
+    if (y + menuHeight > window.innerHeight + window.scrollY) {
+        y = window.innerHeight + window.scrollY - menuHeight - 10;
+    }
+    
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.classList.add('show');
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('contextMenu');
+    menu.classList.remove('show');
+    
+    if (contextMenuRow) {
+        contextMenuRow.classList.remove('context-active');
+    }
+    contextMenuPen = null;
+    contextMenuRow = null;
+}
+
+function confirmReassign() {
+    if (!contextMenuPen) return;
+    
+    const newDistrict = document.getElementById('contextDistrictSelect').value;
+    
+    if (!newDistrict) {
+        alert('Please select a district');
+        return;
+    }
+    
+    // Get current district from the row
+    const currentDistrict = contextMenuRow.cells[5].textContent.trim();
+    
+    if (newDistrict === currentDistrict) {
+        alert('Employee is already assigned to this district');
+        hideContextMenu();
+        return;
+    }
+    
+    if (!confirm(`Reassign this employee from ${currentDistrict} to ${newDistrict}?`)) {
+        return;
+    }
+    
+    // Send request to server
+    const formData = new FormData();
+    formData.append('pen', contextMenuPen);
+    formData.append('district', newDistrict);
+    
+    fetch('/draft/manual-assign', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the row in the table
+            contextMenuRow.cells[5].textContent = newDistrict;
+            contextMenuRow.cells[8].textContent = 'Manual: Changed from ' + data.old_district;
+            
+            // Flash success
+            contextMenuRow.style.transition = 'background 0.3s';
+            contextMenuRow.style.background = 'rgba(46, 204, 113, 0.3)';
+            setTimeout(() => {
+                contextMenuRow.style.background = '';
+            }, 1500);
+            
+            alert(data.message);
+        } else {
+            alert('Error: ' + data.error);
+        }
+        hideContextMenu();
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        hideContextMenu();
+    });
+}
+
+// Hide context menu when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.context-menu')) {
+        hideContextMenu();
+    }
+});
+
+// Hide context menu on scroll
+document.addEventListener('scroll', function() {
+    hideContextMenu();
+});
+
+// Hide context menu on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideContextMenu();
+        closeExcludedModal();
+        closePrefModal();
     }
 });
 </script>

@@ -2788,24 +2788,8 @@ def auto_fill_vacancies():
             allocated_count += 1
             return True
         
-        def try_allocate(pen, name, current_district, preferences, pref1_only=False):
-            """Try to allocate employee to one of their preferences.
-            
-            Args:
-                pref1_only: If True, only consider Pref1 (for first pass allocation)
-            """
-            prefs_to_check = preferences[:1] if pref1_only else preferences
-            for pref_idx, pref in enumerate(prefs_to_check):
-                if not pref:
-                    continue
-                if pref in vacancy_status:
-                    available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
-                    if available > 0 or vacancy_status[pref]['reported'] == 0:
-                        is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
-                        remarks = "Vacancy by Transfer" if is_cascade else None
-                        if allocate(pen, name, current_district, pref, remarks):
-                            return True, pref_idx
-            return False, -1
+        # Note: try_allocate_reported_only and try_allocate_with_cascade are defined
+        # in the multi-pass section below
         
         def try_against_transfer(pen, name, pref_district):
             """Try to create an 'Against' transfer by displacing senior employee"""
@@ -2852,7 +2836,54 @@ def auto_fill_vacancies():
             
             return True, senior_name
         
-        # STEP 0: Process employees WITH SPECIAL PRIORITY first (HIGHEST PRIORITY)
+        # ============================================================================
+        # MULTI-PASS ALLOCATION ALGORITHM
+        # ============================================================================
+        # Priority Order: 1) Special Priority  2) Weightage  3) Normal (all by seniority)
+        # 
+        # Problem: When someone is allocated, they create a cascade vacancy in their 
+        # source district. If we process in one pass, juniors processed later might
+        # get cascade vacancies that should go to seniors who were skipped earlier.
+        #
+        # Solution: Two-pass approach
+        # - Pass 1: Allocate using ONLY reported vacancies (no cascade)
+        # - Pass 2: Allocate cascade vacancies to remaining employees in priority order
+        # ============================================================================
+        
+        def try_allocate_reported_only(pen, name, current_district, preferences):
+            """Try to allocate using ONLY reported vacancies (not cascade)"""
+            for pref_idx, pref in enumerate(preferences):
+                if not pref:
+                    continue
+                if pref in vacancy_status:
+                    # Only use reported vacancies, not cascade
+                    if vacancy_status[pref]['remaining'] > 0:
+                        if allocate(pen, name, current_district, pref, None):
+                            return True, pref_idx
+            return False, -1
+        
+        def try_allocate_with_cascade(pen, name, current_district, preferences):
+            """Try to allocate using both reported and cascade vacancies"""
+            for pref_idx, pref in enumerate(preferences):
+                if not pref:
+                    continue
+                if pref in vacancy_status:
+                    available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
+                    if available > 0:
+                        is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
+                        remarks = "Vacancy by Transfer" if is_cascade else None
+                        if allocate(pen, name, current_district, pref, remarks):
+                            return True, pref_idx
+            return False, -1
+        
+        # Track employees who couldn't be allocated in Pass 1 (for Pass 2)
+        waiting_special = []
+        waiting_weightage = []
+        waiting_normal = []
+        
+        # ===================== PASS 1: ALLOCATE TO REPORTED VACANCIES ONLY =====================
+        
+        # STEP 1A: Process employees WITH SPECIAL PRIORITY first
         special_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -2869,28 +2900,21 @@ def auto_fill_vacancies():
         for row in special_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            allocated, _ = try_allocate(pen, name, district, prefs)
+            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
             if allocated:
                 special_count += 1
-            elif prefs[0] and enable_against:
-                success, _ = try_against_transfer(pen, name, prefs[0])
-                if success:
-                    special_count += 1
-                else:
-                    not_allocated_count += 1
             else:
-                not_allocated_count += 1
+                # Add to waiting list for Pass 2
+                waiting_special.append((pen, name, district, prefs))
         
-        # STEP 1: Process ALL employees in STRICT SENIORITY order
-        # Seniority is the primary criterion - seniors get their best available preference before juniors
-        # Weightage is noted but does NOT allow juniors to jump ahead of seniors
-        
-        all_employees_result = db.session.execute(db.text(f"""
-            SELECT t.pen, j.name, j.district, j.weightage, t.pref1, t.pref2, 
-                   t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+        # STEP 1B: Process employees WITH WEIGHTAGE (sorted by seniority)
+        weightage_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
+                   t.pref5, t.pref6, t.pref7, t.pref8
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND j.weightage = 'Yes'
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
@@ -2898,29 +2922,122 @@ def auto_fill_vacancies():
             ORDER BY j.duration_days DESC
         """))
         
-        # Process each employee in strict seniority order
-        # Each senior gets their best available preference before any junior is considered
-        for row in all_employees_result.fetchall():
+        for row in weightage_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
-            has_weightage = row[3] == 'Yes'
-            prefs = [row[i] for i in range(4, 12)]
-            allocated, _ = try_allocate(pen, name, district, prefs, pref1_only=False)
+            prefs = [row[i] for i in range(3, 11)]
+            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
             if allocated:
-                if has_weightage:
-                    weightage_count += 1
-                else:
-                    normal_count += 1
-            elif prefs[0] and enable_against:
-                success, _ = try_against_transfer(pen, name, prefs[0])
-                if success:
-                    if has_weightage:
-                        weightage_count += 1
+                weightage_count += 1
+            else:
+                waiting_weightage.append((pen, name, district, prefs))
+        
+        # STEP 1C: Process employees WITHOUT WEIGHTAGE (sorted by seniority)
+        normal_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
+                   t.pref5, t.pref6, t.pref7, t.pref8
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND (j.weightage IS NULL OR j.weightage != 'Yes')
+            AND (t.locked IS NULL OR t.locked != 'Yes')
+            AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+            AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                 OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+            ORDER BY j.duration_days DESC
+        """))
+        
+        for row in normal_result.fetchall():
+            pen, name, district = row[0], row[1], row[2]
+            prefs = [row[i] for i in range(3, 11)]
+            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
+            if allocated:
+                normal_count += 1
+            else:
+                waiting_normal.append((pen, name, district, prefs))
+        
+        # ===================== PASS 2: ALLOCATE CASCADE VACANCIES =====================
+        # Now allocate cascade vacancies in priority order: Special > Weightage > Normal
+        
+        # STEP 2A: Waiting Special Priority employees get cascade vacancies first
+        still_waiting_special = []
+        for pen, name, district, prefs in waiting_special:
+            if pen in allocated_pens:
+                continue  # Already allocated somehow
+            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+            if allocated:
+                special_count += 1
+            else:
+                still_waiting_special.append((pen, name, district, prefs))
+        
+        # STEP 2B: Waiting Weightage employees get cascade vacancies next
+        still_waiting_weightage = []
+        for pen, name, district, prefs in waiting_weightage:
+            if pen in allocated_pens:
+                continue
+            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+            if allocated:
+                weightage_count += 1
+            else:
+                still_waiting_weightage.append((pen, name, district, prefs))
+        
+        # STEP 2C: Waiting Normal employees get remaining cascade vacancies
+        still_waiting_normal = []
+        for pen, name, district, prefs in waiting_normal:
+            if pen in allocated_pens:
+                continue
+            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+            if allocated:
+                normal_count += 1
+            else:
+                still_waiting_normal.append((pen, name, district, prefs))
+        
+        # ===================== PASS 3 (OPTIONAL): AGAINST TRANSFERS =====================
+        # Try against transfers for remaining employees if enabled
+        
+        if enable_against:
+            # Special Priority against transfers
+            for pen, name, district, prefs in still_waiting_special:
+                if pen in allocated_pens:
+                    continue
+                if prefs[0]:
+                    success, _ = try_against_transfer(pen, name, prefs[0])
+                    if success:
+                        special_count += 1
                     else:
-                        normal_count += 1
+                        not_allocated_count += 1
                 else:
                     not_allocated_count += 1
-            else:
-                not_allocated_count += 1
+            
+            # Weightage against transfers
+            for pen, name, district, prefs in still_waiting_weightage:
+                if pen in allocated_pens:
+                    continue
+                if prefs[0]:
+                    success, _ = try_against_transfer(pen, name, prefs[0])
+                    if success:
+                        weightage_count += 1
+                    else:
+                        not_allocated_count += 1
+                else:
+                    not_allocated_count += 1
+            
+            # Normal against transfers
+            for pen, name, district, prefs in still_waiting_normal:
+                if pen in allocated_pens:
+                    continue
+                if prefs[0]:
+                    success, _ = try_against_transfer(pen, name, prefs[0])
+                    if success:
+                        normal_count += 1
+                    else:
+                        not_allocated_count += 1
+                else:
+                    not_allocated_count += 1
+        else:
+            # Count remaining as not allocated
+            not_allocated_count += len([p for p, _, _, _ in still_waiting_special if p not in allocated_pens])
+            not_allocated_count += len([p for p, _, _, _ in still_waiting_weightage if p not in allocated_pens])
+            not_allocated_count += len([p for p, _, _, _ in still_waiting_normal if p not in allocated_pens])
         
         # Commit all changes
         try:
