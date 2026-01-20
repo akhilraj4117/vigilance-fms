@@ -2996,6 +2996,7 @@ def auto_fill_stream():
                 INNER JOIN {prefix}jphn j ON t.pen = j.pen
                 WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
                 AND j.weightage = 'Yes'
+                AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes')
                 AND (t.locked IS NULL OR t.locked != 'Yes')
                 AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
                 AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
@@ -3023,7 +3024,7 @@ def auto_fill_stream():
                 FROM {prefix}transfer_applied t
                 INNER JOIN {prefix}jphn j ON t.pen = j.pen
                 WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
-                AND (j.weightage IS NULL OR j.weightage != 'Yes')
+                AND ((j.weightage IS NULL OR j.weightage != 'Yes') OR t.weightage_consider = 'No')
                 AND (t.locked IS NULL OR t.locked != 'Yes')
                 AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
                 AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
@@ -3331,8 +3332,8 @@ def auto_fill_ajax():
         # PASS 1: Pref1 with reported vacancies
         for category, query_condition, counter_name in [
             ('special', "t.special_priority = 'Yes'", 'special_count'),
-            ('weightage', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND j.weightage = 'Yes'", 'weightage_count'),
-            ('normal', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND (j.weightage IS NULL OR j.weightage != 'Yes')", 'normal_count')
+            ('weightage', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes')", 'weightage_count'),
+            ('normal', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND ((j.weightage IS NULL OR j.weightage != 'Yes') OR t.weightage_consider = 'No')", 'normal_count')
         ]:
             result = db.session.execute(db.text(f"""
                 SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
@@ -3663,6 +3664,7 @@ def auto_fill_vacancies():
                 waiting_pref1_special.append((pen, name, district, prefs))
         
         # STEP 1B: Process employees WITH WEIGHTAGE (sorted by seniority)
+        # Only include if weightage_consider is Yes (or not set)
         weightage_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -3670,6 +3672,7 @@ def auto_fill_vacancies():
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
             AND j.weightage = 'Yes'
+            AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes')
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
@@ -3688,13 +3691,14 @@ def auto_fill_vacancies():
                 waiting_pref1_weightage.append((pen, name, district, prefs))
         
         # STEP 1C: Process employees WITHOUT WEIGHTAGE (sorted by seniority)
+        # Also includes weightage employees where weightage_consider is set to 'No'
         normal_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
             WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
-            AND (j.weightage IS NULL OR j.weightage != 'Yes')
+            AND ((j.weightage IS NULL OR j.weightage != 'Yes') OR t.weightage_consider = 'No')
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
