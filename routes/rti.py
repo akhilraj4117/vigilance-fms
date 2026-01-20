@@ -243,8 +243,14 @@ def create_rti():
             appeal_submitted='appeal_submitted' in request.form
         )
         
-        db.session.add(rti)
-        db.session.commit()
+        try:
+            db.session.add(rti)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving RTI application: {str(e)}', 'danger')
+            existing_applications = RTIApplication.query.filter_by(file_number=file_number).order_by(RTIApplication.id.desc()).all() if file_number else []
+            return render_template('rti/create.html', file_number=file_number, existing_applications=existing_applications)
         
         flash('RTI application created successfully.', 'success')
         
