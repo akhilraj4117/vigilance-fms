@@ -639,10 +639,16 @@ def cadre_list():
     district_filter = request.args.get('district', '')
     search = request.args.get('search', '').lower()
     
+    # Calculate duration dynamically instead of using stored stale value
     query = f"""
         SELECT pen, name, designation, institution, district, entry_date,
-               retirement_date, district_join_date, duration_days, contact,
-               weightage, weightage_details
+               retirement_date, district_join_date, 
+               CASE 
+                   WHEN district_join_date IS NOT NULL AND district_join_date != '' 
+                   THEN CURRENT_DATE - TO_DATE(district_join_date, 'DD-MM-YYYY')
+                   ELSE 0 
+               END as duration_days,
+               contact, weightage, weightage_details
         FROM {prefix}jphn
         WHERE 1=1
     """
@@ -1487,11 +1493,16 @@ def application_list():
         # Check if "All Districts" is selected
         if district_filter == 'All Districts':
             # Get employees NOT in transfer_applied from ALL districts
+            # Calculate duration dynamically for accurate display
             result = db.session.execute(db.text(f"""
-                SELECT j.pen, j.name, j.institution, j.duration_days, j.district
+                SELECT j.pen, j.name, j.institution, 
+                       CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                            THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                            ELSE 0 END as duration_days,
+                       j.district
                 FROM {prefix}jphn j
                 WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-                ORDER BY j.district, j.duration_days DESC
+                ORDER BY j.district, duration_days DESC
             """))
             
             employees = result.fetchall()
@@ -1503,12 +1514,16 @@ def application_list():
             applied_count = applied_result.fetchone()[0] or 0
         else:
             # Get employees NOT in transfer_applied for this district
+            # Calculate duration dynamically for accurate display
             result = db.session.execute(db.text(f"""
-                SELECT j.pen, j.name, j.institution, j.duration_days
+                SELECT j.pen, j.name, j.institution,
+                       CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                            THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                            ELSE 0 END as duration_days
                 FROM {prefix}jphn j
                 WHERE j.district = :district
                 AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-                ORDER BY j.duration_days DESC
+                ORDER BY duration_days DESC
             """), {'district': district_filter})
             
             employees = result.fetchall()
@@ -1644,8 +1659,12 @@ def applied_employees():
     pref_district = request.args.get('pref_district', '')
     sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
+    # Calculate duration dynamically for accurate display
     query = f"""
-        SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
+        SELECT j.pen, j.name, j.institution, j.district,
+               CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                    THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                    ELSE 0 END as duration_days,
                j.district_join_date, j.weightage, j.weightage_details,
                t.receipt_numbers, t.applied_date, t.special_priority,
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
@@ -1999,7 +2018,10 @@ def export_applied_excel():
     sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
     query = f"""
-        SELECT j.pen, j.name, j.institution, j.district, j.duration_days,
+        SELECT j.pen, j.name, j.institution, j.district,
+               CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                    THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                    ELSE 0 END as duration_days,
                j.weightage, j.weightage_details, t.receipt_numbers,
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
                t.special_priority, j.weightage_priority
@@ -2268,7 +2290,11 @@ def draft_list():
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
-               j.district_join_date, j.duration_days, j.weightage, j.weightage_details,
+               j.district_join_date, 
+               CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                    THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                    ELSE 0 END as duration_days,
+               j.weightage, j.weightage_details,
                d.against_info, d.remarks,
                t.special_priority, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
         FROM {prefix}jphn j
@@ -2358,7 +2384,10 @@ def export_draft_excel():
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
-               j.duration_days, j.weightage, j.weightage_details, d.remarks,
+               CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                    THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                    ELSE 0 END as duration_days,
+               j.weightage, j.weightage_details, d.remarks,
                t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
@@ -3197,7 +3226,11 @@ def final_list():
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, f.transfer_to_district,
-               j.district_join_date, j.duration_days, j.weightage, j.weightage_details
+               j.district_join_date,
+               CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                    THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                    ELSE 0 END as duration_days,
+               j.weightage, j.weightage_details
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_final f ON j.pen = f.pen
         WHERE 1=1
@@ -3271,11 +3304,14 @@ def get_excluded_from_draft():
     try:
         result = db.session.execute(db.text(f"""
             SELECT j.pen, j.name, j.institution, j.district, j.district_join_date, 
-                   j.duration_days, j.weightage, t.pref1, t.pref2, t.pref3
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   j.weightage, t.pref1, t.pref2, t.pref3
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
             WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
-            ORDER BY j.district, j.duration_days DESC
+            ORDER BY j.district, duration_days DESC
         """))
         employees = result.fetchall()
         
@@ -3307,11 +3343,14 @@ def get_excluded_from_final():
     try:
         result = db.session.execute(db.text(f"""
             SELECT j.pen, j.name, j.institution, j.district, j.district_join_date, 
-                   j.duration_days, j.weightage, t.pref1, t.pref2, t.pref3
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   j.weightage, t.pref1, t.pref2, t.pref3
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
             WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_final)
-            ORDER BY j.district, j.duration_days DESC
+            ORDER BY j.district, duration_days DESC
         """))
         employees = result.fetchall()
         
