@@ -285,6 +285,28 @@ document.addEventListener('keydown', function(e) {
 <script>
     let currentEditingId = null;
     
+    // Helper function to convert DD-MM-YYYY to YYYY-MM-DD for HTML date inputs
+    function formatDateForHtml(dateStr) {
+        if (!dateStr || dateStr === '-') return '';
+        dateStr = dateStr.trim();
+        
+        // Check if already in YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+        }
+        
+        // Convert DD-MM-YYYY or DD/MM/YYYY to YYYY-MM-DD
+        const match = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+        if (match) {
+            const day = match[1].padStart(2, '0');
+            const month = match[2].padStart(2, '0');
+            const year = match[3];
+            return `${year}-${month}-${day}`;
+        }
+        
+        return '';
+    }
+    
     function toggleAdditionalAmount() {
         const checkbox = document.getElementById('additional_amount_checkbox');
         const input = document.getElementById('additional_amount_paid');
@@ -351,7 +373,7 @@ document.addEventListener('keydown', function(e) {
                     // Populate form fields
                     document.getElementById('sl_no').value = app.sl_no || '';
                     document.getElementById('original_application_no').value = app.original_application_no || '';
-                    document.getElementById('date_of_receipt').value = app.date_of_receipt || '';
+                    document.getElementById('date_of_receipt').value = formatDateForHtml(app.date_of_receipt);
                     document.getElementById('status').value = app.status || 'Not replied';
                     document.getElementById('applicant_prefix').value = app.applicant_prefix || 'Sri.';
                     document.getElementById('applicant_name').value = app.applicant_name || '';
@@ -377,13 +399,13 @@ document.addEventListener('keydown', function(e) {
                     if (app.date_of_acknowledgment) {
                         document.getElementById('acknowledgment_checkbox').checked = true;
                         document.getElementById('date_of_acknowledgment').disabled = false;
-                        document.getElementById('date_of_acknowledgment').value = app.date_of_acknowledgment;
+                        document.getElementById('date_of_acknowledgment').value = formatDateForHtml(app.date_of_acknowledgment);
                     }
                     
                     if (app.date_of_disposal) {
                         document.getElementById('disposal_checkbox').checked = true;
                         document.getElementById('date_of_disposal').disabled = false;
-                        document.getElementById('date_of_disposal').value = app.date_of_disposal;
+                        document.getElementById('date_of_disposal').value = formatDateForHtml(app.date_of_disposal);
                     }
                     
                     document.getElementById('appeal_submitted').checked = app.appeal_submitted || false;
