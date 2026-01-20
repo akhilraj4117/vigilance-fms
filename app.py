@@ -2518,8 +2518,14 @@ def auto_fill_vacancies():
             allocated_count += 1
             return True
         
-        def try_allocate(pen, name, current_district, preferences):
-            for pref_idx, pref in enumerate(preferences):
+        def try_allocate(pen, name, current_district, preferences, pref1_only=False):
+            """Try to allocate employee to one of their preferences.
+            
+            Args:
+                pref1_only: If True, only consider Pref1 (for first pass allocation)
+            """
+            prefs_to_check = preferences[:1] if pref1_only else preferences
+            for pref_idx, pref in enumerate(prefs_to_check):
                 if not pref:
                     continue
                 if pref in vacancy_status:
@@ -2636,8 +2642,10 @@ def auto_fill_vacancies():
             else:
                 not_allocated_count += 1
         
-        # STEP 2: Process NORMAL employees (senior first)
+        # STEP 2: Process NORMAL employees (strict seniority order)
         # This includes employees without weightage OR employees with weightage but weightage_consider = 'No'
+        # Process in strict seniority order - senior gets their best available preference before junior
+        
         normal_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -2653,10 +2661,12 @@ def auto_fill_vacancies():
             ORDER BY j.duration_days DESC
         """))
         
+        # Process each employee in strict seniority order
+        # Each senior gets their best available preference before any junior is considered
         for row in normal_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            allocated, _ = try_allocate(pen, name, district, prefs)
+            allocated, _ = try_allocate(pen, name, district, prefs, pref1_only=False)
             if allocated:
                 normal_count += 1
             elif prefs[0] and enable_against:
