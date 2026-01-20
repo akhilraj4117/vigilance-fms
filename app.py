@@ -2725,8 +2725,11 @@ def auto_fill_stream():
     
     enable_against = request.args.get('enable_against') == 'on'
     
+    # Get prefix BEFORE entering generator - session may not be accessible inside generator after first yield
+    prefix = get_table_prefix()
+    
     def generate():
-        prefix = get_table_prefix()
+        # prefix is captured from the outer scope (closure)
         
         def send_progress(percent, stage, detail, stats=None):
             data = {
