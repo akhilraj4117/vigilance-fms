@@ -20,4 +20,5 @@ reportlab==4.0.7
 
 # Production server
 gunicorn==21.2.0
+gevent==24.2.1
 SQLAlchemy==2.0.23

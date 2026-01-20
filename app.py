@@ -2722,11 +2722,18 @@ def remove_from_draft(pen):
 def auto_fill_stream():
     """SSE endpoint for auto-fill with progress updates"""
     import json
+    import traceback
     
     enable_against = request.args.get('enable_against') == 'on'
     
     # Get prefix BEFORE entering generator - session may not be accessible inside generator after first yield
-    prefix = get_table_prefix()
+    try:
+        prefix = get_table_prefix()
+    except Exception as e:
+        # If we can't even get the prefix, return error immediately
+        def error_gen():
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Session error: {str(e)}'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
     
     def generate():
         # prefix is captured from the outer scope (closure)
@@ -3142,13 +3149,20 @@ def auto_fill_stream():
             
         except Exception as e:
             db.session.rollback()
-            yield send_error(f'Error during auto-fill: {str(e)}')
+            error_detail = f'{type(e).__name__}: {str(e)}'
+            print(f"SSE Auto-fill error: {error_detail}")  # Log for server
+            yield send_error(f'Error during auto-fill: {error_detail}')
     
-    return Response(generate(), mimetype='text/event-stream', headers={
-        'Cache-Control': 'no-cache',
+    response = Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no'
+        'X-Accel-Buffering': 'no',
+        'Content-Type': 'text/event-stream; charset=utf-8'
     })
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/draft/auto-fill', methods=['POST'])
