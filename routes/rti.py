@@ -185,7 +185,7 @@ def list_rti():
 @login_required
 def create_rti():
     """Create a new RTI application."""
-    file_number = request.args.get('file_number', '') or request.form.get('file_number', '').strip()
+    file_number = (request.args.get('file_number', '') or request.form.get('file_number', '') or '').strip()
     
     if request.method == 'POST':
         original_application_no = request.form.get('original_application_no', '').strip()
