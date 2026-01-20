@@ -240,7 +240,7 @@ def create_rti():
             date_of_disposal=convert_date_format(request.form.get('date_of_disposal', '')),
             status=request.form.get('status', 'Not replied'),
             remarks=request.form.get('remarks', ''),
-            appeal_submitted='appeal_submitted' in request.form
+            appeal_submitted=1 if 'appeal_submitted' in request.form else 0
         )
         
         try:
@@ -295,7 +295,7 @@ def get_rti_json(id):
             'date_of_disposal': application.date_of_disposal or '',
             'status': application.status or 'Not replied',
             'remarks': application.remarks or '',
-            'appeal_submitted': application.appeal_submitted or False
+            'appeal_submitted': bool(application.appeal_submitted)
         }
     })
 
@@ -342,7 +342,7 @@ def edit_rti(id):
         application.date_of_disposal = convert_date_format(request.form.get('date_of_disposal', ''))
         application.status = request.form.get('status', 'Not replied')
         application.remarks = request.form.get('remarks', '')
-        application.appeal_submitted = 'appeal_submitted' in request.form
+        application.appeal_submitted = 1 if 'appeal_submitted' in request.form else 0
         
         db.session.commit()
         
@@ -404,7 +404,7 @@ def create_appeal(rti_id):
         db.session.add(appeal)
         
         # Update RTI application appeal status
-        application.appeal_submitted = True
+        application.appeal_submitted = 1
         
         db.session.commit()
         

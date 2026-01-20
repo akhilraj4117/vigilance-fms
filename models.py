@@ -278,7 +278,7 @@ class RTIApplication(db.Model):
     date_of_disposal = db.Column(db.String(20))
     status = db.Column(db.String(50))
     remarks = db.Column(db.Text)
-    appeal_submitted = db.Column(db.Boolean, default=False)
+    appeal_submitted = db.Column(db.Integer, default=0)
     
     appeals = db.relationship('RTIAppeal', backref='application', lazy='dynamic', cascade='all, delete-orphan')
     
