@@ -2832,7 +2832,9 @@ def auto_fill_vacancies():
                   AND j.pen != :applicant_pen
                   AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
                   AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
-                ORDER BY j.duration_days DESC
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                              ELSE 0 END DESC
                 LIMIT 1
             """), {'district': pref_district, 'applicant_pen': pen})
             
@@ -2923,7 +2925,9 @@ def auto_fill_vacancies():
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
-            ORDER BY j.duration_days DESC
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                          ELSE 0 END DESC
         """))
         
         for row in special_result.fetchall():
@@ -2948,7 +2952,9 @@ def auto_fill_vacancies():
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
-            ORDER BY j.duration_days DESC
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                          ELSE 0 END DESC
         """))
         
         for row in weightage_result.fetchall():
@@ -2972,7 +2978,9 @@ def auto_fill_vacancies():
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
                  OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
-            ORDER BY j.duration_days DESC
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                          ELSE 0 END DESC
         """))
         
         for row in normal_result.fetchall():
