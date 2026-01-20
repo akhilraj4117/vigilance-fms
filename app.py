@@ -3182,6 +3182,253 @@ def auto_fill_stream():
     return response
 
 
+@app.route('/draft/auto-fill-ajax', methods=['POST'])
+@login_required
+@requires_transfer_session
+def auto_fill_ajax():
+    """AJAX-based auto-fill endpoint (fallback when SSE fails)"""
+    prefix = get_table_prefix()
+    enable_against = request.form.get('enable_against') == 'on'
+    
+    try:
+        # Check if there are any applied employees with preferences
+        pref_check = db.session.execute(db.text(f"""
+            SELECT COUNT(*) FROM {prefix}transfer_applied 
+            WHERE pref1 IS NOT NULL OR pref2 IS NOT NULL OR pref3 IS NOT NULL OR pref4 IS NOT NULL
+               OR pref5 IS NOT NULL OR pref6 IS NOT NULL OR pref7 IS NOT NULL OR pref8 IS NOT NULL
+        """))
+        has_preferences = pref_check.fetchone()[0] > 0
+        
+        if not has_preferences:
+            return jsonify({'success': False, 'error': 'No employees have set their district preferences yet.'})
+        
+        # Get vacancy status
+        vacancy_status = {}
+        v_result = db.session.execute(db.text(f"SELECT district, vacancy_reported FROM {prefix}vacancy"))
+        vacancy_data = {row[0]: row[1] or 0 for row in v_result.fetchall()}
+        
+        f_result = db.session.execute(db.text(f"""
+            SELECT transfer_to_district, COUNT(*) FROM {prefix}transfer_draft GROUP BY transfer_to_district
+        """))
+        filled_data = {row[0]: row[1] for row in f_result.fetchall()}
+        
+        for district in DISTRICTS:
+            vacancy_reported = vacancy_data.get(district, 0)
+            filled = filled_data.get(district, 0)
+            vacancy_status[district] = {
+                'reported': vacancy_reported,
+                'filled': filled,
+                'remaining': vacancy_reported - filled if vacancy_reported > 0 else 0,
+                'cascade': 0
+            }
+        
+        # Counters
+        allocated_count = 0
+        special_count = 0
+        weightage_count = 0
+        normal_count = 0
+        cascade_count = 0
+        against_count = 0
+        not_allocated_count = 0
+        
+        # Pre-fetch allocated PENs
+        allocated_pens_result = db.session.execute(db.text(f"SELECT pen FROM {prefix}transfer_draft"))
+        allocated_pens = set(row[0] for row in allocated_pens_result.fetchall())
+        
+        def allocate(pen, name, current_district, to_district, remarks=None):
+            nonlocal allocated_count, cascade_count
+            if pen in allocated_pens:
+                return False
+            is_cascade = vacancy_status[to_district]['remaining'] <= 0 and vacancy_status[to_district]['cascade'] > 0
+            if is_cascade and remarks is None:
+                remarks = "Vacancy by Transfer"
+            
+            db.session.execute(db.text(f"""
+                INSERT INTO {prefix}transfer_draft (pen, transfer_to_district, added_date, remarks, last_modified)
+                VALUES (:pen, :to_district, :date, :remarks, :now)
+            """), {
+                'pen': pen, 'to_district': to_district,
+                'date': get_ist_now().strftime('%d-%m-%Y'),
+                'remarks': remarks, 'now': datetime.now().isoformat()
+            })
+            
+            if vacancy_status[to_district]['remaining'] > 0:
+                vacancy_status[to_district]['remaining'] -= 1
+            elif vacancy_status[to_district]['cascade'] > 0:
+                vacancy_status[to_district]['cascade'] -= 1
+                cascade_count += 1
+            
+            vacancy_status[to_district]['filled'] += 1
+            if current_district and current_district != to_district and current_district in vacancy_status:
+                vacancy_status[current_district]['cascade'] += 1
+            
+            allocated_pens.add(pen)
+            allocated_count += 1
+            return True
+        
+        def try_allocate_pref1_reported(pen, name, current_district, pref1):
+            if not pref1 or pref1 not in vacancy_status:
+                return False
+            if vacancy_status[pref1]['remaining'] > 0:
+                return allocate(pen, name, current_district, pref1, "Pref 1:")
+            return False
+        
+        def try_allocate_pref1_cascade(pen, name, current_district, pref1):
+            if not pref1 or pref1 not in vacancy_status:
+                return False
+            available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
+            if available > 0:
+                is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
+                remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
+                return allocate(pen, name, current_district, pref1, remarks)
+            return False
+        
+        def try_allocate_pref2_to_8(pen, name, current_district, preferences):
+            for pref_idx, pref in enumerate(preferences[1:], start=2):
+                if not pref or pref not in vacancy_status:
+                    continue
+                available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
+                if available > 0:
+                    is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
+                    remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
+                    if allocate(pen, name, current_district, pref, remarks):
+                        return True
+            return False
+        
+        def try_against_transfer(pen, name, pref_district):
+            nonlocal against_count
+            senior_result = db.session.execute(db.text(f"""
+                SELECT j.pen, j.name FROM {prefix}jphn j
+                WHERE j.district = :district AND j.pen != :pen
+                  AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                  AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
+                LIMIT 1
+            """), {'district': pref_district, 'pen': pen})
+            senior = senior_result.fetchone()
+            if not senior:
+                return False
+            
+            nearby_districts = get_nearby_districts(pref_district)
+            target_district = None
+            for nearby in nearby_districts:
+                if nearby in vacancy_status:
+                    if vacancy_status[nearby]['remaining'] + vacancy_status[nearby]['cascade'] > 0:
+                        target_district = nearby
+                        break
+            if not target_district:
+                return False
+            
+            allocate(senior[0], senior[1], pref_district, target_district, f"Displaced for {name}")
+            allocate(pen, name, None, pref_district, f"Against {senior[1]}")
+            against_count += 1
+            return True
+        
+        # Process employees in priority order
+        waiting_pref1_special, waiting_pref1_weightage, waiting_pref1_normal = [], [], []
+        
+        # PASS 1: Pref1 with reported vacancies
+        for category, query_condition, counter_name in [
+            ('special', "t.special_priority = 'Yes'", 'special_count'),
+            ('weightage', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND j.weightage = 'Yes'", 'weightage_count'),
+            ('normal', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND (j.weightage IS NULL OR j.weightage != 'Yes')", 'normal_count')
+        ]:
+            result = db.session.execute(db.text(f"""
+                SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+                FROM {prefix}transfer_applied t
+                INNER JOIN {prefix}jphn j ON t.pen = j.pen
+                WHERE {query_condition} AND (t.locked IS NULL OR t.locked != 'Yes')
+                AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL)
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
+            """))
+            waiting_list = []
+            for row in result.fetchall():
+                pen, name, district = row[0], row[1], row[2]
+                prefs = list(row[3:11])
+                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                    if category == 'special': special_count += 1
+                    elif category == 'weightage': weightage_count += 1
+                    else: normal_count += 1
+                else:
+                    waiting_list.append((pen, name, district, prefs))
+            
+            if category == 'special': waiting_pref1_special = waiting_list
+            elif category == 'weightage': waiting_pref1_weightage = waiting_list
+            else: waiting_pref1_normal = waiting_list
+        
+        # PASS 2: Pref1 with cascade vacancies
+        waiting_pref2_special, waiting_pref2_weightage, waiting_pref2_normal = [], [], []
+        for category, waiting_list in [('special', waiting_pref1_special), ('weightage', waiting_pref1_weightage), ('normal', waiting_pref1_normal)]:
+            new_waiting = []
+            for pen, name, district, prefs in waiting_list:
+                if pen in allocated_pens:
+                    continue
+                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                    if category == 'special': special_count += 1
+                    elif category == 'weightage': weightage_count += 1
+                    else: normal_count += 1
+                else:
+                    new_waiting.append((pen, name, district, prefs))
+            if category == 'special': waiting_pref2_special = new_waiting
+            elif category == 'weightage': waiting_pref2_weightage = new_waiting
+            else: waiting_pref2_normal = new_waiting
+        
+        # PASS 3: Pref2-8
+        still_waiting_special, still_waiting_weightage, still_waiting_normal = [], [], []
+        for category, waiting_list in [('special', waiting_pref2_special), ('weightage', waiting_pref2_weightage), ('normal', waiting_pref2_normal)]:
+            new_waiting = []
+            for pen, name, district, prefs in waiting_list:
+                if pen in allocated_pens:
+                    continue
+                if try_allocate_pref2_to_8(pen, name, district, prefs):
+                    if category == 'special': special_count += 1
+                    elif category == 'weightage': weightage_count += 1
+                    else: normal_count += 1
+                else:
+                    new_waiting.append((pen, name, district, prefs))
+            if category == 'special': still_waiting_special = new_waiting
+            elif category == 'weightage': still_waiting_weightage = new_waiting
+            else: still_waiting_normal = new_waiting
+        
+        # PASS 4 (Optional): Against transfers
+        if enable_against:
+            for category, waiting_list in [('special', still_waiting_special), ('weightage', still_waiting_weightage), ('normal', still_waiting_normal)]:
+                for pen, name, district, prefs in waiting_list:
+                    if pen in allocated_pens:
+                        continue
+                    if prefs[0] and try_against_transfer(pen, name, prefs[0]):
+                        if category == 'special': special_count += 1
+                        elif category == 'weightage': weightage_count += 1
+                        else: normal_count += 1
+                    else:
+                        not_allocated_count += 1
+        else:
+            not_allocated_count = sum(1 for p, _, _, _ in still_waiting_special + still_waiting_weightage + still_waiting_normal if p not in allocated_pens)
+        
+        db.session.commit()
+        session['autofill_ran'] = True
+        
+        stats = {
+            'allocated': allocated_count,
+            'special': special_count,
+            'weightage': weightage_count,
+            'normal': normal_count,
+            'cascade': cascade_count,
+            'against': against_count,
+            'not_allocated': not_allocated_count
+        }
+        
+        msg = f'Total Allocated: {allocated_count}'
+        return jsonify({'success': True, 'message': msg, 'stats': stats})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/draft/auto-fill', methods=['POST'])
 @login_required
 @requires_transfer_session

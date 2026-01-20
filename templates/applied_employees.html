@@ -657,9 +657,39 @@ function startAutoFill() {
     autoFillEventSource.onerror = function(error) {
         console.error('SSE Error:', error);
         autoFillEventSource.close();
-        autoFillRunning = false;
-        showAutoFillResult(false, 'Connection lost. Please try again.');
+        // Fallback to AJAX when SSE fails
+        console.log('Falling back to AJAX auto-fill...');
+        fallbackToAjaxAutoFill(enableAgainst);
     };
+}
+
+function fallbackToAjaxAutoFill(enableAgainst) {
+    // Show loading state
+    updateProgress(50, 'Processing...', 'Using fallback method (SSE unavailable)...');
+    
+    // Use fetch to call the AJAX endpoint
+    fetch('/draft/auto-fill-ajax', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'enable_against=' + (enableAgainst ? 'on' : '')
+    })
+    .then(response => response.json())
+    .then(data => {
+        autoFillRunning = false;
+        if (data.success) {
+            showAutoFillResult(true, data.message, data.stats);
+        } else {
+            showAutoFillResult(false, data.error || 'Auto-fill failed. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('AJAX Error:', error);
+        autoFillRunning = false;
+        showAutoFillResult(false, 'Auto-fill failed: ' + error.message);
+    });
 }
 
 function updateProgress(percent, stage, detail) {
