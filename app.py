@@ -3129,8 +3129,8 @@ def auto_fill_stream():
             # Commit all changes
             db.session.commit()
             
-            # Mark autofill as run in session
-            session['autofill_ran'] = True
+            # Note: session['autofill_ran'] cannot be set here as headers are already sent
+            # The check_autofill_ran() function checks the database for draft entries instead
             
             # Build result message
             msg = f'Total Allocated: {allocated_count}'
