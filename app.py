@@ -52,6 +52,23 @@ def health_check():
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 
+@app.route('/sse-test')
+def sse_test():
+    """Test SSE connectivity - returns 3 messages then completes"""
+    import json
+    
+    def generate():
+        for i in range(1, 4):
+            yield f"data: {json.dumps({'count': i, 'message': f'Test message {i}'})}\n\n"
+            time.sleep(0.5)
+        yield f"data: {json.dumps({'done': True})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+    })
+
+
 @app.errorhandler(502)
 def bad_gateway_error(error):
     """Handle 502 errors gracefully"""

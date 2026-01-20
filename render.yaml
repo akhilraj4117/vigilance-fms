@@ -3,7 +3,7 @@ services:
     name: jphn-transfer
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 120 --worker-class=gevent
     envVars:
       - key: FLASK_CONFIG
         value: production
