@@ -2716,11 +2716,443 @@ def remove_from_draft(pen):
     return redirect(url_for('draft_list'))
 
 
+@app.route('/auto-fill-stream')
+@login_required
+@requires_transfer_session
+def auto_fill_stream():
+    """SSE endpoint for auto-fill with progress updates"""
+    import json
+    
+    enable_against = request.args.get('enable_against') == 'on'
+    
+    def generate():
+        prefix = get_table_prefix()
+        
+        def send_progress(percent, stage, detail, stats=None):
+            data = {
+                'type': 'progress',
+                'percent': percent,
+                'stage': stage,
+                'detail': detail
+            }
+            if stats:
+                data['stats'] = stats
+            return f"data: {json.dumps(data)}\n\n"
+        
+        def send_complete(message, stats):
+            data = {
+                'type': 'complete',
+                'message': message,
+                'stats': stats
+            }
+            return f"data: {json.dumps(data)}\n\n"
+        
+        def send_error(message):
+            data = {
+                'type': 'error',
+                'message': message
+            }
+            return f"data: {json.dumps(data)}\n\n"
+        
+        try:
+            yield send_progress(5, 'Initializing', 'Checking applied employees...')
+            
+            # Check if there are any applied employees with preferences
+            pref_check = db.session.execute(db.text(f"""
+                SELECT COUNT(*) FROM {prefix}transfer_applied 
+                WHERE pref1 IS NOT NULL OR pref2 IS NOT NULL OR pref3 IS NOT NULL OR pref4 IS NOT NULL
+                   OR pref5 IS NOT NULL OR pref6 IS NOT NULL OR pref7 IS NOT NULL OR pref8 IS NOT NULL
+            """))
+            has_preferences = pref_check.fetchone()[0] > 0
+            
+            if not has_preferences:
+                yield send_error('No employees have set their district preferences yet.')
+                return
+            
+            yield send_progress(10, 'Loading Data', 'Fetching vacancy information...')
+            
+            # Get vacancy status
+            vacancy_status = {}
+            v_result = db.session.execute(db.text(f"""
+                SELECT district, vacancy_reported FROM {prefix}vacancy
+            """))
+            vacancy_data = {row[0]: row[1] or 0 for row in v_result.fetchall()}
+            
+            f_result = db.session.execute(db.text(f"""
+                SELECT transfer_to_district, COUNT(*) FROM {prefix}transfer_draft 
+                GROUP BY transfer_to_district
+            """))
+            filled_data = {row[0]: row[1] for row in f_result.fetchall()}
+            
+            for district in DISTRICTS:
+                vacancy_reported = vacancy_data.get(district, 0)
+                filled = filled_data.get(district, 0)
+                vacancy_status[district] = {
+                    'reported': vacancy_reported,
+                    'filled': filled,
+                    'remaining': vacancy_reported - filled if vacancy_reported > 0 else 0,
+                    'cascade': 0
+                }
+            
+            yield send_progress(15, 'Loading Data', 'Fetching employee data...')
+            
+            # Counters
+            allocated_count = 0
+            special_count = 0
+            weightage_count = 0
+            normal_count = 0
+            cascade_count = 0
+            against_count = 0
+            not_allocated_count = 0
+            
+            # Pre-fetch allocated PENs
+            allocated_pens_result = db.session.execute(db.text(f"""
+                SELECT pen FROM {prefix}transfer_draft
+            """))
+            allocated_pens = set(row[0] for row in allocated_pens_result.fetchall())
+            
+            def allocate(pen, name, current_district, to_district, remarks=None):
+                nonlocal allocated_count, cascade_count
+                
+                if pen in allocated_pens:
+                    return False
+                
+                is_cascade = vacancy_status[to_district]['remaining'] <= 0 and vacancy_status[to_district]['cascade'] > 0
+                if is_cascade and remarks is None:
+                    remarks = "Vacancy by Transfer"
+                
+                db.session.execute(db.text(f"""
+                    INSERT INTO {prefix}transfer_draft (pen, transfer_to_district, added_date, remarks, last_modified)
+                    VALUES (:pen, :to_district, :date, :remarks, :now)
+                """), {
+                    'pen': pen, 'to_district': to_district,
+                    'date': get_ist_now().strftime('%d-%m-%Y'),
+                    'remarks': remarks, 'now': datetime.now().isoformat()
+                })
+                
+                if vacancy_status[to_district]['remaining'] > 0:
+                    vacancy_status[to_district]['remaining'] -= 1
+                elif vacancy_status[to_district]['cascade'] > 0:
+                    vacancy_status[to_district]['cascade'] -= 1
+                    cascade_count += 1
+                
+                vacancy_status[to_district]['filled'] += 1
+                
+                if current_district and current_district != to_district:
+                    if current_district in vacancy_status:
+                        vacancy_status[current_district]['cascade'] += 1
+                
+                allocated_pens.add(pen)
+                allocated_count += 1
+                return True
+            
+            def try_allocate_pref1_reported(pen, name, current_district, pref1):
+                if not pref1:
+                    return False
+                if pref1 in vacancy_status:
+                    if vacancy_status[pref1]['remaining'] > 0:
+                        if allocate(pen, name, current_district, pref1, "Pref 1:"):
+                            return True
+                return False
+            
+            def try_allocate_pref1_cascade(pen, name, current_district, pref1):
+                if not pref1:
+                    return False
+                if pref1 in vacancy_status:
+                    available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
+                    if available > 0:
+                        is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
+                        remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
+                        if allocate(pen, name, current_district, pref1, remarks):
+                            return True
+                return False
+            
+            def try_allocate_pref2_to_8(pen, name, current_district, preferences):
+                for pref_idx, pref in enumerate(preferences[1:], start=2):
+                    if not pref:
+                        continue
+                    if pref in vacancy_status:
+                        available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
+                        if available > 0:
+                            is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
+                            remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
+                            if allocate(pen, name, current_district, pref, remarks):
+                                return True, pref_idx
+                return False, -1
+            
+            def try_against_transfer(pen, name, pref_district):
+                nonlocal against_count
+                
+                senior_result = db.session.execute(db.text(f"""
+                    SELECT j.pen, j.name
+                    FROM {prefix}jphn j
+                    WHERE j.district = :district
+                      AND j.pen != :applicant_pen
+                      AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                      AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+                    ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                                  ELSE 0 END DESC
+                    LIMIT 1
+                """), {'district': pref_district, 'applicant_pen': pen})
+                
+                senior = senior_result.fetchone()
+                if not senior:
+                    return False, None
+                
+                senior_pen, senior_name = senior[0], senior[1]
+                
+                nearby_districts = get_nearby_districts(pref_district)
+                target_district = None
+                
+                for nearby in nearby_districts:
+                    if nearby in vacancy_status:
+                        avail = vacancy_status[nearby]['remaining'] + vacancy_status[nearby]['cascade']
+                        if avail > 0:
+                            target_district = nearby
+                            break
+                
+                if not target_district:
+                    return False, None
+                
+                allocate(senior_pen, senior_name, pref_district, target_district, f"Displaced for {name}")
+                allocate(pen, name, None, pref_district, f"Against {senior_name}")
+                against_count += 1
+                
+                return True, senior_name
+            
+            def get_stats():
+                return {
+                    'allocated': allocated_count,
+                    'special': special_count,
+                    'weightage': weightage_count,
+                    'normal': normal_count,
+                    'cascade': cascade_count,
+                    'against': against_count,
+                    'not_allocated': not_allocated_count
+                }
+            
+            yield send_progress(20, 'Pass 1: Pref1 Reported', 'Processing Special Priority employees...', get_stats())
+            
+            # PASS 1: PREF1 WITH REPORTED VACANCIES
+            special_result = db.session.execute(db.text(f"""
+                SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
+                       t.pref5, t.pref6, t.pref7, t.pref8
+                FROM {prefix}transfer_applied t
+                INNER JOIN {prefix}jphn j ON t.pen = j.pen
+                WHERE t.special_priority = 'Yes'
+                AND (t.locked IS NULL OR t.locked != 'Yes')
+                AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                     OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                              ELSE 0 END DESC
+            """))
+            special_employees = special_result.fetchall()
+            
+            waiting_pref1_special = []
+            for row in special_employees:
+                pen, name, district = row[0], row[1], row[2]
+                prefs = [row[i] for i in range(3, 11)]
+                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                    special_count += 1
+                else:
+                    waiting_pref1_special.append((pen, name, district, prefs))
+            
+            yield send_progress(30, 'Pass 1: Pref1 Reported', 'Processing Weightage employees...', get_stats())
+            
+            weightage_result = db.session.execute(db.text(f"""
+                SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
+                       t.pref5, t.pref6, t.pref7, t.pref8
+                FROM {prefix}transfer_applied t
+                INNER JOIN {prefix}jphn j ON t.pen = j.pen
+                WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+                AND j.weightage = 'Yes'
+                AND (t.locked IS NULL OR t.locked != 'Yes')
+                AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                     OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                              ELSE 0 END DESC
+            """))
+            weightage_employees = weightage_result.fetchall()
+            
+            waiting_pref1_weightage = []
+            for row in weightage_employees:
+                pen, name, district = row[0], row[1], row[2]
+                prefs = [row[i] for i in range(3, 11)]
+                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                    weightage_count += 1
+                else:
+                    waiting_pref1_weightage.append((pen, name, district, prefs))
+            
+            yield send_progress(40, 'Pass 1: Pref1 Reported', 'Processing Normal employees...', get_stats())
+            
+            normal_result = db.session.execute(db.text(f"""
+                SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
+                       t.pref5, t.pref6, t.pref7, t.pref8
+                FROM {prefix}transfer_applied t
+                INNER JOIN {prefix}jphn j ON t.pen = j.pen
+                WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+                AND (j.weightage IS NULL OR j.weightage != 'Yes')
+                AND (t.locked IS NULL OR t.locked != 'Yes')
+                AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+                AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                     OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                              ELSE 0 END DESC
+            """))
+            normal_employees = normal_result.fetchall()
+            
+            waiting_pref1_normal = []
+            for row in normal_employees:
+                pen, name, district = row[0], row[1], row[2]
+                prefs = [row[i] for i in range(3, 11)]
+                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                    normal_count += 1
+                else:
+                    waiting_pref1_normal.append((pen, name, district, prefs))
+            
+            yield send_progress(50, 'Pass 2: Pref1 Cascade', 'Trying cascade vacancies for Pref1...', get_stats())
+            
+            # PASS 2: PREF1 WITH CASCADE VACANCIES
+            waiting_pref2_special = []
+            for pen, name, district, prefs in waiting_pref1_special:
+                if pen in allocated_pens:
+                    continue
+                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                    special_count += 1
+                else:
+                    waiting_pref2_special.append((pen, name, district, prefs))
+            
+            waiting_pref2_weightage = []
+            for pen, name, district, prefs in waiting_pref1_weightage:
+                if pen in allocated_pens:
+                    continue
+                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                    weightage_count += 1
+                else:
+                    waiting_pref2_weightage.append((pen, name, district, prefs))
+            
+            waiting_pref2_normal = []
+            for pen, name, district, prefs in waiting_pref1_normal:
+                if pen in allocated_pens:
+                    continue
+                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                    normal_count += 1
+                else:
+                    waiting_pref2_normal.append((pen, name, district, prefs))
+            
+            yield send_progress(65, 'Pass 3: Pref2-8', 'Trying alternative preferences...', get_stats())
+            
+            # PASS 3: PREF2-8 FOR REMAINING
+            still_waiting_special = []
+            for pen, name, district, prefs in waiting_pref2_special:
+                if pen in allocated_pens:
+                    continue
+                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
+                if allocated:
+                    special_count += 1
+                else:
+                    still_waiting_special.append((pen, name, district, prefs))
+            
+            still_waiting_weightage = []
+            for pen, name, district, prefs in waiting_pref2_weightage:
+                if pen in allocated_pens:
+                    continue
+                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
+                if allocated:
+                    weightage_count += 1
+                else:
+                    still_waiting_weightage.append((pen, name, district, prefs))
+            
+            still_waiting_normal = []
+            for pen, name, district, prefs in waiting_pref2_normal:
+                if pen in allocated_pens:
+                    continue
+                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
+                if allocated:
+                    normal_count += 1
+                else:
+                    still_waiting_normal.append((pen, name, district, prefs))
+            
+            yield send_progress(80, 'Against Transfers' if enable_against else 'Finalizing', 
+                              'Processing against transfers...' if enable_against else 'Counting unallocated...', get_stats())
+            
+            # PASS 4 (OPTIONAL): AGAINST TRANSFERS
+            if enable_against:
+                for pen, name, district, prefs in still_waiting_special:
+                    if pen in allocated_pens:
+                        continue
+                    if prefs[0]:
+                        success, _ = try_against_transfer(pen, name, prefs[0])
+                        if success:
+                            special_count += 1
+                        else:
+                            not_allocated_count += 1
+                    else:
+                        not_allocated_count += 1
+                
+                for pen, name, district, prefs in still_waiting_weightage:
+                    if pen in allocated_pens:
+                        continue
+                    if prefs[0]:
+                        success, _ = try_against_transfer(pen, name, prefs[0])
+                        if success:
+                            weightage_count += 1
+                        else:
+                            not_allocated_count += 1
+                    else:
+                        not_allocated_count += 1
+                
+                for pen, name, district, prefs in still_waiting_normal:
+                    if pen in allocated_pens:
+                        continue
+                    if prefs[0]:
+                        success, _ = try_against_transfer(pen, name, prefs[0])
+                        if success:
+                            normal_count += 1
+                        else:
+                            not_allocated_count += 1
+                    else:
+                        not_allocated_count += 1
+            else:
+                not_allocated_count += len([p for p, _, _, _ in still_waiting_special if p not in allocated_pens])
+                not_allocated_count += len([p for p, _, _, _ in still_waiting_weightage if p not in allocated_pens])
+                not_allocated_count += len([p for p, _, _, _ in still_waiting_normal if p not in allocated_pens])
+            
+            yield send_progress(95, 'Committing', 'Saving changes to database...', get_stats())
+            
+            # Commit all changes
+            db.session.commit()
+            
+            # Mark autofill as run in session
+            session['autofill_ran'] = True
+            
+            # Build result message
+            msg = f'Total Allocated: {allocated_count}'
+            
+            yield send_complete(msg, get_stats())
+            
+        except Exception as e:
+            db.session.rollback()
+            yield send_error(f'Error during auto-fill: {str(e)}')
+    
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+    })
+
+
 @app.route('/draft/auto-fill', methods=['POST'])
 @login_required
 @requires_transfer_session
 def auto_fill_vacancies():
-    """Auto-fill vacancies based on preferences and priorities"""
+    """Auto-fill vacancies based on preferences and priorities (fallback for non-JS)"""
     prefix = get_table_prefix()
     enable_against = request.form.get('enable_against') == 'on'
     

@@ -221,9 +221,11 @@
 <!-- Auto-fill Modal -->
 <div id="autoFillModal" class="modal">
     <div class="modal-content modal-lg">
-        <span class="modal-close" onclick="closeAutoFillModal()">&times;</span>
+        <span class="modal-close" onclick="closeAutoFillModal()" id="autoFillCloseBtn">&times;</span>
         <h2><i class="fas fa-magic"></i> Auto-fill Vacancies</h2>
-        <form method="POST" action="{{ url_for('auto_fill_vacancies') }}">
+        
+        <!-- Configuration Section (shown before starting) -->
+        <div id="autoFillConfig">
             <div class="auto-fill-info">
                 <p><strong>This will automatically assign transfers based on:</strong></p>
                 <div class="priority-list">
@@ -249,7 +251,7 @@
             
             <div class="form-group checkbox-group">
                 <label>
-                    <input type="checkbox" name="enable_against">
+                    <input type="checkbox" id="enableAgainst">
                     <span>Enable 'Against' Transfers (Displace senior employees if no vacancy available)</span>
                 </label>
                 <p class="help-text">If enabled: When an applicant cannot get ANY of their 8 preferences, the senior-most employee in their Pref 1 district will be displaced.</p>
@@ -257,11 +259,69 @@
             
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeAutoFillModal()">Cancel</button>
-                <button type="submit" class="btn btn-success btn-lg">
+                <button type="button" class="btn btn-success btn-lg" onclick="startAutoFill()">
                     <i class="fas fa-rocket"></i> Start Auto-fill
                 </button>
             </div>
-        </form>
+        </div>
+        
+        <!-- Progress Section (shown during processing) -->
+        <div id="autoFillProgress" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-header">
+                    <i class="fas fa-cog fa-spin"></i>
+                    <span id="progressStage">Initializing...</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                    </div>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Allocated:</span>
+                        <span class="stat-value" id="statAllocated">0</span>
+                    </div>
+                    <div class="stat-item stat-special">
+                        <span class="stat-label">Special Priority:</span>
+                        <span class="stat-value" id="statSpecial">0</span>
+                    </div>
+                    <div class="stat-item stat-weightage">
+                        <span class="stat-label">Weightage:</span>
+                        <span class="stat-value" id="statWeightage">0</span>
+                    </div>
+                    <div class="stat-item stat-normal">
+                        <span class="stat-label">Normal:</span>
+                        <span class="stat-value" id="statNormal">0</span>
+                    </div>
+                    <div class="stat-item stat-cascade">
+                        <span class="stat-label">Cascade:</span>
+                        <span class="stat-value" id="statCascade">0</span>
+                    </div>
+                </div>
+                <div class="progress-detail" id="progressDetail">Preparing to process employees...</div>
+            </div>
+        </div>
+        
+        <!-- Result Section (shown after completion) -->
+        <div id="autoFillResult" style="display: none;">
+            <div class="result-container">
+                <div class="result-icon success" id="resultIcon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 id="resultTitle">Auto-fill Complete!</h3>
+                <div class="result-summary" id="resultSummary"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="window.location.href='{{ url_for('draft_list') }}'">
+                        <i class="fas fa-list"></i> View Draft List
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAutoFillModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -524,12 +584,126 @@ window.onclick = function(e) {
     }
 }
 
+let autoFillEventSource = null;
+let autoFillRunning = false;
+
 function openAutoFillModal() {
+    // Reset modal to initial state
+    document.getElementById('autoFillConfig').style.display = 'block';
+    document.getElementById('autoFillProgress').style.display = 'none';
+    document.getElementById('autoFillResult').style.display = 'none';
+    document.getElementById('autoFillCloseBtn').style.display = 'block';
+    autoFillRunning = false;
     document.getElementById('autoFillModal').style.display = 'flex';
 }
 
 function closeAutoFillModal() {
+    if (autoFillRunning) {
+        if (!confirm('Auto-fill is still running. Are you sure you want to close?')) {
+            return;
+        }
+        if (autoFillEventSource) {
+            autoFillEventSource.close();
+        }
+    }
     document.getElementById('autoFillModal').style.display = 'none';
+    autoFillRunning = false;
+}
+
+function startAutoFill() {
+    const enableAgainst = document.getElementById('enableAgainst').checked;
+    
+    // Show progress section, hide config
+    document.getElementById('autoFillConfig').style.display = 'none';
+    document.getElementById('autoFillProgress').style.display = 'block';
+    document.getElementById('autoFillCloseBtn').style.display = 'none';
+    autoFillRunning = true;
+    
+    // Reset progress display
+    updateProgress(0, 'Initializing...', 'Connecting to server...');
+    document.getElementById('statAllocated').textContent = '0';
+    document.getElementById('statSpecial').textContent = '0';
+    document.getElementById('statWeightage').textContent = '0';
+    document.getElementById('statNormal').textContent = '0';
+    document.getElementById('statCascade').textContent = '0';
+    
+    // Start SSE connection for progress updates
+    const url = `/auto-fill-stream?enable_against=${enableAgainst ? 'on' : ''}`;
+    autoFillEventSource = new EventSource(url);
+    
+    autoFillEventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'progress') {
+            updateProgress(data.percent, data.stage, data.detail);
+            if (data.stats) {
+                document.getElementById('statAllocated').textContent = data.stats.allocated || 0;
+                document.getElementById('statSpecial').textContent = data.stats.special || 0;
+                document.getElementById('statWeightage').textContent = data.stats.weightage || 0;
+                document.getElementById('statNormal').textContent = data.stats.normal || 0;
+                document.getElementById('statCascade').textContent = data.stats.cascade || 0;
+            }
+        } else if (data.type === 'complete') {
+            autoFillEventSource.close();
+            autoFillRunning = false;
+            showAutoFillResult(true, data.message, data.stats);
+        } else if (data.type === 'error') {
+            autoFillEventSource.close();
+            autoFillRunning = false;
+            showAutoFillResult(false, data.message);
+        }
+    };
+    
+    autoFillEventSource.onerror = function(error) {
+        console.error('SSE Error:', error);
+        autoFillEventSource.close();
+        autoFillRunning = false;
+        showAutoFillResult(false, 'Connection lost. Please try again.');
+    };
+}
+
+function updateProgress(percent, stage, detail) {
+    document.getElementById('progressBarFill').style.width = percent + '%';
+    document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('progressStage').textContent = stage;
+    document.getElementById('progressDetail').textContent = detail;
+}
+
+function showAutoFillResult(success, message, stats) {
+    document.getElementById('autoFillProgress').style.display = 'none';
+    document.getElementById('autoFillResult').style.display = 'block';
+    document.getElementById('autoFillCloseBtn').style.display = 'block';
+    
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultSummary = document.getElementById('resultSummary');
+    
+    if (success) {
+        resultIcon.className = 'result-icon success';
+        resultIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        resultTitle.textContent = 'Auto-fill Complete!';
+        
+        let summaryHtml = `<p>${message}</p>`;
+        if (stats) {
+            summaryHtml += `
+                <div class="result-stats">
+                    <div class="result-stat"><span class="label">Total Allocated:</span> <span class="value">${stats.allocated || 0}</span></div>
+                    <div class="result-stat stat-special"><span class="label">Special Priority:</span> <span class="value">${stats.special || 0}</span></div>
+                    <div class="result-stat stat-weightage"><span class="label">Weightage:</span> <span class="value">${stats.weightage || 0}</span></div>
+                    <div class="result-stat stat-normal"><span class="label">Normal:</span> <span class="value">${stats.normal || 0}</span></div>
+                    ${stats.cascade > 0 ? `<div class="result-stat stat-cascade"><span class="label">Cascade:</span> <span class="value">${stats.cascade}</span></div>` : ''}
+                    ${stats.against > 0 ? `<div class="result-stat stat-against"><span class="label">Against:</span> <span class="value">${stats.against}</span></div>` : ''}
+                    ${stats.not_allocated > 0 ? `<div class="result-stat stat-failed"><span class="label">Not Allocated:</span> <span class="value">${stats.not_allocated}</span></div>` : ''}
+                </div>
+            `;
+        }
+        resultSummary.innerHTML = summaryHtml;
+    } else {
+        resultIcon.className = 'result-icon error';
+        resultIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+        resultTitle.textContent = 'Auto-fill Failed';
+        resultSummary.innerHTML = `<p class="error-message">${message}</p>`;
+    }
 }
 
 // Edit Modal Functions
@@ -900,6 +1074,160 @@ function unlockAll() {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--border-light);
+}
+
+/* Progress Bar Styles */
+.progress-container {
+    padding: 1.5rem;
+    text-align: center;
+}
+.progress-header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+.progress-header i {
+    font-size: 1.5rem;
+}
+.progress-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.progress-bar {
+    flex: 1;
+    height: 24px;
+    background: var(--bg-hover, #e9ecef);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color, #27ae60));
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.3) 50%,
+        transparent 100%
+    );
+    animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.progress-percent {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 50px;
+}
+.progress-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-hover, #f8f9fa);
+    border-radius: var(--border-radius);
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--bg-card, white);
+    border-radius: 8px;
+    min-width: 80px;
+}
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-item.stat-special .stat-value { color: #9b59b6; }
+.stat-item.stat-weightage .stat-value { color: #f39c12; }
+.stat-item.stat-normal .stat-value { color: #3498db; }
+.stat-item.stat-cascade .stat-value { color: #27ae60; }
+.progress-detail {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Result Section Styles */
+.result-container {
+    text-align: center;
+    padding: 2rem;
+}
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+.result-icon.success { color: #27ae60; }
+.result-icon.error { color: #e74c3c; }
+.result-container h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+.result-summary {
+    margin-bottom: 1.5rem;
+}
+.result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.result-stat {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-hover, #f8f9fa);
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+.result-stat .label { color: var(--text-muted); }
+.result-stat .value { font-weight: 600; }
+.result-stat.stat-special .value { color: #9b59b6; }
+.result-stat.stat-weightage .value { color: #f39c12; }
+.result-stat.stat-normal .value { color: #3498db; }
+.result-stat.stat-cascade .value { color: #27ae60; }
+.result-stat.stat-against .value { color: #e67e22; }
+.result-stat.stat-failed .value { color: #e74c3c; }
+.error-message {
+    color: #e74c3c;
+    background: #fdf2f2;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid #f5c6cb;
 }
 
 /* Preference Section Headers */
