@@ -2186,7 +2186,7 @@ def export_applied_excel():
         duration_days = emp[4] or 0
         years = duration_days // 365
         months = (duration_days % 365) // 30
-        days = duration_days % 30
+        days = (duration_days % 365) % 30
         duration_str = ''
         if years > 0:
             duration_str += f'{years}Y '
@@ -2335,6 +2335,276 @@ def draft_list():
                          sort_by=sort_by,
                          format_duration=format_duration,
                          now=datetime.now)
+
+
+@app.route('/draft/export-excel')
+@login_required
+@requires_transfer_session
+def export_draft_excel():
+    """Export draft list to Excel with proper formatting (respects current filters and sort)"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    except ImportError:
+        flash('openpyxl library not installed', 'error')
+        return redirect(url_for('draft_list'))
+    
+    prefix = get_table_prefix()
+    
+    # Get filter and sort parameters from request
+    from_district = request.args.get('from_district', '')
+    to_district = request.args.get('to_district', '')
+    sort_by = request.args.get('sort', '')
+    
+    query = f"""
+        SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
+               j.duration_days, j.weightage, j.weightage_details, d.remarks,
+               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+        FROM {prefix}jphn j
+        INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
+        LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
+        WHERE 1=1
+    """
+    params = {}
+    
+    if from_district:
+        query += " AND j.district = :from_district"
+        params['from_district'] = from_district
+    
+    if to_district:
+        query += " AND d.transfer_to_district = :to_district"
+        params['to_district'] = to_district
+    
+    # Order based on sort option
+    if sort_by == 'to_district':
+        query += """ ORDER BY CASE d.transfer_to_district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END, j.duration_days DESC"""
+    else:
+        query += """ ORDER BY CASE j.district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END, j.duration_days DESC"""
+    
+    result = db.session.execute(db.text(query), params)
+    transfers = result.fetchall()
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Draft Transfer List'
+    
+    # Styles
+    header_font = Font(bold=True, size=14)
+    subheader_font = Font(bold=True, size=11)
+    table_header_font = Font(bold=True, size=10)
+    table_header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal='center', vertical='center')
+    left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    
+    # Set column widths
+    ws.column_dimensions['A'].width = 8    # Sl. No.
+    ws.column_dimensions['B'].width = 12   # PEN
+    ws.column_dimensions['C'].width = 25   # Name
+    ws.column_dimensions['D'].width = 30   # Institution
+    ws.column_dimensions['E'].width = 16   # From District
+    ws.column_dimensions['F'].width = 16   # To District
+    ws.column_dimensions['G'].width = 12   # Duration
+    ws.column_dimensions['H'].width = 10   # Weightage
+    ws.column_dimensions['I'].width = 18   # Remarks
+    ws.column_dimensions['J'].width = 14   # Pref 1
+    ws.column_dimensions['K'].width = 14   # Pref 2
+    ws.column_dimensions['L'].width = 14   # Pref 3
+    
+    last_col = 'L'
+    
+    # Title rows
+    ws.merge_cells(f'A1:{last_col}1')
+    ws['A1'] = 'JPHN Transfer Management System'
+    ws['A1'].font = header_font
+    ws['A1'].alignment = center_align
+    
+    # Build subtitle based on filters
+    subtitle = 'Draft Transfer List'
+    filter_parts = []
+    if from_district:
+        filter_parts.append(f'From: {from_district}')
+    if to_district:
+        filter_parts.append(f'To: {to_district}')
+    if sort_by == 'to_district':
+        filter_parts.append('Sorted by: To District')
+    else:
+        filter_parts.append('Sorted by: From District')
+    if filter_parts:
+        subtitle += ' (' + ', '.join(filter_parts) + ')'
+    
+    ws.merge_cells(f'A2:{last_col}2')
+    ws['A2'] = subtitle
+    ws['A2'].font = subheader_font
+    ws['A2'].alignment = center_align
+    
+    ws.merge_cells(f'A3:{last_col}3')
+    ws['A3'] = f'Generated: {get_ist_now().strftime("%d-%m-%Y %I:%M %p")}'
+    ws['A3'].alignment = center_align
+    
+    # Column headers (row 5)
+    headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
+               'Duration', 'Weightage', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=5, column=col_num, value=header)
+        cell.font = table_header_font
+        cell.fill = table_header_fill
+        cell.border = thin_border
+        cell.alignment = center_align
+    
+    # Data rows
+    for idx, transfer in enumerate(transfers, 1):
+        row_num = idx + 5
+        duration_days = transfer[5] or 0
+        years = duration_days // 365
+        months = (duration_days % 365) // 30
+        days = (duration_days % 365) % 30
+        duration_str = ''
+        if years > 0:
+            duration_str += f'{years}Y '
+        if months > 0:
+            duration_str += f'{months}M '
+        if days > 0:
+            duration_str += f'{days}D'
+        duration_str = duration_str.strip() or '-'
+        
+        data = [
+            idx,                           # Sl. No.
+            transfer[0],                   # PEN
+            transfer[1],                   # Name
+            transfer[2],                   # Institution
+            transfer[3],                   # From District
+            transfer[4],                   # To District
+            duration_str,                  # Duration
+            transfer[6] or 'No',           # Weightage
+            transfer[8] or '',             # Remarks
+            transfer[9] or '',             # Pref 1
+            transfer[10] or '',            # Pref 2
+            transfer[11] or ''             # Pref 3
+        ]
+        
+        for col_num, value in enumerate(data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.border = thin_border
+            if col_num == 1:  # Sl. No. - center aligned
+                cell.alignment = center_align
+            else:
+                cell.alignment = left_align
+    
+    # Save to BytesIO
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Build filename based on filters
+    filename_parts = ['draft_transfer_list']
+    if from_district:
+        filename_parts.append(f'from_{from_district.replace(" ", "_")}')
+    if to_district:
+        filename_parts.append(f'to_{to_district.replace(" ", "_")}')
+    filename_parts.append(get_ist_now().strftime("%Y%m%d"))
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'{"_".join(filename_parts)}.xlsx'
+    )
+
+
+@app.route('/draft/manual-assign', methods=['POST'])
+@login_required
+@requires_transfer_session
+def manual_assign_draft():
+    """Manually assign an employee to a specific district, updating vacancy"""
+    prefix = get_table_prefix()
+    
+    pen = request.form.get('pen', '')
+    new_district = request.form.get('district', '')
+    
+    if not pen or not new_district:
+        return jsonify({'success': False, 'error': 'PEN and district required'})
+    
+    try:
+        # Get current assignment
+        current = db.session.execute(db.text(f"""
+            SELECT d.transfer_to_district, j.name, j.district
+            FROM {prefix}transfer_draft d
+            INNER JOIN {prefix}jphn j ON d.pen = j.pen
+            WHERE d.pen = :pen
+        """), {'pen': pen}).fetchone()
+        
+        if not current:
+            return jsonify({'success': False, 'error': 'Employee not found in draft list'})
+        
+        old_district = current[0]
+        emp_name = current[1]
+        home_district = current[2]
+        
+        if old_district == new_district:
+            return jsonify({'success': False, 'error': 'Already assigned to this district'})
+        
+        # Update the assignment
+        db.session.execute(db.text(f"""
+            UPDATE {prefix}transfer_draft
+            SET transfer_to_district = :new_district,
+                remarks = :remarks,
+                last_modified = :now
+            WHERE pen = :pen
+        """), {
+            'new_district': new_district,
+            'remarks': f'Manual: Changed from {old_district}',
+            'now': datetime.now().isoformat(),
+            'pen': pen
+        })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{emp_name} reassigned from {old_district} to {new_district}',
+            'old_district': old_district,
+            'new_district': new_district
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/draft/add', methods=['POST'])
@@ -2611,49 +2881,16 @@ def auto_fill_vacancies():
             else:
                 not_allocated_count += 1
         
-        # STEP 1: Process WEIGHTAGE employees
-        weightage_result = db.session.execute(db.text(f"""
-            SELECT t.pen, j.name, j.district, j.weightage_priority, t.pref1, t.pref2, 
+        # STEP 1: Process ALL employees in STRICT SENIORITY order
+        # Seniority is the primary criterion - seniors get their best available preference before juniors
+        # Weightage is noted but does NOT allow juniors to jump ahead of seniors
+        
+        all_employees_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, j.weightage, t.pref1, t.pref2, 
                    t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
             FROM {prefix}transfer_applied t
             INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            WHERE j.weightage = 'Yes'
-            AND COALESCE(t.weightage_consider, 'Yes') = 'Yes'
-            AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
-            AND (t.locked IS NULL OR t.locked != 'Yes')
-            AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
-            AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
-                 OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
-            ORDER BY COALESCE(j.weightage_priority, 5) ASC, j.duration_days ASC
-        """))
-        
-        for row in weightage_result.fetchall():
-            pen, name, district = row[0], row[1], row[2]
-            prefs = [row[i] for i in range(4, 12)]
-            allocated, _ = try_allocate(pen, name, district, prefs)
-            if allocated:
-                weightage_count += 1
-            elif prefs[0] and enable_against:
-                success, _ = try_against_transfer(pen, name, prefs[0])
-                if success:
-                    weightage_count += 1
-                else:
-                    not_allocated_count += 1
-            else:
-                not_allocated_count += 1
-        
-        # STEP 2: Process NORMAL employees (strict seniority order)
-        # This includes employees without weightage OR employees with weightage but weightage_consider = 'No'
-        # Process in strict seniority order - senior gets their best available preference before junior
-        
-        normal_result = db.session.execute(db.text(f"""
-            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
-                   t.pref5, t.pref6, t.pref7, t.pref8
-            FROM {prefix}transfer_applied t
-            INNER JOIN {prefix}jphn j ON t.pen = j.pen
-            WHERE ((j.weightage IS NULL OR j.weightage != 'Yes') 
-                   OR (j.weightage = 'Yes' AND COALESCE(t.weightage_consider, 'Yes') = 'No'))
-            AND (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
             AND (t.locked IS NULL OR t.locked != 'Yes')
             AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
             AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
@@ -2663,16 +2900,23 @@ def auto_fill_vacancies():
         
         # Process each employee in strict seniority order
         # Each senior gets their best available preference before any junior is considered
-        for row in normal_result.fetchall():
+        for row in all_employees_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
-            prefs = [row[i] for i in range(3, 11)]
+            has_weightage = row[3] == 'Yes'
+            prefs = [row[i] for i in range(4, 12)]
             allocated, _ = try_allocate(pen, name, district, prefs, pref1_only=False)
             if allocated:
-                normal_count += 1
+                if has_weightage:
+                    weightage_count += 1
+                else:
+                    normal_count += 1
             elif prefs[0] and enable_against:
                 success, _ = try_against_transfer(pen, name, prefs[0])
                 if success:
-                    normal_count += 1
+                    if has_weightage:
+                        weightage_count += 1
+                    else:
+                        normal_count += 1
                 else:
                     not_allocated_count += 1
             else:
