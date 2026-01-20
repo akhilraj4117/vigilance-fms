@@ -2868,51 +2868,62 @@ def auto_fill_vacancies():
             return True, senior_name
         
         # ============================================================================
-        # MULTI-PASS ALLOCATION ALGORITHM
+        # MULTI-PASS ALLOCATION ALGORITHM (Pref1-First Strategy)
         # ============================================================================
         # Priority Order: 1) Special Priority  2) Weightage  3) Normal (all by seniority)
         # 
-        # Problem: When someone is allocated, they create a cascade vacancy in their 
-        # source district. If we process in one pass, juniors processed later might
-        # get cascade vacancies that should go to seniors who were skipped earlier.
-        #
-        # Solution: Two-pass approach
-        # - Pass 1: Allocate using ONLY reported vacancies (no cascade)
-        # - Pass 2: Allocate cascade vacancies to remaining employees in priority order
+        # KEY PRINCIPLE: A senior should NEVER get Pref2 if a junior with same Pref1 gets Pref1
+        # 
+        # Solution: Three-pass approach focusing on Pref1 first
+        # - Pass 1: Try ONLY Pref1 with reported vacancies
+        # - Pass 2: Try ONLY Pref1 with cascade vacancies (for those who didn't get Pref1)
+        # - Pass 3: Try Pref2-8 for those who couldn't get Pref1 at all
         # ============================================================================
         
-        def try_allocate_reported_only(pen, name, current_district, preferences):
-            """Try to allocate using ONLY reported vacancies (not cascade)"""
-            for pref_idx, pref in enumerate(preferences):
-                if not pref:
-                    continue
-                if pref in vacancy_status:
-                    # Only use reported vacancies, not cascade
-                    if vacancy_status[pref]['remaining'] > 0:
-                        if allocate(pen, name, current_district, pref, None):
-                            return True, pref_idx
-            return False, -1
+        def try_allocate_pref1_reported(pen, name, current_district, pref1):
+            """Try to allocate ONLY Pref1 using reported vacancies"""
+            if not pref1:
+                return False
+            if pref1 in vacancy_status:
+                if vacancy_status[pref1]['remaining'] > 0:
+                    if allocate(pen, name, current_district, pref1, "Pref 1:"):
+                        return True
+            return False
         
-        def try_allocate_with_cascade(pen, name, current_district, preferences):
-            """Try to allocate using both reported and cascade vacancies"""
-            for pref_idx, pref in enumerate(preferences):
+        def try_allocate_pref1_cascade(pen, name, current_district, pref1):
+            """Try to allocate ONLY Pref1 using cascade vacancies"""
+            if not pref1:
+                return False
+            if pref1 in vacancy_status:
+                available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
+                if available > 0:
+                    is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
+                    remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
+                    if allocate(pen, name, current_district, pref1, remarks):
+                        return True
+            return False
+        
+        def try_allocate_pref2_to_8(pen, name, current_district, preferences):
+            """Try to allocate Pref2 through Pref8 using any available vacancy"""
+            # preferences[0] is pref1, we start from preferences[1] which is pref2
+            for pref_idx, pref in enumerate(preferences[1:], start=2):
                 if not pref:
                     continue
                 if pref in vacancy_status:
                     available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
                     if available > 0:
                         is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
-                        remarks = "Vacancy by Transfer" if is_cascade else None
+                        remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
                         if allocate(pen, name, current_district, pref, remarks):
                             return True, pref_idx
             return False, -1
         
-        # Track employees who couldn't be allocated in Pass 1 (for Pass 2)
-        waiting_special = []
-        waiting_weightage = []
-        waiting_normal = []
+        # Track employees at each stage
+        waiting_pref1_special = []
+        waiting_pref1_weightage = []
+        waiting_pref1_normal = []
         
-        # ===================== PASS 1: ALLOCATE TO REPORTED VACANCIES ONLY =====================
+        # ===================== PASS 1: PREF1 WITH REPORTED VACANCIES ONLY =====================
         
         # STEP 1A: Process employees WITH SPECIAL PRIORITY first
         special_result = db.session.execute(db.text(f"""
@@ -2933,12 +2944,10 @@ def auto_fill_vacancies():
         for row in special_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
-            if allocated:
+            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
                 special_count += 1
             else:
-                # Add to waiting list for Pass 2
-                waiting_special.append((pen, name, district, prefs))
+                waiting_pref1_special.append((pen, name, district, prefs))
         
         # STEP 1B: Process employees WITH WEIGHTAGE (sorted by seniority)
         weightage_result = db.session.execute(db.text(f"""
@@ -2960,11 +2969,10 @@ def auto_fill_vacancies():
         for row in weightage_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
-            if allocated:
+            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
                 weightage_count += 1
             else:
-                waiting_weightage.append((pen, name, district, prefs))
+                waiting_pref1_weightage.append((pen, name, district, prefs))
         
         # STEP 1C: Process employees WITHOUT WEIGHTAGE (sorted by seniority)
         normal_result = db.session.execute(db.text(f"""
@@ -2986,43 +2994,69 @@ def auto_fill_vacancies():
         for row in normal_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            allocated, _ = try_allocate_reported_only(pen, name, district, prefs)
-            if allocated:
+            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
                 normal_count += 1
             else:
-                waiting_normal.append((pen, name, district, prefs))
+                waiting_pref1_normal.append((pen, name, district, prefs))
         
-        # ===================== PASS 2: ALLOCATE CASCADE VACANCIES =====================
-        # Now allocate cascade vacancies in priority order: Special > Weightage > Normal
+        # ===================== PASS 2: PREF1 WITH CASCADE VACANCIES =====================
+        # Give everyone a chance at Pref1 cascade before moving to Pref2-8
         
-        # STEP 2A: Waiting Special Priority employees get cascade vacancies first
-        still_waiting_special = []
-        for pen, name, district, prefs in waiting_special:
+        waiting_pref2_special = []
+        for pen, name, district, prefs in waiting_pref1_special:
             if pen in allocated_pens:
-                continue  # Already allocated somehow
-            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+                continue
+            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                special_count += 1
+            else:
+                waiting_pref2_special.append((pen, name, district, prefs))
+        
+        waiting_pref2_weightage = []
+        for pen, name, district, prefs in waiting_pref1_weightage:
+            if pen in allocated_pens:
+                continue
+            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                weightage_count += 1
+            else:
+                waiting_pref2_weightage.append((pen, name, district, prefs))
+        
+        waiting_pref2_normal = []
+        for pen, name, district, prefs in waiting_pref1_normal:
+            if pen in allocated_pens:
+                continue
+            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
+                normal_count += 1
+            else:
+                waiting_pref2_normal.append((pen, name, district, prefs))
+        
+        # ===================== PASS 3: PREF2-8 FOR REMAINING EMPLOYEES =====================
+        # Only after all Pref1 opportunities exhausted, try Pref2-8
+        
+        still_waiting_special = []
+        for pen, name, district, prefs in waiting_pref2_special:
+            if pen in allocated_pens:
+                continue
+            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
             if allocated:
                 special_count += 1
             else:
                 still_waiting_special.append((pen, name, district, prefs))
         
-        # STEP 2B: Waiting Weightage employees get cascade vacancies next
         still_waiting_weightage = []
-        for pen, name, district, prefs in waiting_weightage:
+        for pen, name, district, prefs in waiting_pref2_weightage:
             if pen in allocated_pens:
                 continue
-            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
             if allocated:
                 weightage_count += 1
             else:
                 still_waiting_weightage.append((pen, name, district, prefs))
         
-        # STEP 2C: Waiting Normal employees get remaining cascade vacancies
         still_waiting_normal = []
-        for pen, name, district, prefs in waiting_normal:
+        for pen, name, district, prefs in waiting_pref2_normal:
             if pen in allocated_pens:
                 continue
-            allocated, _ = try_allocate_with_cascade(pen, name, district, prefs)
+            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
             if allocated:
                 normal_count += 1
             else:
