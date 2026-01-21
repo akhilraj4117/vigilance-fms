@@ -1,0 +1,1608 @@
+('D:\\New Program\\dist\\Transfer Manager 9.0.exe',
+ False,
+ False,
+ False,
+ ['D:\\New Program\\favicon.ico'],
+ None,
+ False,
+ False,
+ b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<assembly xmlns='
+ b'"urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">\n  <trustInfo x'
+ b'mlns="urn:schemas-microsoft-com:asm.v3">\n    <security>\n      <requested'
+ b'Privileges>\n        <requestedExecutionLevel level="asInvoker" uiAccess='
+ b'"false"/>\n      </requestedPrivileges>\n    </security>\n  </trustInfo>\n  '
+ b'<compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">\n    <'
+ b'application>\n      <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f'
+ b'0}"/>\n      <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>\n '
+ b'     <supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}"/>\n      <s'
+ b'upportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/>\n      <supporte'
+ b'dOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>\n    </application>\n  <'
+ b'/compatibility>\n  <application xmlns="urn:schemas-microsoft-com:asm.v3">'
+ b'\n    <windowsSettings>\n      <longPathAware xmlns="http://schemas.micros'
+ b'oft.com/SMI/2016/WindowsSettings">true</longPathAware>\n    </windowsSett'
+ b'ings>\n  </application>\n  <dependency>\n    <dependentAssembly>\n      <ass'
+ b'emblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version='
+ b'"6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" langua'
+ b'ge="*"/>\n    </dependentAssembly>\n  </dependency>\n</assembly>',
+ True,
+ False,
+ None,
+ None,
+ None,
+ 'D:\\New Program\\build\\Transfer Manager 9.0\\Transfer Manager 9.0.pkg',
+ [('pyi-contents-directory _internal', '', 'OPTION'),
+  ('PYZ-00.pyz',
+   'D:\\New Program\\build\\Transfer Manager 9.0\\PYZ-00.pyz',
+   'PYZ'),
+  ('struct',
+   'D:\\New Program\\build\\Transfer Manager 9.0\\localpycs\\struct.pyc',
+   'PYMODULE'),
+  ('pyimod01_archive',
+   'D:\\New Program\\build\\Transfer Manager '
+   '9.0\\localpycs\\pyimod01_archive.pyc',
+   'PYMODULE'),
+  ('pyimod02_importers',
+   'D:\\New Program\\build\\Transfer Manager '
+   '9.0\\localpycs\\pyimod02_importers.pyc',
+   'PYMODULE'),
+  ('pyimod03_ctypes',
+   'D:\\New Program\\build\\Transfer Manager '
+   '9.0\\localpycs\\pyimod03_ctypes.pyc',
+   'PYMODULE'),
+  ('pyimod04_pywin32',
+   'D:\\New Program\\build\\Transfer Manager '
+   '9.0\\localpycs\\pyimod04_pywin32.pyc',
+   'PYMODULE'),
+  ('pyiboot01_bootstrap',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
+   'PYSOURCE'),
+  ('pyi_rth_inspect',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('pyi_rth_pkgutil',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pkgutil.py',
+   'PYSOURCE'),
+  ('pyi_rth_multiprocessing',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_multiprocessing.py',
+   'PYSOURCE'),
+  ('pyi_rth_cryptography_openssl',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks\\pyi_rth_cryptography_openssl.py',
+   'PYSOURCE'),
+  ('pyi_rth_pyside6',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pyside6.py',
+   'PYSOURCE'),
+  ('JPHN Transfer', 'D:\\New Program\\JPHN Transfer.py', 'PYSOURCE'),
+  ('pypdfium2_raw\\pdfium.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pypdfium2_raw\\pdfium.dll',
+   'BINARY'),
+  ('python314.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\python314.dll',
+   'BINARY'),
+  ('PySide6\\opengl32sw.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\opengl32sw.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\networkinformation\\qnetworklistmanager.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\networkinformation\\qnetworklistmanager.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\tls\\qopensslbackend.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\tls\\qopensslbackend.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\tls\\qcertonlybackend.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\tls\\qcertonlybackend.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\tls\\qschannelbackend.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\tls\\qschannelbackend.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qtiff.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qtiff.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\platforms\\qminimal.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\platforms\\qminimal.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qwbmp.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qwbmp.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\platforms\\qdirect2d.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\platforms\\qdirect2d.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qtga.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qtga.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qsvg.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qsvg.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qico.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qico.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\platforms\\qwindows.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\platforms\\qwindows.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qicns.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qicns.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qwebp.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qwebp.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\generic\\qtuiotouchplugin.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\generic\\qtuiotouchplugin.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qgif.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qgif.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qpdf.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qpdf.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\iconengines\\qsvgicon.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\iconengines\\qsvgicon.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\platforminputcontexts\\qtvirtualkeyboardplugin.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\platforminputcontexts\\qtvirtualkeyboardplugin.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\imageformats\\qjpeg.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\imageformats\\qjpeg.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\platforms\\qoffscreen.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\platforms\\qoffscreen.dll',
+   'BINARY'),
+  ('PySide6\\plugins\\styles\\qmodernwindowsstyle.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\plugins\\styles\\qmodernwindowsstyle.dll',
+   'BINARY'),
+  ('_zstd.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_zstd.pyd',
+   'EXTENSION'),
+  ('_lzma.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_lzma.pyd',
+   'EXTENSION'),
+  ('_bz2.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_bz2.pyd',
+   'EXTENSION'),
+  ('_decimal.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_decimal.pyd',
+   'EXTENSION'),
+  ('_hashlib.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_hashlib.pyd',
+   'EXTENSION'),
+  ('select.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\select.pyd',
+   'EXTENSION'),
+  ('_socket.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_socket.pyd',
+   'EXTENSION'),
+  ('unicodedata.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\unicodedata.pyd',
+   'EXTENSION'),
+  ('_ssl.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_ssl.pyd',
+   'EXTENSION'),
+  ('_multiprocessing.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_multiprocessing.pyd',
+   'EXTENSION'),
+  ('pyexpat.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\pyexpat.pyd',
+   'EXTENSION'),
+  ('_ctypes.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_ctypes.pyd',
+   'EXTENSION'),
+  ('_queue.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_queue.pyd',
+   'EXTENSION'),
+  ('charset_normalizer\\md__mypyc.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\charset_normalizer\\md__mypyc.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('charset_normalizer\\md.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\charset_normalizer\\md.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('_overlapped.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_overlapped.pyd',
+   'EXTENSION'),
+  ('_asyncio.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_asyncio.pyd',
+   'EXTENSION'),
+  ('_uuid.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_uuid.pyd',
+   'EXTENSION'),
+  ('_wmi.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_wmi.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingft.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PIL\\_imagingft.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imaging.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PIL\\_imaging.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_webp.cp314-win_amd64.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PIL\\_webp.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingtk.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PIL\\_imagingtk.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_avif.cp314-win_amd64.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PIL\\_avif.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingcms.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PIL\\_imagingcms.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingmath.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PIL\\_imagingmath.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('_elementtree.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_elementtree.pyd',
+   'EXTENSION'),
+  ('cryptography\\hazmat\\bindings\\_rust.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography\\hazmat\\bindings\\_rust.pyd',
+   'EXTENSION'),
+  ('_cffi_backend.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\_cffi_backend.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\etree.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\etree.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\_elementpath.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\_elementpath.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\sax.cp314-win_amd64.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\lxml\\sax.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\objectify.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\objectify.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\html\\diff.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\html\\diff.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\html\\_difflib.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\html\\_difflib.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('lxml\\builder.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\builder.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('psycopg2\\_psycopg.cp314-win_amd64.pyd',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\psycopg2\\_psycopg.cp314-win_amd64.pyd',
+   'EXTENSION'),
+  ('PySide6\\QtPrintSupport.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\QtPrintSupport.pyd',
+   'EXTENSION'),
+  ('shiboken6\\Shiboken.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\shiboken6\\Shiboken.pyd',
+   'EXTENSION'),
+  ('PySide6\\QtNetwork.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\QtNetwork.pyd',
+   'EXTENSION'),
+  ('PySide6\\QtGui.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\QtGui.pyd',
+   'EXTENSION'),
+  ('PySide6\\QtCore.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\QtCore.pyd',
+   'EXTENSION'),
+  ('PySide6\\QtWidgets.pyd',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\QtWidgets.pyd',
+   'EXTENSION'),
+  ('_sqlite3.pyd',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_sqlite3.pyd',
+   'EXTENSION'),
+  ('VCRUNTIME140.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('shiboken6\\MSVCP140.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\shiboken6\\MSVCP140.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Core.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Core.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Network.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Network.dll',
+   'BINARY'),
+  ('VCRUNTIME140_1.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Gui.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Gui.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Svg.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Svg.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Pdf.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Pdf.dll',
+   'BINARY'),
+  ('PySide6\\Qt6VirtualKeyboard.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6VirtualKeyboard.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Widgets.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Widgets.dll',
+   'BINARY'),
+  ('libcrypto-3.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\libcrypto-3.dll',
+   'BINARY'),
+  ('libssl-3.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\libssl-3.dll',
+   'BINARY'),
+  ('libffi-8.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\libffi-8.dll',
+   'BINARY'),
+  ('python3.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\python3.dll',
+   'BINARY'),
+  ('psycopg2_binary.libs\\libpq-6403524fab916a7d13e87bc746be2a9e.dll',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\psycopg2_binary.libs\\libpq-6403524fab916a7d13e87bc746be2a9e.dll',
+   'BINARY'),
+  ('PySide6\\MSVCP140.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\MSVCP140.dll',
+   'BINARY'),
+  ('shiboken6\\shiboken6.abi3.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\shiboken6\\shiboken6.abi3.dll',
+   'BINARY'),
+  ('PySide6\\Qt6PrintSupport.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6PrintSupport.dll',
+   'BINARY'),
+  ('PySide6\\pyside6.abi3.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\pyside6.abi3.dll',
+   'BINARY'),
+  ('PySide6\\VCRUNTIME140.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('PySide6\\VCRUNTIME140_1.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('shiboken6\\VCRUNTIME140_1.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\shiboken6\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('shiboken6\\VCRUNTIME140.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\shiboken6\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('PySide6\\MSVCP140_2.dll',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\MSVCP140_2.dll',
+   'BINARY'),
+  ('sqlite3.dll',
+   'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\sqlite3.dll',
+   'BINARY'),
+  ('PySide6\\MSVCP140_1.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\MSVCP140_1.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Quick.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Quick.dll',
+   'BINARY'),
+  ('PySide6\\Qt6Qml.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6Qml.dll',
+   'BINARY'),
+  ('psycopg2_binary.libs\\libcrypto-3-x64-ffd7a9c6f04fd43163d4af80fa0e5643.dll',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\psycopg2_binary.libs\\libcrypto-3-x64-ffd7a9c6f04fd43163d4af80fa0e5643.dll',
+   'BINARY'),
+  ('psycopg2_binary.libs\\libssl-3-x64-315f24bcb7a55f987a0b36e7c5ba119a.dll',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\psycopg2_binary.libs\\libssl-3-x64-315f24bcb7a55f987a0b36e7c5ba119a.dll',
+   'BINARY'),
+  ('PySide6\\Qt6OpenGL.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6OpenGL.dll',
+   'BINARY'),
+  ('PySide6\\Qt6QmlMeta.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6QmlMeta.dll',
+   'BINARY'),
+  ('PySide6\\Qt6QmlModels.dll',
+   'D:\\New Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6QmlModels.dll',
+   'BINARY'),
+  ('PySide6\\Qt6QmlWorkerScript.dll',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\Qt6QmlWorkerScript.dll',
+   'BINARY'),
+  ('Health Logo.png', 'D:\\New Program\\Health Logo.png', 'DATA'),
+  ('favicon.ico', 'D:\\New Program\\favicon.ico', 'DATA'),
+  ('pypdfium2\\version.json',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pypdfium2\\version.json',
+   'DATA'),
+  ('pypdfium2_raw\\version.json',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pypdfium2_raw\\version.json',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\METADATA',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\METADATA',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\WHEEL',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\WHEEL',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\RECORD',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\RECORD',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\licenses\\LICENSE.BSD',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\licenses\\LICENSE.BSD',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\INSTALLER',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\INSTALLER',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\licenses\\LICENSE',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('cryptography-46.0.3.dist-info\\licenses\\LICENSE.APACHE',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\cryptography-46.0.3.dist-info\\licenses\\LICENSE.APACHE',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UCS2-HW-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UCS2-HW-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF8-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF8-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90msp-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90msp-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\B5-H.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\B5-V.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKm471-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKm471-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKscs-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKscs-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\WP-Symbol-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\WP-Symbol-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJISX0213-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJISX0213-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCms-UHC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCms-UHC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\V.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF16-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF16-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCms-UHC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCms-UHC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS1-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS1-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKgccs-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKgccs-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GB-V.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GB-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF16-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF16-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETHK-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETHK-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBTpc-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBTpc-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBK2K-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBK2K-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-Johab-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-Johab-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKdla-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKdla-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF16-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF16-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJISX02132004-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJISX02132004-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90msp-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90msp-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Katakana-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Katakana-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\NWP-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\NWP-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETenms-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETenms-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78ms-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78ms-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCms-UHC-HW-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCms-UHC-HW-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF16-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF16-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\to-unicode-Adobe-Korea1.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\to-unicode-Adobe-Korea1.pickle.gz',
+   'DATA'),
+  ('pdfminer\\py.typed',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\py.typed',
+   'DATA'),
+  ('pdfminer\\cmap\\HKdla-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKdla-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF16-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF16-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBKp-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBKp-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBK2K-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBK2K-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Ext-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Ext-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF8-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF8-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF8-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF8-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90ms-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90ms-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF16-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF16-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78ms-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78ms-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\to-unicode-Adobe-GB1.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\to-unicode-Adobe-GB1.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETen-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETen-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Roman-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Roman-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Katakana-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Katakana-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF16-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF16-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Add-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Add-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GB-H.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GB-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Add-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Add-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCms-UHC-HW-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCms-UHC-HW-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\README.txt',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\README.txt',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS1-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS1-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UCS2-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UCS2-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBT-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBT-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90pv-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90pv-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETen-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETen-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKdlb-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKdlb-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF8-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF8-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBpc-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBpc-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCpc-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCpc-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GB-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GB-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSCpc-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSCpc-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\83pv-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\83pv-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UCS2-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UCS2-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\NWP-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\NWP-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Hiragana-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Hiragana-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Hiragana-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Hiragana-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\B5pc-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\B5pc-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90ms-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90ms-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Ext-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Ext-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBK-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBK-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBT-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBT-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Add-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Add-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\B5pc-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\B5pc-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Ext-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Ext-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Roman-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Roman-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETenms-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETenms-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF8-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF8-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBT-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBT-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKm471-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKm471-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\83pv-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\83pv-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\ETHK-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\ETHK-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF8-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF8-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF8-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF8-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UTF16-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UTF16-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF8-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF8-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKm314-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKm314-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UCS2-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UCS2-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\90pv-RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\90pv-RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Ext-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Ext-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-H.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKm314-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKm314-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS2-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS2-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GB-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GB-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UTF16-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UTF16-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\H.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJISX02132004-UTF32-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJISX02132004-UTF32-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Hankaku-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Hankaku-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Add-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Add-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UCS2-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UCS2-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UCS2-HW-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UCS2-HW-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBKp-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBKp-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\RKSJ-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\RKSJ-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniKS-UCS2-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniKS-UCS2-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\Hankaku-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\Hankaku-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UCS2-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UCS2-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBTpc-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBTpc-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBT-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBT-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\WP-Symbol-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\WP-Symbol-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBK-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBK-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\to-unicode-Adobe-CNS1.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\to-unicode-Adobe-CNS1.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJISX0213-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJISX0213-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniGB-UCS2-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniGB-UCS2-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-V.pickle.gz',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\CNS2-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\CNS2-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\to-unicode-Adobe-Japan1.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\to-unicode-Adobe-Japan1.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniCNS-UTF16-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniCNS-UTF16-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKdlb-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKdlb-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-RKSJ-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-RKSJ-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF32-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF32-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UTF8-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UTF8-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\KSC-Johab-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\KSC-Johab-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS-UCS2-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS-UCS2-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKgccs-B5-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKgccs-B5-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\78-EUC-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\78-EUC-V.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\GBpc-EUC-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\GBpc-EUC-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\HKscs-B5-H.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\HKscs-B5-H.pickle.gz',
+   'DATA'),
+  ('pdfminer\\cmap\\UniJIS2004-UTF8-V.pickle.gz',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer\\cmap\\UniJIS2004-UTF8-V.pickle.gz',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_abstract_expand.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_abstract_expand.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\XSD2Schtrn.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\XSD2Schtrn.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_svrl_for_xslt1.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_svrl_for_xslt1.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_dsdl_include.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_dsdl_include.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\readme.txt',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\readme.txt',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_skeleton_for_xslt1.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_skeleton_for_xslt1.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\RNG2Schtrn.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\RNG2Schtrn.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_message.xsl',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_message.xsl',
+   'DATA'),
+  ('lxml\\isoschematron\\resources\\rng\\iso-schematron.rng',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\rng\\iso-schematron.rng',
+   'DATA'),
+  ('docx\\templates\\default-footer.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-footer.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\styles.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\styles.xml',
+   'DATA'),
+  ('docx\\templates\\default-comments.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-comments.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\docProps\\app.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\docProps\\app.xml',
+   'DATA'),
+  ('docx\\templates\\default-styles.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-styles.xml',
+   'DATA'),
+  ('docx\\py.typed',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\docx\\py.typed',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\[Content_Types].xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\[Content_Types].xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\docProps\\thumbnail.jpeg',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\docProps\\thumbnail.jpeg',
+   'DATA'),
+  ('docx\\templates\\default-settings.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-settings.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\_rels\\.rels',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\_rels\\.rels',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\customXml\\itemProps1.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\customXml\\itemProps1.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\stylesWithEffects.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\stylesWithEffects.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\theme\\theme1.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\theme\\theme1.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\numbering.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\numbering.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\webSettings.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\webSettings.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\customXml\\_rels\\item1.xml.rels',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\customXml\\_rels\\item1.xml.rels',
+   'DATA'),
+  ('docx\\templates\\default.docx',
+   'd:\\New Program\\.venv\\Lib\\site-packages\\docx\\templates\\default.docx',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\fontTable.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\fontTable.xml',
+   'DATA'),
+  ('docx\\templates\\default-header.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-header.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\settings.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\settings.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\document.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\document.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\docProps\\core.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\docProps\\core.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\customXml\\item1.xml',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\customXml\\item1.xml',
+   'DATA'),
+  ('docx\\templates\\default-docx-template\\word\\_rels\\document.xml.rels',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\docx\\templates\\default-docx-template\\word\\_rels\\document.xml.rels',
+   'DATA'),
+  ('PySide6\\translations\\qt_pt_PT.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_pt_PT.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_sk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_sk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_sl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_sl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_hu.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_hu.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_pl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_pl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ja.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ja.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_zh_CN.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_zh_CN.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ru.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ru.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_nn.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_nn.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ru.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ru.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ka.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ka.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ar.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ar.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_lt.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_lt.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_pt_BR.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_pt_BR.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_pl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_pl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_da.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_da.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_bg.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_bg.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ko.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ko.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_sl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_sl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_nl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_nl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_da.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_da.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ca.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ca.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_it.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_it.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_de.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_de.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_sk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_sk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_nn.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_nn.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_en.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_en.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ru.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ru.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_sv.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_sv.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_hr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_hr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_hr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_hr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_en.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_en.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_pt_BR.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_pt_BR.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_fr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_fr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_lg.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_lg.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_zh_TW.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_zh_TW.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_hu.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_hu.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ar.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ar.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_nl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_nl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_pl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_pl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_he.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_he.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_uk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_uk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_bg.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_bg.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ja.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ja.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_bg.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_bg.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_de.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_de.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ka.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ka.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_nn.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_nn.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ar.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ar.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ja.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ja.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_da.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_da.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_de.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_de.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_fa.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_fa.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_uk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_uk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_lv.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_lv.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_he.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_he.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_gd.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_gd.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_fr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_fr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_gl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_gl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ka.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ka.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_fr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_fr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_gd.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_gd.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_es.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_es.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_pt_BR.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_pt_BR.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_sv.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_sv.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_zh_CN.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_zh_CN.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_fi.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_fi.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_uk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_uk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_tr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_tr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_gl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_gl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_cs.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_cs.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_lv.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_lv.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_ca.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_ca.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_hu.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_hu.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_tr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_tr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_sk.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_sk.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_nl.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_nl.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_zh_CN.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_zh_CN.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_hr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_hr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_it.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_it.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_en.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_en.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_it.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_it.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_cs.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_cs.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_es.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_es.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_fi.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_fi.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_cs.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_cs.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_zh_TW.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_zh_TW.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ko.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ko.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_ko.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_ko.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_fa.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_fa.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_lg.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_lg.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_ca.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_ca.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_zh_TW.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_zh_TW.qm',
+   'DATA'),
+  ('PySide6\\translations\\qtbase_tr.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qtbase_tr.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_sv.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_sv.qm',
+   'DATA'),
+  ('PySide6\\translations\\qt_help_es.qm',
+   'D:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PySide6\\translations\\qt_help_es.qm',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\INSTALLER',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\INSTALLER',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\WHEEL',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\WHEEL',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\top_level.txt',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\top_level.txt',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\licenses\\LICENSE',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\RECORD',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\RECORD',
+   'DATA'),
+  ('pdfminer_six-20251107.dist-info\\METADATA',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\pdfminer_six-20251107.dist-info\\METADATA',
+   'DATA'),
+  ('base_library.zip',
+   'D:\\New Program\\build\\Transfer Manager 9.0\\base_library.zip',
+   'DATA')],
+ [],
+ False,
+ False,
+ 1765553189,
+ [('runw.exe',
+   'd:\\New '
+   'Program\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
+   'EXECUTABLE')],
+ 'C:\\Users\\AkhilZ\\AppData\\Local\\Python\\pythoncore-3.14-64\\python314.dll')
