@@ -1,0 +1,1167 @@
+{% extends "base.html" %}
+{% block title %}Transfer Applications - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-file-alt"></i> Transfer Applications</h1>
+        <div class="header-actions">
+            <button type="button" class="btn btn-info" onclick="openCompareModal()">
+                <i class="fas fa-exchange-alt"></i> Compare PENs
+            </button>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="form-group">
+                <label for="district">Select District</label>
+                <select name="district" id="district" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- Select District --</option>
+                    <option value="All Districts" {% if district_filter == 'All Districts' %}selected{% endif %}>All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == district_filter %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    
+    {% if district_filter %}
+    <div class="info-bar">
+        <span><i class="fas fa-info-circle"></i> Showing employees from <strong>{{ district_filter }}</strong> who have NOT applied for transfer yet.</span>
+        {% if applied_count %}
+        {% if district_filter == 'All Districts' %}
+        <span class="already-applied">
+            {{ applied_count }} applied{% if last_applied %} | Last: <strong>{{ last_applied[0] }}</strong> ({{ last_applied[2] }}){% endif %}
+        </span>
+        {% else %}
+        <a href="{{ url_for('applied_employees', district=district_filter) }}" class="already-applied-link">
+            <span class="already-applied">{{ applied_count }} applied{% if last_applied %} | Last: <strong>{{ last_applied[0] }}</strong>{% endif %} <i class="fas fa-external-link-alt"></i></span>
+        </a>
+        {% endif %}
+        {% endif %}
+    </div>
+    
+    <div class="application-layout">
+        <!-- Employee List Panel -->
+        <div class="employee-panel">
+            <div class="employee-panel-header">
+                <h3><i class="fas fa-users"></i> Employees (<span id="visibleCount">{{ employees|length }}</span>)</h3>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="employeeSearch" placeholder="Search by Name or PEN..." onkeyup="filterEmployees()">
+                    <button type="button" class="search-clear" onclick="clearSearch()" title="Clear">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="already-applied-alert" id="alreadyAppliedAlert" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="alreadyAppliedMessage">This Employee Already Applied</span>
+            </div>
+            {% if employees %}
+            <div class="employee-list-scroll">
+                {% for emp in employees %}
+                <div class="employee-row" id="emp-row-{{ emp[0] }}" data-name="{{ emp[1]|lower }}" data-pen="{{ emp[0] }}" {% if district_filter == 'All Districts' %}data-district="{{ emp[4]|lower }}"{% endif %}>
+                    <div class="emp-info">
+                        <span class="emp-name">{{ emp[1] }}</span>
+                        {% if district_filter == 'All Districts' %}
+                        <span class="emp-details">{{ emp[0] }} | {{ emp[2] }} | {{ format_duration(emp[3]) }} | <strong>{{ emp[4] }}</strong></span>
+                        {% else %}
+                        <span class="emp-details">{{ emp[0] }} | {{ emp[2] }} | {{ format_duration(emp[3]) }}</span>
+                        {% endif %}
+                    </div>
+                    {% if district_filter == 'All Districts' %}
+                    <button type="button" class="btn btn-sm btn-primary mark-btn" 
+                            onclick="openApplicationForm('{{ emp[0] }}', '{{ emp[1] }}', '{{ emp[2] }}', '{{ format_duration(emp[3]) }}', '{{ emp[4] }}')">
+                        <i class="fas fa-plus"></i> Mark as Applied
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-primary mark-btn" 
+                            onclick="openApplicationForm('{{ emp[0] }}', '{{ emp[1] }}', '{{ emp[2] }}', '{{ format_duration(emp[3]) }}', '')">
+                        <i class="fas fa-plus"></i> Mark as Applied
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="no-search-results" id="noSearchResults">
+                    <i class="fas fa-search"></i>
+                    <p>No employees found matching your search</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-employees">
+                <i class="fas fa-check-circle"></i>
+                <p>All employees from {{ district_filter }} have applied!</p>
+                <a href="{{ url_for('applied_employees', district=district_filter) }}" class="btn btn-primary btn-sm">
+                    View Applied List
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Application Form Panel -->
+        <div class="form-panel" id="applicationFormPanel">
+            <div class="form-panel-placeholder" id="formPlaceholder">
+                <i class="fas fa-hand-pointer"></i>
+                <p>Click "Mark as Applied" button next to an employee to enter application details</p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('mark_applied') }}" id="applicationForm" style="display:none;">
+                <div class="form-panel-header">
+                    <h3><i class="fas fa-edit"></i> Application Details</h3>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="closeApplicationForm()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+                
+                <div class="selected-employee" id="selectedEmployee">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+                
+                <input type="hidden" name="pens" id="selectedPen">
+                <input type="hidden" name="district" id="selectedDistrict" value="{{ district_filter }}">`
+                
+                <div class="form-content-scroll">
+                    <div class="form-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="receipt_numbers"><i class="fas fa-receipt"></i> Receipt Number</label>
+                                <input type="text" name="receipt_numbers" id="receipt_numbers" class="form-control" 
+                                       placeholder="Enter receipt number" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="applied_date"><i class="fas fa-calendar"></i> Applied Date</label>
+                                <input type="text" name="applied_date" id="applied_date" class="form-control date-input" 
+                                       placeholder="DD-MM-YYYY">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" name="special_priority" id="special_priority">
+                                    <span>Special Priority</span>
+                                </label>
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" name="has_weightage" id="has_weightage" onchange="toggleWeightage()">
+                                    <span>Has Weightage</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="weightage-fields" id="weightageFields" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="weightage_details">Weightage Reason</label>
+                                    <input type="text" name="weightage_details" id="weightage_details" class="form-control" 
+                                           placeholder="Enter reason">
+                                </div>
+                                <div class="form-group">
+                                    <label for="weightage_priority">Priority Level</label>
+                                    <select name="weightage_priority" id="weightage_priority" class="form-control">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5" selected>5</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4><i class="fas fa-list-ol"></i> District Preferences (1-8)</h4>
+                        <div class="preferences-compact">
+                            <div class="pref-row">
+                                <div class="form-group">
+                                    <label>Pref 1</label>
+                                    <select name="pref1" id="pref1" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 2</label>
+                                    <select name="pref2" id="pref2" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 3</label>
+                                    <select name="pref3" id="pref3" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 4</label>
+                                    <select name="pref4" id="pref4" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="pref-row">
+                                <div class="form-group">
+                                    <label>Pref 5</label>
+                                    <select name="pref5" id="pref5" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 6</label>
+                                    <select name="pref6" id="pref6" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 7</label>
+                                    <select name="pref7" id="pref7" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pref 8</label>
+                                    <select name="pref8" id="pref8" class="form-control pref-select">
+                                        <option value="">--</option>
+                                        {% for d in districts %}
+                                        <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions-sticky">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check"></i> Finalise Application
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="select-district-prompt">
+        <i class="fas fa-hand-point-up"></i>
+        <h3>Select a District</h3>
+        <p>Please select a district from the dropdown to view employees who haven't applied for transfer.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.application-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    height: calc(100vh - 280px);
+    min-height: 450px;
+}
+
+.employee-panel, .form-panel {
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.employee-panel h3 {
+    padding: 0;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.employee-panel-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.search-box i.fa-search {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.search-box input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    display: none;
+}
+
+.search-clear:hover {
+    color: var(--danger-color);
+}
+
+.employee-row.hidden {
+    display: none;
+}
+
+.no-search-results {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    display: none;
+}
+
+.no-search-results i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.employee-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.employee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+
+.employee-row:hover {
+    background: var(--bg-hover);
+}
+
+.employee-row.selected {
+    background: rgba(37, 99, 235, 0.1);
+    border-left: 3px solid var(--primary-color);
+}
+
+.emp-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.emp-name {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.emp-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.mark-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.no-employees {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.no-employees i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--success-color);
+}
+
+.form-panel {
+    position: relative;
+}
+
+.form-panel-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2rem;
+}
+
+.form-panel-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.form-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.form-panel-header h3 {
+    padding: 0;
+    border: none;
+    margin: 0;
+    font-size: 1rem;
+}
+
+#applicationForm {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.selected-employee {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    color: white;
+    padding: 0.75rem 1rem;
+    margin: 0;
+}
+
+.selected-employee .emp-name {
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+    color: white;
+}
+
+.selected-employee .emp-details {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.8rem;
+}
+
+.form-content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.form-section {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.form-section h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.form-group {
+    margin-bottom: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+    display: block;
+}
+
+.form-group .form-control {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.preferences-compact .pref-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+.preferences-compact .form-group {
+    margin-bottom: 0;
+}
+
+.preferences-compact label {
+    font-size: 0.7rem;
+}
+
+.preferences-compact .form-control {
+    padding: 0.35rem;
+    font-size: 0.75rem;
+}
+
+.form-actions-sticky {
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border-top: 2px solid var(--primary-color);
+    margin-top: auto;
+}
+
+.form-actions-sticky .btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+.weightage-fields {
+    background: var(--bg-hover);
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+}
+
+.already-applied-link {
+    text-decoration: none;
+}
+
+.already-applied {
+    cursor: pointer;
+}
+
+.already-applied:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+    .application-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .employee-panel {
+        max-height: 250px;
+    }
+    
+    .form-panel {
+        min-height: 400px;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPen = null;
+
+function openApplicationForm(pen, name, institution, duration, district) {
+    // Hide placeholder, show form
+    document.getElementById('formPlaceholder').style.display = 'none';
+    document.getElementById('applicationForm').style.display = 'flex';
+    
+    // Set selected employee info
+    document.getElementById('selectedPen').value = pen;
+    
+    // If district is provided (All Districts mode), update the hidden district field
+    if (district) {
+        document.getElementById('selectedDistrict').value = district;
+        document.getElementById('selectedEmployee').innerHTML = `
+            <div class="emp-name">${name}</div>
+            <div class="emp-details">PEN: ${pen} | ${institution} | Duration: ${duration} | District: ${district}</div>
+        `;
+    } else {
+        document.getElementById('selectedEmployee').innerHTML = `
+            <div class="emp-name">${name}</div>
+            <div class="emp-details">PEN: ${pen} | ${institution} | Duration: ${duration}</div>
+        `;
+    }
+    
+    // Highlight selected row
+    if (currentPen) {
+        const oldRow = document.getElementById('emp-row-' + currentPen);
+        if (oldRow) oldRow.classList.remove('selected');
+    }
+    document.getElementById('emp-row-' + pen).classList.add('selected');
+    currentPen = pen;
+    
+    // Reset form
+    document.getElementById('receipt_numbers').value = '';
+    document.getElementById('applied_date').value = getTodayDate();
+    document.getElementById('special_priority').checked = false;
+    document.getElementById('has_weightage').checked = false;
+    document.getElementById('weightageFields').style.display = 'none';
+    document.getElementById('weightage_details').value = '';
+    document.getElementById('weightage_priority').value = '5';
+    
+    // Reset preferences
+    for (let i = 1; i <= 8; i++) {
+        document.getElementById('pref' + i).value = '';
+    }
+    resetPrefOptions();
+    
+    // Focus on receipt number
+    document.getElementById('receipt_numbers').focus();
+}
+
+function closeApplicationForm() {
+    document.getElementById('formPlaceholder').style.display = 'flex';
+    document.getElementById('applicationForm').style.display = 'none';
+    
+    if (currentPen) {
+        const row = document.getElementById('emp-row-' + currentPen);
+        if (row) row.classList.remove('selected');
+        currentPen = null;
+    }
+}
+
+function toggleWeightage() {
+    const checked = document.getElementById('has_weightage').checked;
+    document.getElementById('weightageFields').style.display = checked ? 'block' : 'none';
+}
+
+function getTodayDate() {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    return dd + '-' + mm + '-' + yyyy;
+}
+
+// Date input formatting
+document.getElementById('applied_date')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) value = value.slice(0,2) + '-' + value.slice(2);
+    if (value.length >= 5) value = value.slice(0,5) + '-' + value.slice(5,9);
+    e.target.value = value;
+});
+
+function resetPrefOptions() {
+    document.querySelectorAll('.pref-select option').forEach(opt => {
+        opt.disabled = false;
+    });
+}
+
+// Prevent duplicate preferences
+document.querySelectorAll('.pref-select').forEach(select => {
+    select.addEventListener('change', function() {
+        const selectedValues = Array.from(document.querySelectorAll('.pref-select'))
+            .map(s => s.value).filter(v => v);
+        
+        document.querySelectorAll('.pref-select').forEach(s => {
+            Array.from(s.options).forEach(opt => {
+                if (opt.value && selectedValues.includes(opt.value) && s.value !== opt.value) {
+                    opt.disabled = true;
+                } else {
+                    opt.disabled = false;
+                }
+            });
+        });
+    });
+});
+
+// Form validation
+document.getElementById('applicationForm')?.addEventListener('submit', function(e) {
+    const receipt = document.getElementById('receipt_numbers').value.trim();
+    if (!receipt) {
+        e.preventDefault();
+        alert('Please enter the Receipt Number');
+        document.getElementById('receipt_numbers').focus();
+        return false;
+    }
+});
+
+// Search/Filter employees
+let checkAppliedTimeout = null;
+
+function filterEmployees() {
+    const searchInput = document.getElementById('employeeSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const clearBtn = document.querySelector('.search-clear');
+    const rows = document.querySelectorAll('.employee-row');
+    const noResults = document.getElementById('noSearchResults');
+    const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
+    
+    // Show/hide clear button
+    clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    // Hide already applied alert initially
+    alreadyAppliedAlert.style.display = 'none';
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name') || '';
+        const pen = row.getAttribute('data-pen') || '';
+        const district = row.getAttribute('data-district') || '';
+        
+        if (name.includes(searchTerm) || pen.includes(searchTerm) || district.includes(searchTerm)) {
+            row.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+    
+    // Update count and show/hide no results message
+    document.getElementById('visibleCount').textContent = visibleCount;
+    if (noResults) {
+        noResults.style.display = (visibleCount === 0 && searchTerm) ? 'block' : 'none';
+    }
+    
+    // Check if the search term looks like a PEN number (numeric) and employee is not found
+    if (searchTerm && /^\d+$/.test(searchTerm) && searchTerm.length >= 3) {
+        // Clear previous timeout
+        if (checkAppliedTimeout) clearTimeout(checkAppliedTimeout);
+        
+        // Debounce the check
+        checkAppliedTimeout = setTimeout(() => {
+            checkIfAlreadyApplied(searchTerm);
+        }, 300);
+    }
+}
+
+function checkIfAlreadyApplied(pen) {
+    fetch(`/application/check/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
+            if (data.applied) {
+                document.getElementById('alreadyAppliedMessage').innerHTML = 
+                    `<strong>${data.name}</strong> (PEN: ${pen}) from <strong>${data.district}</strong> has already applied!`;
+                alreadyAppliedAlert.style.display = 'flex';
+            } else {
+                alreadyAppliedAlert.style.display = 'none';
+            }
+        })
+        .catch(() => {
+            // Silently fail
+        });
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('employeeSearch');
+    searchInput.value = '';
+    document.getElementById('alreadyAppliedAlert').style.display = 'none';
+    filterEmployees();
+    searchInput.focus();
+}
+
+// Auto-focus search field when redirected after marking as applied
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('focus_search') === '1') {
+        // Set district to "All Districts" for easier searching
+        const districtSelect = document.getElementById('districtSelect');
+        if (districtSelect && districtSelect.value !== '') {
+            districtSelect.value = '';
+            districtSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Focus the search field after a short delay to ensure page is ready
+        setTimeout(function() {
+            const searchInput = document.getElementById('employeeSearch');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }, 100);
+        
+        // Clean up URL (remove the parameter)
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+    }
+})();
+</script>
+
+<style>
+.already-applied-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    margin: 0.5rem;
+    font-size: 0.85rem;
+}
+.already-applied-alert i {
+    color: #ffc107;
+    font-size: 1rem;
+}
+
+/* Compare Modal Styles */
+.compare-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+.compare-modal {
+    background: var(--bg-card);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.compare-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+.compare-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+.compare-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.compare-modal-close:hover {
+    opacity: 0.8;
+}
+.compare-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.compare-upload-section {
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+.compare-upload-section i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+.compare-upload-section p {
+    margin: 0.5rem 0;
+    color: var(--text-muted);
+}
+.compare-file-input {
+    display: none;
+}
+.compare-results {
+    display: none;
+}
+.compare-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.compare-stat {
+    flex: 1;
+    min-width: 150px;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+.compare-stat.uploaded {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+.compare-stat.applied {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.compare-stat.not-applied {
+    background: #fff3e0;
+    color: #e65100;
+}
+.compare-stat .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+.compare-stat .stat-label {
+    font-size: 0.85rem;
+}
+.compare-list {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+.compare-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.compare-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.compare-list th, .compare-list td {
+    padding: 0.5rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.compare-list th {
+    background: var(--bg-main);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+.compare-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+</style>
+
+<!-- Compare PENs Modal -->
+<div class="compare-modal-overlay" id="compareModal">
+    <div class="compare-modal">
+        <div class="compare-modal-header">
+            <h3><i class="fas fa-exchange-alt"></i> Compare PENs</h3>
+            <button type="button" class="compare-modal-close" onclick="closeCompareModal()">&times;</button>
+        </div>
+        <div class="compare-modal-body">
+            <div class="compare-upload-section" id="compareUploadSection">
+                <i class="fas fa-file-excel"></i>
+                <h4>Upload Excel File with PENs</h4>
+                <p>Upload an Excel file with PEN numbers (one PEN per row in the first column)</p>
+                <input type="file" id="comparePenFile" class="compare-file-input" accept=".xlsx,.xls" onchange="processCompareFile(this)">
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('comparePenFile').click()">
+                    <i class="fas fa-upload"></i> Select Excel File
+                </button>
+            </div>
+            
+            <div class="compare-results" id="compareResults">
+                <div class="compare-stats">
+                    <div class="compare-stat uploaded">
+                        <div class="stat-number" id="statUploaded">0</div>
+                        <div class="stat-label">Uploaded PENs</div>
+                    </div>
+                    <div class="compare-stat applied">
+                        <div class="stat-number" id="statApplied">0</div>
+                        <div class="stat-label">Already Applied</div>
+                    </div>
+                    <div class="compare-stat not-applied">
+                        <div class="stat-number" id="statNotApplied">0</div>
+                        <div class="stat-label">NOT Applied</div>
+                    </div>
+                </div>
+                
+                <div class="compare-list-header">
+                    <strong><i class="fas fa-exclamation-circle"></i> PENs NOT Applied Yet:</strong>
+                    <button type="button" class="btn btn-sm btn-success" onclick="exportNotApplied()">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                <div class="compare-list" id="compareListContainer">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sl. No.</th>
+                                <th>PEN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notAppliedList">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="compare-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="resetCompare()">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+            <button type="button" class="btn btn-danger" onclick="closeCompareModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// Applied PENs list (from server)
+const appliedPens = new Set([
+    {% for emp in applied_pens %}'{{ emp }}'{% if not loop.last %},{% endif %}{% endfor %}
+]);
+
+let notAppliedPens = [];
+
+function openCompareModal() {
+    document.getElementById('compareModal').style.display = 'flex';
+}
+
+function closeCompareModal() {
+    document.getElementById('compareModal').style.display = 'none';
+}
+
+function resetCompare() {
+    document.getElementById('compareUploadSection').style.display = 'block';
+    document.getElementById('compareResults').style.display = 'none';
+    document.getElementById('comparePenFile').value = '';
+    notAppliedPens = [];
+}
+
+function processCompareFile(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            
+            // Extract PENs from first column
+            const uploadedPens = [];
+            rows.forEach(row => {
+                if (row && row[0]) {
+                    const pen = String(row[0]).trim();
+                    if (pen && /^\d+$/.test(pen)) {
+                        uploadedPens.push(pen);
+                    }
+                }
+            });
+            
+            if (uploadedPens.length === 0) {
+                alert('No valid PEN numbers found in the uploaded file.');
+                return;
+            }
+            
+            // Compare with applied PENs
+            notAppliedPens = uploadedPens.filter(pen => !appliedPens.has(pen));
+            const appliedCount = uploadedPens.length - notAppliedPens.length;
+            
+            // Update stats
+            document.getElementById('statUploaded').textContent = uploadedPens.length;
+            document.getElementById('statApplied').textContent = appliedCount;
+            document.getElementById('statNotApplied').textContent = notAppliedPens.length;
+            
+            // Populate not applied list
+            const tbody = document.getElementById('notAppliedList');
+            tbody.innerHTML = '';
+            notAppliedPens.forEach((pen, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${idx + 1}</td><td>${pen}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            // Show results
+            document.getElementById('compareUploadSection').style.display = 'none';
+            document.getElementById('compareResults').style.display = 'block';
+            
+        } catch (err) {
+            alert('Error reading file: ' + err.message);
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+function exportNotApplied() {
+    if (notAppliedPens.length === 0) {
+        alert('No PENs to export');
+        return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const wsData = [['Sl. No.', 'PEN (NOT Applied)']];
+    notAppliedPens.forEach((pen, idx) => {
+        wsData.push([idx + 1, pen]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch: 10}, {wch: 20}];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Not Applied PENs');
+    XLSX.writeFile(wb, `not_applied_pens_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// Close modal when clicking outside
+document.getElementById('compareModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCompareModal();
+    }
+});
+</script>
+{% endblock %}

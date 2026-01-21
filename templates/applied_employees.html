@@ -1,0 +1,1372 @@
+{% extends "base.html" %}
+{% block title %}Applied Employees - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-check-circle"></i> Applied Employees</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('applied_employees') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by District → Special Priority → Weightage Priority → Duration">
+                <i class="fas fa-sort-amount-down"></i> From District Sort
+            </a>
+            <a href="{{ url_for('applied_employees', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Pref 1 District (South to North) → Seniority">
+                <i class="fas fa-map-marker-alt"></i> To District Sort
+            </a>
+            <button type="button" class="btn btn-success" onclick="openAutoFillModal()">
+                <i class="fas fa-magic"></i> Auto-fill Vacancies
+            </button>
+            <a href="{{ url_for('export_applied_excel', district=district_filter, pref_district=pref_district, sort=sort_by) }}" class="btn btn-secondary">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="printTable()">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <form method="POST" action="{{ url_for('clear_applied_list') }}" style="display:inline" 
+                  onsubmit="return confirm('Clear ALL applied employees? This will remove all applications and preferences. This cannot be undone!')">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="form-group">
+                <label for="district">Filter by Current District</label>
+                <select name="district" id="district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == district_filter %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pref_district">To District</label>
+                <select name="pref_district" id="pref_district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Preferences</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == pref_district %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group search-group">
+                <label for="tableSearch">Search</label>
+                <div class="search-box-inline">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tableSearch" class="form-control" placeholder="Search by Name or PEN..." onkeyup="filterTable()">
+                    <button type="button" class="search-clear" onclick="clearSearch()" title="Clear">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% if district_filter or pref_district %}
+            <a href="{{ url_for('applied_employees') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear Filters
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header">
+        <h2>JPHN Transfer Management System - Applied Employees List</h2>
+        <p>Generated on: {{ now().strftime('%d-%m-%Y %I:%M %p') if now else '' }}</p>
+        <p>Total Employees: {{ employees|length }}</p>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table applied-table" id="appliedTable">
+            <thead>
+                <tr>
+                    <th>Sl No</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 1, 'number')">PEN</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 2, 'text')">Name</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 3, 'text')">Institution</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 4, 'text')">Current District</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 5, 'duration')">Duration</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 6, 'text')">Weightage</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 7, 'text')">Reason</th>
+                    {% if pref_district %}
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'number')">Pref #</th>
+                    {% else %}
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 8, 'text')">Pref 1</th>
+                    {% endif %}
+                    <th class="sortable" onclick="sortTable(document.getElementById('appliedTable'), 9, 'text')">Receipt</th>
+                    <th class="no-print actions-header">
+                        Actions
+                        <button type="button" class="btn btn-warning btn-sm unlock-all-btn" onclick="unlockAll()" title="Unlock All Employees">
+                            <i class="fas fa-unlock"></i> Unlock All
+                        </button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set current_pref = namespace(value=0) %}
+                {% for emp in employees %}
+                {% if pref_district and emp[22] != current_pref.value %}
+                {% set current_pref.value = emp[22] %}
+                <tr class="pref-section-header">
+                    <td colspan="10" class="pref-heading">
+                        <i class="fas fa-bookmark"></i> Preference {{ emp[22] }}
+                        <span class="pref-count">({{ pref_counts.get(emp[22], 0) }} employee{% if pref_counts.get(emp[22], 0) != 1 %}s{% endif %})</span>
+                    </td>
+                    <td class="action-cell"></td>
+                </tr>
+                {% endif %}
+                <tr class="{% if emp[20] == 'Yes' %}row-locked{% endif %} {% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %} data-pen="{{ emp[0] }}" data-locked="{{ emp[20] }}" data-weightage="{{ emp[6] }}" data-weightage-consider="{{ emp[21] }}">
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        {{ emp[0] }}
+                        {% if emp[20] == 'Yes' %}
+                        <i class="fas fa-lock text-danger" title="Locked - Will not be included in Auto-fill"></i>
+                        {% endif %}
+                    </td>
+                    <td>{{ emp[1] }}</td>
+                    <td>{{ emp[2] }}</td>
+                    <td>{{ emp[3] }}</td>
+                    <td>{{ format_duration(emp[4]) }}</td>
+                    <td class="weightage-cell" oncontextmenu="showWeightageMenu(event, '{{ emp[0] }}', '{{ emp[6] }}', '{{ emp[21] }}')" title="Right-click to toggle Consider/Not Consider">
+                        {% if emp[6] == 'Yes' %}
+                            {% if emp[21] == 'No' %}
+                            <span class="badge badge-danger weightage-not-consider" title="{{ emp[7] or '' }} - NOT CONSIDERED for weightage priority">
+                                <i class="fas fa-times-circle"></i> Yes (Not Consider)
+                            </span>
+                            {% else %}
+                            <span class="badge badge-warning" title="{{ emp[7] or '' }}">Yes</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp[6] == 'Yes' %}
+                        <span title="{{ emp[7] or '' }}">{{ emp[7] or '-' }}</span>
+                        {% else %}
+                        <span class="badge badge-secondary">NA</span>
+                        {% endif %}
+                    </td>
+                    {% if pref_district %}
+                    <td class="pref-cell">
+                        <span class="badge {% if emp[22] == 1 %}badge-success{% elif emp[22] <= 3 %}badge-info{% else %}badge-secondary{% endif %}">Pref {{ emp[22] }}</span>
+                    </td>
+                    {% else %}
+                    <td class="pref-cell">{{ emp[11] or '-' }}</td>
+                    {% endif %}
+                    <td>{{ emp[8] or '-' }}</td>
+                    <td class="action-cell">
+                        <button type="button" class="btn btn-sm {% if emp[20] == 'Yes' %}btn-danger{% else %}btn-secondary{% endif %} btn-lock" 
+                                onclick="toggleLock('{{ emp[0] }}')"
+                                title="{% if emp[20] == 'Yes' %}Unlock - Include in Auto-fill{% else %}Lock - Exclude from Auto-fill{% endif %}">
+                            <i class="fas {% if emp[20] == 'Yes' %}fa-lock{% else %}fa-unlock{% endif %}"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="showDetails('{{ emp[0] }}', '{{ emp[1] }}', '{{ emp[11] }}', '{{ emp[12] }}', '{{ emp[13] }}', '{{ emp[14] }}', '{{ emp[15] }}', '{{ emp[16] }}', '{{ emp[17] }}', '{{ emp[18] }}')"
+                                title="View All Preferences">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning" 
+                                onclick="openEditModal('{{ emp[0] }}')"
+                                title="Edit Application">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <form method="POST" action="{{ url_for('remove_from_applied', pen=emp[0]) }}" 
+                              style="display:inline" onsubmit="return confirm('Remove this employee from applied list?')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="no-data">
+                        <i class="fas fa-inbox"></i>
+                        <p>No applied employees found</p>
+                        <a href="{{ url_for('application_list') }}" class="btn btn-primary">Mark Applications</a>
+                    </td>
+                    <td class="action-cell"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-footer">
+        <span class="record-count">Total: {{ employees|length }} employee(s)</span>
+    </div>
+</div>
+
+<!-- Weightage Context Menu -->
+<div id="weightageContextMenu" class="context-menu">
+    <ul>
+        <li id="menuConsider" onclick="setWeightageConsider(true)">
+            <i class="fas fa-check-circle text-success"></i> Consider
+        </li>
+        <li id="menuNotConsider" onclick="setWeightageConsider(false)">
+            <i class="fas fa-times-circle text-danger"></i> Not Consider
+        </li>
+    </ul>
+</div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h2><i class="fas fa-list-ol"></i> All Preferences</h2>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- Auto-fill Modal -->
+<div id="autoFillModal" class="modal">
+    <div class="modal-content modal-lg">
+        <span class="modal-close" onclick="closeAutoFillModal()" id="autoFillCloseBtn">&times;</span>
+        <h2><i class="fas fa-magic"></i> Auto-fill Vacancies</h2>
+        
+        <!-- Configuration Section (shown before starting) -->
+        <div id="autoFillConfig">
+            <div class="auto-fill-info">
+                <p><strong>This will automatically assign transfers based on:</strong></p>
+                <div class="priority-list">
+                    <div class="priority-item priority-special">
+                        <span class="priority-badge">PRIORITY 0</span>
+                        <span class="priority-text">Employees with <strong>SPECIAL PRIORITY</strong> - Processed FIRST, get preferences in order</span>
+                    </div>
+                    <div class="priority-item priority-weightage">
+                        <span class="priority-badge">PRIORITY 1</span>
+                        <span class="priority-text">Employees with <strong>WEIGHTAGE</strong> - Get preferences in order if vacancy available</span>
+                    </div>
+                    <div class="priority-item priority-normal">
+                        <span class="priority-badge">PRIORITY 2</span>
+                        <span class="priority-text">Employees <strong>WITHOUT weightage</strong> - Junior employees first (least duration)</span>
+                    </div>
+                </div>
+                <div class="cascade-info">
+                    <i class="fas fa-sync-alt"></i>
+                    <span><strong>CASCADING VACANCIES:</strong> When an employee transfers out, their old district gets a NEW vacancy that can also be filled!</span>
+                </div>
+                <p class="note"><i class="fas fa-info-circle"></i> Employees already in Draft List will be skipped. Results will appear in Draft List.</p>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" id="enableAgainst">
+                    <span>Enable 'Against' Transfers (Displace senior employees if no vacancy available)</span>
+                </label>
+                <p class="help-text">If enabled: When an applicant cannot get ANY of their 8 preferences, the senior-most employee in their Pref 1 district will be displaced.</p>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeAutoFillModal()">Cancel</button>
+                <button type="button" class="btn btn-success btn-lg" onclick="startAutoFill()">
+                    <i class="fas fa-rocket"></i> Start Auto-fill
+                </button>
+            </div>
+        </div>
+        
+        <!-- Progress Section (shown during processing) -->
+        <div id="autoFillProgress" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-header">
+                    <i class="fas fa-cog fa-spin"></i>
+                    <span id="progressStage">Initializing...</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                    </div>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Allocated:</span>
+                        <span class="stat-value" id="statAllocated">0</span>
+                    </div>
+                    <div class="stat-item stat-special">
+                        <span class="stat-label">Special Priority:</span>
+                        <span class="stat-value" id="statSpecial">0</span>
+                    </div>
+                    <div class="stat-item stat-weightage">
+                        <span class="stat-label">Weightage:</span>
+                        <span class="stat-value" id="statWeightage">0</span>
+                    </div>
+                    <div class="stat-item stat-normal">
+                        <span class="stat-label">Normal:</span>
+                        <span class="stat-value" id="statNormal">0</span>
+                    </div>
+                    <div class="stat-item stat-cascade">
+                        <span class="stat-label">Cascade:</span>
+                        <span class="stat-value" id="statCascade">0</span>
+                    </div>
+                </div>
+                <div class="progress-detail" id="progressDetail">Preparing to process employees...</div>
+            </div>
+        </div>
+        
+        <!-- Result Section (shown after completion) -->
+        <div id="autoFillResult" style="display: none;">
+            <div class="result-container">
+                <div class="result-icon success" id="resultIcon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 id="resultTitle">Auto-fill Complete!</h3>
+                <div class="result-summary" id="resultSummary"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="window.location.href='{{ url_for('draft_list') }}'">
+                        <i class="fas fa-list"></i> View Draft List
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAutoFillModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content modal-lg">
+        <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        <h2><i class="fas fa-edit"></i> Edit Application</h2>
+        <form method="POST" id="editForm" action="">
+            <div class="selected-employee-edit" id="editSelectedEmployee"></div>
+            
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_receipt_numbers"><i class="fas fa-receipt"></i> Receipt Number</label>
+                        <input type="text" name="receipt_numbers" id="edit_receipt_numbers" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_applied_date"><i class="fas fa-calendar"></i> Applied Date</label>
+                        <input type="text" name="applied_date" id="edit_applied_date" class="form-control" placeholder="DD-MM-YYYY">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" name="special_priority" id="edit_special_priority">
+                            <span>Special Priority</span>
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" name="has_weightage" id="edit_has_weightage" onchange="toggleEditWeightage()">
+                            <span>Has Weightage</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="weightage-fields" id="editWeightageFields" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_weightage_details">Weightage Reason</label>
+                            <input type="text" name="weightage_details" id="edit_weightage_details" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_weightage_priority">Priority Level</label>
+                            <select name="weightage_priority" id="edit_weightage_priority" class="form-control">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4><i class="fas fa-list-ol"></i> District Preferences (1-8)</h4>
+                <div class="preferences-grid">
+                    <div class="form-group">
+                        <label>Pref 1</label>
+                        <select name="pref1" id="edit_pref1" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 2</label>
+                        <select name="pref2" id="edit_pref2" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 3</label>
+                        <select name="pref3" id="edit_pref3" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 4</label>
+                        <select name="pref4" id="edit_pref4" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 5</label>
+                        <select name="pref5" id="edit_pref5" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 6</label>
+                        <select name="pref6" id="edit_pref6" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 7</label>
+                        <select name="pref7" id="edit_pref7" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pref 8</label>
+                        <select name="pref8" id="edit_pref8" class="form-control edit-pref-select">
+                            <option value="">--</option>
+                            {% for d in districts %}
+                            <option value="{{ d }}">{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Weightage Context Menu Variables
+let contextMenuPen = null;
+let contextMenuHasWeightage = false;
+let contextMenuConsider = true;
+
+function showWeightageMenu(e, pen, hasWeightage, consider) {
+    e.preventDefault();
+    
+    // Only show context menu for employees with weightage
+    if (hasWeightage !== 'Yes') {
+        return;
+    }
+    
+    contextMenuPen = pen;
+    contextMenuHasWeightage = hasWeightage === 'Yes';
+    contextMenuConsider = consider !== 'No';
+    
+    const menu = document.getElementById('weightageContextMenu');
+    const menuConsider = document.getElementById('menuConsider');
+    const menuNotConsider = document.getElementById('menuNotConsider');
+    
+    // Highlight current selection
+    if (contextMenuConsider) {
+        menuConsider.classList.add('active');
+        menuNotConsider.classList.remove('active');
+    } else {
+        menuConsider.classList.remove('active');
+        menuNotConsider.classList.add('active');
+    }
+    
+    // Position the menu
+    menu.style.display = 'block';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+    
+    // Close menu when clicking elsewhere
+    document.addEventListener('click', hideWeightageMenu);
+}
+
+function hideWeightageMenu() {
+    document.getElementById('weightageContextMenu').style.display = 'none';
+    document.removeEventListener('click', hideWeightageMenu);
+}
+
+function setWeightageConsider(consider) {
+    if (!contextMenuPen) return;
+    
+    // If clicking on the same state, just close menu
+    if (consider === contextMenuConsider) {
+        hideWeightageMenu();
+        return;
+    }
+    
+    fetch(`/applied/toggle-weightage-consider/${contextMenuPen}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Find the row and update it
+            const row = document.querySelector(`tr[data-pen="${contextMenuPen}"]`);
+            if (row) {
+                const weightageCell = row.querySelector('.weightage-cell');
+                row.dataset.weightageConsider = data.consider ? 'Yes' : 'No';
+                
+                if (data.consider) {
+                    // Show as "Yes" (Consider)
+                    weightageCell.innerHTML = '<span class="badge badge-warning">Yes</span>';
+                } else {
+                    // Show as "Yes (Not Consider)" with different styling
+                    weightageCell.innerHTML = '<span class="badge badge-danger weightage-not-consider" title="NOT CONSIDERED for weightage priority"><i class="fas fa-times-circle"></i> Yes (Not Consider)</span>';
+                }
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+    
+    hideWeightageMenu();
+}
+
+function showDetails(pen, name, p1, p2, p3, p4, p5, p6, p7, p8) {
+    const prefs = [p1, p2, p3, p4, p5, p6, p7, p8].filter(p => p && p !== 'None');
+    let html = `<h3>${name} (${pen})</h3><div class="pref-list">`;
+    prefs.forEach((p, i) => {
+        html += `<div class="pref-item"><span class="pref-num">${i+1}</span><span class="pref-value">${p}</span></div>`;
+    });
+    if (prefs.length === 0) {
+        html += '<p>No preferences set</p>';
+    }
+    html += '</div>';
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('detailsModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+}
+
+// Close modal on outside click
+window.onclick = function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+}
+
+let autoFillEventSource = null;
+let autoFillRunning = false;
+
+function openAutoFillModal() {
+    // Reset modal to initial state
+    document.getElementById('autoFillConfig').style.display = 'block';
+    document.getElementById('autoFillProgress').style.display = 'none';
+    document.getElementById('autoFillResult').style.display = 'none';
+    document.getElementById('autoFillCloseBtn').style.display = 'block';
+    autoFillRunning = false;
+    document.getElementById('autoFillModal').style.display = 'flex';
+}
+
+function closeAutoFillModal() {
+    if (autoFillRunning) {
+        if (!confirm('Auto-fill is still running. Are you sure you want to close?')) {
+            return;
+        }
+        if (autoFillEventSource) {
+            autoFillEventSource.close();
+        }
+    }
+    document.getElementById('autoFillModal').style.display = 'none';
+    autoFillRunning = false;
+}
+
+function startAutoFill() {
+    const enableAgainst = document.getElementById('enableAgainst').checked;
+    
+    // Show progress section, hide config
+    document.getElementById('autoFillConfig').style.display = 'none';
+    document.getElementById('autoFillProgress').style.display = 'block';
+    document.getElementById('autoFillCloseBtn').style.display = 'none';
+    autoFillRunning = true;
+    
+    // Reset progress display
+    updateProgress(0, 'Initializing...', 'Connecting to server...');
+    document.getElementById('statAllocated').textContent = '0';
+    document.getElementById('statSpecial').textContent = '0';
+    document.getElementById('statWeightage').textContent = '0';
+    document.getElementById('statNormal').textContent = '0';
+    document.getElementById('statCascade').textContent = '0';
+    
+    // Start SSE connection for progress updates
+    const url = `/auto-fill-stream?enable_against=${enableAgainst ? 'on' : ''}`;
+    autoFillEventSource = new EventSource(url);
+    
+    autoFillEventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'progress') {
+            updateProgress(data.percent, data.stage, data.detail);
+            if (data.stats) {
+                document.getElementById('statAllocated').textContent = data.stats.allocated || 0;
+                document.getElementById('statSpecial').textContent = data.stats.special || 0;
+                document.getElementById('statWeightage').textContent = data.stats.weightage || 0;
+                document.getElementById('statNormal').textContent = data.stats.normal || 0;
+                document.getElementById('statCascade').textContent = data.stats.cascade || 0;
+            }
+        } else if (data.type === 'complete') {
+            autoFillEventSource.close();
+            autoFillRunning = false;
+            showAutoFillResult(true, data.message, data.stats);
+        } else if (data.type === 'error') {
+            autoFillEventSource.close();
+            autoFillRunning = false;
+            showAutoFillResult(false, data.message);
+        }
+    };
+    
+    autoFillEventSource.onerror = function(error) {
+        console.error('SSE Error:', error);
+        autoFillEventSource.close();
+        // Fallback to AJAX when SSE fails
+        console.log('Falling back to AJAX auto-fill...');
+        fallbackToAjaxAutoFill(enableAgainst);
+    };
+}
+
+function fallbackToAjaxAutoFill(enableAgainst) {
+    // Show loading state
+    updateProgress(50, 'Processing...', 'Using fallback method (SSE unavailable)...');
+    
+    // Use fetch to call the AJAX endpoint
+    fetch('/draft/auto-fill-ajax', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'enable_against=' + (enableAgainst ? 'on' : '')
+    })
+    .then(response => response.json())
+    .then(data => {
+        autoFillRunning = false;
+        if (data.success) {
+            showAutoFillResult(true, data.message, data.stats);
+        } else {
+            showAutoFillResult(false, data.error || 'Auto-fill failed. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('AJAX Error:', error);
+        autoFillRunning = false;
+        showAutoFillResult(false, 'Auto-fill failed: ' + error.message);
+    });
+}
+
+function updateProgress(percent, stage, detail) {
+    document.getElementById('progressBarFill').style.width = percent + '%';
+    document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('progressStage').textContent = stage;
+    document.getElementById('progressDetail').textContent = detail;
+}
+
+function showAutoFillResult(success, message, stats) {
+    document.getElementById('autoFillProgress').style.display = 'none';
+    document.getElementById('autoFillResult').style.display = 'block';
+    document.getElementById('autoFillCloseBtn').style.display = 'block';
+    
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultSummary = document.getElementById('resultSummary');
+    
+    if (success) {
+        resultIcon.className = 'result-icon success';
+        resultIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        resultTitle.textContent = 'Auto-fill Complete!';
+        
+        let summaryHtml = `<p>${message}</p>`;
+        if (stats) {
+            summaryHtml += `
+                <div class="result-stats">
+                    <div class="result-stat"><span class="label">Total Allocated:</span> <span class="value">${stats.allocated || 0}</span></div>
+                    <div class="result-stat stat-special"><span class="label">Special Priority:</span> <span class="value">${stats.special || 0}</span></div>
+                    <div class="result-stat stat-weightage"><span class="label">Weightage:</span> <span class="value">${stats.weightage || 0}</span></div>
+                    <div class="result-stat stat-normal"><span class="label">Normal:</span> <span class="value">${stats.normal || 0}</span></div>
+                    ${stats.cascade > 0 ? `<div class="result-stat stat-cascade"><span class="label">Cascade:</span> <span class="value">${stats.cascade}</span></div>` : ''}
+                    ${stats.against > 0 ? `<div class="result-stat stat-against"><span class="label">Against:</span> <span class="value">${stats.against}</span></div>` : ''}
+                    ${stats.not_allocated > 0 ? `<div class="result-stat stat-failed"><span class="label">Not Allocated:</span> <span class="value">${stats.not_allocated}</span></div>` : ''}
+                </div>
+            `;
+        }
+        resultSummary.innerHTML = summaryHtml;
+    } else {
+        resultIcon.className = 'result-icon error';
+        resultIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+        resultTitle.textContent = 'Auto-fill Failed';
+        resultSummary.innerHTML = `<p class="error-message">${message}</p>`;
+    }
+}
+
+// Edit Modal Functions
+function openEditModal(pen) {
+    fetch(`/applied/edit/${pen}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const emp = data.data;
+                
+                // Set form action
+                document.getElementById('editForm').action = `/applied/edit/${pen}`;
+                
+                // Set employee info
+                document.getElementById('editSelectedEmployee').innerHTML = `
+                    <strong>${emp.name}</strong> (PEN: ${emp.pen})<br>
+                    <small>${emp.institution} | ${emp.district}</small>
+                `;
+                
+                // Set form values
+                document.getElementById('edit_receipt_numbers').value = emp.receipt_numbers;
+                document.getElementById('edit_applied_date').value = emp.applied_date;
+                document.getElementById('edit_special_priority').checked = emp.special_priority === 'Yes';
+                document.getElementById('edit_has_weightage').checked = emp.weightage === 'Yes';
+                document.getElementById('edit_weightage_details').value = emp.weightage_details;
+                document.getElementById('edit_weightage_priority').value = emp.weightage_priority;
+                
+                // Show/hide weightage fields
+                document.getElementById('editWeightageFields').style.display = emp.weightage === 'Yes' ? 'block' : 'none';
+                
+                // Set preferences
+                for (let i = 1; i <= 8; i++) {
+                    document.getElementById(`edit_pref${i}`).value = emp[`pref${i}`] || '';
+                }
+                
+                // Show modal
+                document.getElementById('editModal').style.display = 'flex';
+            } else {
+                alert('Error loading employee data: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function toggleEditWeightage() {
+    const checked = document.getElementById('edit_has_weightage').checked;
+    document.getElementById('editWeightageFields').style.display = checked ? 'block' : 'none';
+}
+
+// Search/Filter table
+function filterTable() {
+    const searchInput = document.getElementById('tableSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const clearBtn = document.querySelector('.search-clear');
+    const table = document.getElementById('appliedTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        if (row.querySelector('.no-data')) return;
+        
+        const pen = (row.cells[1]?.textContent || '').toLowerCase();
+        const name = (row.cells[2]?.textContent || '').toLowerCase();
+        const institution = (row.cells[3]?.textContent || '').toLowerCase();
+        
+        if (pen.includes(searchTerm) || name.includes(searchTerm) || institution.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update record count
+    const countEl = document.querySelector('.record-count');
+    if (countEl) {
+        countEl.textContent = `Showing: ${visibleCount} of {{ employees|length }} employee(s)`;
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('tableSearch');
+    searchInput.value = '';
+    filterTable();
+    searchInput.focus();
+    document.querySelector('.record-count').textContent = 'Total: {{ employees|length }} employee(s)';
+}
+
+// Toggle Lock/Unlock
+function toggleLock(pen) {
+    fetch(`/applied/toggle-lock/${pen}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Find the row and update it
+            const row = document.querySelector(`tr[data-pen="${pen}"]`);
+            if (row) {
+                const lockBtn = row.querySelector('.btn-lock');
+                const penCell = row.cells[1];
+                
+                if (data.locked) {
+                    row.classList.add('row-locked');
+                    row.dataset.locked = 'Yes';
+                    lockBtn.classList.remove('btn-secondary');
+                    lockBtn.classList.add('btn-danger');
+                    lockBtn.title = 'Unlock - Include in Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-lock"></i>';
+                    // Add lock icon to PEN cell
+                    if (!penCell.querySelector('.fa-lock')) {
+                        penCell.innerHTML = pen + ' <i class="fas fa-lock text-danger" title="Locked - Will not be included in Auto-fill"></i>';
+                    }
+                } else {
+                    row.classList.remove('row-locked');
+                    row.dataset.locked = 'No';
+                    lockBtn.classList.remove('btn-danger');
+                    lockBtn.classList.add('btn-secondary');
+                    lockBtn.title = 'Lock - Exclude from Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-unlock"></i>';
+                    // Remove lock icon from PEN cell
+                    penCell.innerHTML = pen;
+                }
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+// Unlock All employees
+function unlockAll() {
+    if (!confirm('Unlock all employees? This will make all employees available for Auto-fill.')) {
+        return;
+    }
+    
+    fetch('/applied/unlock-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update all rows in the table
+            document.querySelectorAll('tr.row-locked').forEach(row => {
+                row.classList.remove('row-locked');
+                row.dataset.locked = 'No';
+                const pen = row.dataset.pen;
+                const lockBtn = row.querySelector('.btn-lock');
+                const penCell = row.cells[1];
+                
+                if (lockBtn) {
+                    lockBtn.classList.remove('btn-danger');
+                    lockBtn.classList.add('btn-secondary');
+                    lockBtn.title = 'Lock - Exclude from Auto-fill';
+                    lockBtn.innerHTML = '<i class="fas fa-unlock"></i>';
+                }
+                if (penCell) {
+                    penCell.innerHTML = pen;
+                }
+            });
+            alert(`${data.count} employee(s) unlocked successfully!`);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+</script>
+
+<style>
+/* Context Menu Styles */
+.context-menu {
+    display: none;
+    position: absolute;
+    z-index: 10000;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    overflow: hidden;
+}
+.context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.context-menu li {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+.context-menu li:hover {
+    background: var(--bg-hover, #f5f5f5);
+}
+.context-menu li.active {
+    background: var(--primary-light, #e3f2fd);
+    font-weight: 600;
+}
+.context-menu li i {
+    font-size: 1.1rem;
+}
+.text-success {
+    color: #27ae60 !important;
+}
+
+/* Weightage Cell Styles */
+.weightage-cell {
+    cursor: context-menu;
+}
+.weightage-not-consider {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    color: white !important;
+    animation: pulse-warning 2s infinite;
+}
+.weightage-not-consider i {
+    margin-right: 3px;
+}
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Active button state for sort buttons */
+.header-actions .btn.active {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
+    font-weight: bold;
+}
+
+/* Actions column header with Unlock All button */
+.actions-header {
+    position: relative;
+    min-width: 140px;
+}
+.unlock-all-btn {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+}
+
+/* Locked row styling */
+.row-locked {
+    background-color: rgba(231, 76, 60, 0.1) !important;
+    opacity: 0.8;
+}
+.row-locked td {
+    color: var(--text-muted);
+}
+.text-danger {
+    color: #e74c3c !important;
+    margin-left: 5px;
+}
+
+.search-group {
+    min-width: 250px;
+}
+.search-box-inline {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}
+.search-box-inline i.fa-search {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+.search-box-inline input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    outline: none;
+    min-width: 150px;
+}
+.search-box-inline input::placeholder {
+    color: var(--text-muted);
+}
+.search-box-inline .search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    display: none;
+}
+.search-box-inline .search-clear:hover {
+    color: var(--danger-color);
+}
+
+/* Edit Modal Styles */
+.selected-employee-edit {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+.form-section {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+.form-section:last-of-type {
+    border-bottom: none;
+}
+.form-section h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.preferences-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+.preferences-grid .form-group {
+    margin-bottom: 0;
+}
+.preferences-grid label {
+    font-size: 0.75rem;
+}
+.preferences-grid .form-control {
+    padding: 0.35rem;
+    font-size: 0.8rem;
+}
+.weightage-fields {
+    background: var(--bg-hover);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+}
+.modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+}
+
+/* Progress Bar Styles */
+.progress-container {
+    padding: 1.5rem;
+    text-align: center;
+}
+.progress-header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+.progress-header i {
+    font-size: 1.5rem;
+}
+.progress-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.progress-bar {
+    flex: 1;
+    height: 24px;
+    background: var(--bg-hover, #e9ecef);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color, #27ae60));
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.3) 50%,
+        transparent 100%
+    );
+    animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.progress-percent {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 50px;
+}
+.progress-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-hover, #f8f9fa);
+    border-radius: var(--border-radius);
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--bg-card, white);
+    border-radius: 8px;
+    min-width: 80px;
+}
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-item.stat-special .stat-value { color: #9b59b6; }
+.stat-item.stat-weightage .stat-value { color: #f39c12; }
+.stat-item.stat-normal .stat-value { color: #3498db; }
+.stat-item.stat-cascade .stat-value { color: #27ae60; }
+.progress-detail {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Result Section Styles */
+.result-container {
+    text-align: center;
+    padding: 2rem;
+}
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+.result-icon.success { color: #27ae60; }
+.result-icon.error { color: #e74c3c; }
+.result-container h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+.result-summary {
+    margin-bottom: 1.5rem;
+}
+.result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.result-stat {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-hover, #f8f9fa);
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+.result-stat .label { color: var(--text-muted); }
+.result-stat .value { font-weight: 600; }
+.result-stat.stat-special .value { color: #9b59b6; }
+.result-stat.stat-weightage .value { color: #f39c12; }
+.result-stat.stat-normal .value { color: #3498db; }
+.result-stat.stat-cascade .value { color: #27ae60; }
+.result-stat.stat-against .value { color: #e67e22; }
+.result-stat.stat-failed .value { color: #e74c3c; }
+.error-message {
+    color: #e74c3c;
+    background: #fdf2f2;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid #f5c6cb;
+}
+
+/* Preference Section Headers */
+.pref-section-header td {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color)) !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 0.6rem 1rem !important;
+    border: none !important;
+}
+.pref-heading {
+    font-size: 0.95rem;
+}
+.pref-heading i {
+    margin-right: 0.5rem;
+}
+.pref-count {
+    font-weight: 400;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-left: 0.5rem;
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
+    }
+    
+    /* Hide URL and other browser-added content */
+    html {
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin: 5mm;
+    }
+    
+    .page-header, .filter-section, .header-actions, 
+    .btn, .modal-overlay, .sidebar, nav, 
+    .search-group, footer, .record-count {
+        display: none !important;
+    }
+    
+    .page-container {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .table-container {
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+    
+    .data-table {
+        font-size: 8pt !important;
+        width: 100% !important;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 3px 5px !important;
+        border: 1px solid #333 !important;
+    }
+    
+    .data-table th {
+        background: #ddd !important;
+        font-weight: bold !important;
+    }
+    
+    /* Hide Actions column in print */
+    .data-table th.no-print,
+    .data-table td.action-cell {
+        display: none !important;
+    }
+    
+    /* Adjust preference section header colspan for print (10 cols instead of 11) */
+    .pref-section-header .pref-heading {
+        border: 1px solid #333 !important;
+    }
+    
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    
+    .print-header h2 {
+        margin: 0;
+        font-size: 14pt;
+    }
+    
+    .print-header p {
+        margin: 5px 0;
+        font-size: 10pt;
+    }
+}
+
+.print-header {
+    display: none;
+}
+</style>
+
+<script>
+function printTable() {
+    window.print();
+}
+</script>
+{% endblock %}

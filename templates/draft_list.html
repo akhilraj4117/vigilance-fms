@@ -1,0 +1,1350 @@
+{% extends "base.html" %}
+{% block title %}Draft Transfer List - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1><i class="fas fa-clipboard-list"></i> Draft Transfer List</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('draft_list') }}" class="btn btn-info {% if not sort_by %}active{% endif %}" title="Sort by Current District (South to North) → Seniority">
+                <i class="fas fa-sort-amount-down"></i> From District Sort
+            </a>
+            <a href="{{ url_for('draft_list', sort='to_district') }}" class="btn btn-primary {% if sort_by == 'to_district' %}active{% endif %}" title="Sort by Transfer To District (South to North) → Seniority">
+                <i class="fas fa-map-marker-alt"></i> To District Sort
+            </a>
+            <button type="button" class="btn btn-secondary" onclick="showExcluded()">
+                <i class="fas fa-user-minus"></i> Not Included
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="printTable()">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <div class="export-dropdown">
+                <button class="btn btn-secondary dropdown-toggle" onclick="toggleDropdown('exportDropdown')">
+                    <i class="fas fa-download"></i> Export <i class="fas fa-caret-down"></i>
+                </button>
+                <div class="dropdown-menu" id="exportDropdown">
+                    <a href="javascript:void(0)" onclick="exportCSV()" class="dropdown-item">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </a>
+                    <a href="javascript:void(0)" onclick="exportExcel()" class="dropdown-item">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </a>
+                    <a href="javascript:void(0)" onclick="exportWord()" class="dropdown-item">
+                        <i class="fas fa-file-word"></i> Word
+                    </a>
+                    <a href="javascript:void(0)" onclick="exportPDF()" class="dropdown-item">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                </div>
+            </div>
+            <form method="POST" action="{{ url_for('clear_draft_list') }}" style="display:inline" 
+                  onsubmit="return confirm('Clear all draft transfers? This cannot be undone.')">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('confirm_transfers') }}" style="display:inline" 
+                  onsubmit="return confirm('Confirm all draft transfers? This will create the final list.')">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check-double"></i> Confirm All
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="form-group">
+                <label for="from_district">From District</label>
+                <select name="from_district" id="from_district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == from_district %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="to_district">To District</label>
+                <select name="to_district" id="to_district" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Districts</option>
+                    {% for d in districts %}
+                    <option value="{{ d }}" {% if d == to_district %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group search-group">
+                <label for="tableSearch">Search</label>
+                <div class="search-box-inline">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tableSearch" class="form-control" placeholder="Search by Name or PEN..." onkeyup="filterTable()">
+                    <button type="button" class="search-clear" onclick="clearSearch()" title="Clear">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% if from_district or to_district %}
+            <a href="{{ url_for('draft_list') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear Filters
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header">
+        <h2>JPHN Transfer Management System - Draft Transfer List</h2>
+        <p>Generated on: {{ now().strftime('%d-%m-%Y %I:%M %p') if now else '' }}</p>
+        <p>Total Transfers: {{ transfers|length }}</p>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table draft-table" id="draftTable">
+            <thead>
+                <tr>
+                    <th>Sl No</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 1, 'number')">PEN</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 2, 'text')">Name</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 3, 'text')">Institution</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 4, 'text')">From District</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 5, 'text')">To District</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 6, 'duration')">Duration</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 7, 'text')">Weightage</th>
+                    <th class="sortable" onclick="sortTable(document.getElementById('draftTable'), 8, 'text')">Remarks</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transfers %}
+                <tr class="{% if t[11] == 'Yes' %}row-special{% elif t[7] == 'Yes' %}row-weightage{% endif %}" {% if t[11] == 'Yes' %}title="Special Priority"{% endif %}>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ t[0] }}</td>
+                    <td>{{ t[1] }}</td>
+                    <td>{{ t[2] }}</td>
+                    <td>{{ t[3] }}</td>
+                    <td class="to-district">{{ t[4] }}</td>
+                    <td>{{ format_duration(t[6]) }}</td>
+                    <td>
+                        {% if t[7] == 'Yes' %}
+                        <span class="badge badge-warning" title="{{ t[8] or '' }}">Yes</span>
+                        {% else %}
+                        <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ t[10] or '-' }}</td>
+                    <td class="action-cell">
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="showPreferences('{{ t[0] }}', '{{ t[1] }}', '{{ t[12] }}', '{{ t[13] }}', '{{ t[14] }}', '{{ t[15] }}', '{{ t[16] }}', '{{ t[17] }}', '{{ t[18] }}', '{{ t[19] }}')"
+                                title="View Preferences">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <form method="POST" action="{{ url_for('remove_from_draft', pen=t[0]) }}" 
+                              style="display:inline" onsubmit="return confirm('Remove from draft list?')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="no-data">
+                        <i class="fas fa-inbox"></i>
+                        <p>No draft transfers found</p>
+                        <a href="{{ url_for('applied_employees') }}" class="btn btn-success">
+                            <i class="fas fa-magic"></i> Go to Applied List to Auto-fill
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-footer">
+        <span class="record-count">Total: {{ transfers|length }} transfer(s)</span>
+    </div>
+</div>
+
+<!-- Preferences Modal -->
+<div id="prefModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closePrefModal()">&times;</span>
+        <h2><i class="fas fa-list-ol"></i> Preferences</h2>
+        <div id="prefModalBody"></div>
+    </div>
+</div>
+
+<!-- Right-click Context Menu for Manual Assignment -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-header">
+        <i class="fas fa-exchange-alt"></i> Reassign <span id="contextEmpName"></span>
+    </div>
+    <div class="context-menu-body">
+        <label>Select New District:</label>
+        <select id="contextDistrictSelect" class="form-control">
+            {% for d in districts %}
+            <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="context-menu-footer">
+        <button class="btn btn-sm btn-secondary" onclick="hideContextMenu()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmReassign()">Reassign</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Transfer data for export
+const transferData = [
+    {% for t in transfers %}
+    {
+        pen: {{ t[0]|tojson }},
+        name: {{ t[1]|tojson }},
+        institution: {{ t[2]|tojson }},
+        fromDistrict: {{ t[3]|tojson }},
+        toDistrict: {{ t[4]|tojson }},
+        duration: {{ t[6]|tojson }},
+        weightage: {{ t[7]|tojson }},
+        weightageDetails: {{ t[8]|tojson }},
+        remarks: {{ t[10]|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+const transferType = {{ session.get('transfer_type', 'general')|tojson }};
+const transferYear = {{ session.get('year', '')|tojson }};
+const transferMonth = {{ session.get('month', '')|tojson }};
+const listType = 'Draft';
+const districts = {{ districts|tojson }};
+
+function formatDuration(days) {
+    if (!days) return '-';
+    const years = Math.floor(days / 365);
+    const months = Math.floor((days % 365) / 30);
+    const d = days % 30;
+    let result = '';
+    if (years > 0) result += years + 'Y ';
+    if (months > 0) result += months + 'M ';
+    if (d > 0) result += d + 'D';
+    return result.trim() || '-';
+}
+
+function getFileName(ext) {
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return `draft_transfer_list_${date}.${ext}`;
+}
+
+function exportCSV() {
+    const headers = ['Sl No', 'PEN', 'Name', 'Institution', 'From District', 'To District', 'Duration', 'Weightage', 'Remarks'];
+    let csv = headers.join(',') + '\n';
+    
+    transferData.forEach((t, i) => {
+        const row = [
+            i + 1,
+            t.pen,
+            `"${(t.name || '').replace(/"/g, '""')}"`,
+            `"${(t.institution || '').replace(/"/g, '""')}"`,
+            t.fromDistrict,
+            t.toDistrict,
+            formatDuration(t.duration),
+            t.weightage || 'No',
+            `"${(t.remarks || '').replace(/"/g, '""')}"`
+        ];
+        csv += row.join(',') + '\n';
+    });
+    
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, getFileName('csv'));
+}
+
+function exportExcel() {
+    // Use server-side Excel export with current filters
+    const fromDistrict = document.getElementById('from_district').value;
+    const toDistrict = document.getElementById('to_district').value;
+    const sortBy = '{{ sort_by or "" }}';
+    
+    let url = '/draft/export-excel?';
+    const params = [];
+    if (fromDistrict) params.push('from_district=' + encodeURIComponent(fromDistrict));
+    if (toDistrict) params.push('to_district=' + encodeURIComponent(toDistrict));
+    if (sortBy) params.push('sort=' + encodeURIComponent(sortBy));
+    
+    window.location.href = url + params.join('&');
+}
+
+function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
+    
+    // Header
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Government of Kerala', 148, 15, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text('Department: Health Services', 148, 22, { align: 'center' });
+    
+    let titleText = transferType === 'regular' 
+        ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
+        : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
+    doc.text(titleText, 148, 29, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.text(`${listType} Transfer List`, 14, 38);
+    
+    // Group by district
+    const groupedData = {};
+    transferData.forEach(t => {
+        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
+        groupedData[t.fromDistrict].push(t);
+    });
+    
+    let slNo = 1;
+    let startY = 45;
+    const headers = [['Sl.', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']];
+    
+    districts.forEach(district => {
+        if (!groupedData[district]) return;
+        
+        // Check if need new page
+        if (startY > 170) {
+            doc.addPage();
+            startY = 15;
+        }
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`District: ${district.toUpperCase()}`, 14, startY);
+        startY += 5;
+        
+        const rows = groupedData[district].map(t => [
+            slNo++,
+            t.pen,
+            t.name,
+            'JPHN Gr I',
+            t.institution || '',
+            t.fromDistrict,
+            t.toDistrict,
+            t.weightage === 'Yes' ? (t.weightageDetails || '') : ''
+        ]);
+        
+        doc.autoTable({
+            head: headers,
+            body: rows,
+            startY: startY,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 1 },
+            headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
+            columnStyles: {
+                0: { cellWidth: 10 },
+                1: { cellWidth: 18 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 50 },
+                5: { cellWidth: 25 },
+                6: { cellWidth: 25 },
+                7: { cellWidth: 30 }
+            }
+        });
+        
+        startY = doc.lastAutoTable.finalY + 8;
+    });
+    
+    doc.save(getFileName('pdf'));
+}
+
+function exportWord() {
+    let html;
+    
+    if (transferType === 'regular') {
+        // Regular Transfer - Malayalam format (Portrait, 6 columns, no district grouping)
+        html = exportWordRegular();
+    } else {
+        // General Transfer - English format (Landscape, 8 columns, grouped by district)
+        html = exportWordGeneral();
+    }
+    
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    saveAs(blob, getFileName('doc'));
+}
+
+function exportWordRegular() {
+    // Regular Transfer - Malayalam format matching desktop app exactly
+    let html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+              xmlns:w="urn:schemas-microsoft-com:office:word" 
+              xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="utf-8">
+            <title>Regular Transfer List</title>
+            <!--[if gte mso 9]>
+            <xml>
+                <w:WordDocument>
+                    <w:View>Print</w:View>
+                    <w:Zoom>100</w:Zoom>
+                    <w:DoNotOptimizeForBrowser/>
+                </w:WordDocument>
+            </xml>
+            <![endif]-->
+            <style>
+                @page {
+                    size: A4 portrait;
+                    margin: 2cm 2cm 2cm 2cm;
+                }
+                body { 
+                    font-family: 'MANDARAM', 'Noto Sans Malayalam', Arial, sans-serif; 
+                    font-size: 14pt;
+                    line-height: 1.15;
+                }
+                .title-section {
+                    text-align: center;
+                    margin-bottom: 12px;
+                }
+                .title-text {
+                    font-size: 17pt;
+                    font-weight: bold;
+                    text-decoration: underline;
+                }
+                .subject-table {
+                    width: 100%;
+                    border: none;
+                    margin: 12px 0;
+                }
+                .subject-table td {
+                    border: none;
+                    padding: 6px 0;
+                    font-size: 14pt;
+                    vertical-align: top;
+                }
+                .subject-label {
+                    width: 100px;
+                    text-align: right;
+                    padding-right: 10px;
+                }
+                .subject-text {
+                    text-align: justify;
+                }
+                .order-section {
+                    text-align: center;
+                    margin: 12px 0;
+                }
+                .order-text {
+                    font-size: 16pt;
+                    font-weight: bold;
+                    text-decoration: underline;
+                }
+                .body-text {
+                    text-align: justify;
+                    text-indent: 36px;
+                    margin: 12px 0;
+                    font-size: 14pt;
+                }
+                table.data-table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 12px 0;
+                    page-break-inside: auto;
+                }
+                table.data-table th, table.data-table td {
+                    border: 1px solid black;
+                    padding: 6px 8px;
+                    font-size: 14pt;
+                    vertical-align: top;
+                }
+                table.data-table th {
+                    text-align: center;
+                    font-weight: bold;
+                }
+                td.center { text-align: center; }
+                td.justify { text-align: justify; }
+                .col-slno { width: 8%; }
+                .col-pen { width: 12%; }
+                .col-name { width: 25%; }
+                .col-inst { width: 25%; }
+                .col-from { width: 15%; }
+                .col-to { width: 15%; }
+                .instruction {
+                    text-align: justify;
+                    text-indent: 36px;
+                    margin: 12px 0;
+                    font-size: 14pt;
+                }
+                .signature-area {
+                    margin-top: 30px;
+                    text-indent: 252px;
+                    font-size: 14pt;
+                    font-weight: bold;
+                }
+                .receiver-section {
+                    margin-top: 20px;
+                    font-size: 14pt;
+                }
+                .receiver-title {
+                    margin-bottom: 6px;
+                }
+                .receiver-text {
+                    text-indent: 36px;
+                    font-weight: bold;
+                }
+                .copy-section {
+                    margin-top: 12px;
+                    font-size: 14pt;
+                }
+                .copy-item {
+                    margin-left: 36px;
+                    margin-top: 6px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="title-section">
+                <span class="title-text">തിരുവനന്തപുരം, ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ കാര്യാലയത്തിലെ</span><br>
+                <span class="title-text">അഡീഷണൽ ഡയറക്ടർ (എ & റ്റി) – യുടെ നടപടിക്രമം</span>
+            </div>
+            
+            <table class="subject-table">
+                <tr>
+                    <td class="subject-label">വിഷയം :</td>
+                    <td class="subject-text">ആ.വ. – ആ.വ.ഡ - ജൂനിയർ പബ്ലിക് ഹെൽത്ത് നഴ്‌സ് ഗ്രേഡ് 1 തസ്തികയിലെ ജീവനക്കാർക്ക് സ്ഥലംമാറ്റം അനുവദിച്ച് ഉത്തരവ് പുറപ്പെടുവിക്കുന്നു.</td>
+                </tr>
+                <tr>
+                    <td class="subject-label">പരാമർശം :</td>
+                    <td class="subject-text">വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I ജീവനക്കാരുടെ അപേക്ഷകൾ.</td>
+                </tr>
+            </table>
+            
+            <div class="order-section">
+                <span class="order-text">ഉത്തരവ് നം. __________, തീയതി: __________</span>
+            </div>
+            
+            <p class="body-text">വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും മേൽ പരാമർശ പ്രകാരം ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I – ജീവനക്കാരുടെ സ്ഥലംമാറ്റത്തിനുള്ള അപേക്ഷകൾ പരിഗണിച്ച്, ചുവടെ ചേർക്കുന്ന ജീവനക്കാർക്ക് അവരുടെ പേരിന് നേരെ രേഖപ്പെടുത്തിയിട്ടുള്ള ജില്ലകളിലേക്ക് സ്ഥലം മാറ്റം നൽകി ഉത്തരവാകുന്നു.</p>
+            
+            <table class="data-table">
+                <tr>
+                    <th class="col-slno">Sl. No.</th>
+                    <th class="col-pen">PEN</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-inst">Present Institution</th>
+                    <th class="col-from">Present District</th>
+                    <th class="col-to">Allotted District</th>
+                </tr>`;
+    
+    // Add all records without district grouping
+    transferData.forEach((t, idx) => {
+        html += `<tr>
+                <td class="center">${idx + 1}</td>
+                <td class="justify">${t.pen}</td>
+                <td class="justify">${t.name || ''}</td>
+                <td class="justify">${t.institution || ''}</td>
+                <td class="justify">${(t.fromDistrict || '').toUpperCase()}</td>
+                <td class="justify">${(t.toDistrict || '').toUpperCase()}</td>
+            </tr>`;
+    });
+    
+    html += `</table>
+            
+            <p class="instruction">ബന്ധപ്പെട്ട ജില്ലാ മെഡിക്കൽ ഓഫീസർമാർ ജീവനക്കാർക്ക് നിയമന ഉത്തരവ് നൽകേണ്ടതും നിയമന ഉത്തരവ് ലഭിച്ച ശേഷം സ്ഥാപന മേധാവികൾ ജീവനക്കാരെ വിടുതൽ ചെയ്യേണ്ടതും, ടി വിവരം യഥാസമയേ ഈ കാര്യാലയത്തിൽ റിപ്പോർട്ട് ചെയ്യേണ്ടതുമാണ്.</p>
+            
+            <p class="instruction">ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ ഔദ്യോഗിക വെബ്സൈറ്റിൽ പ്രസിദ്ധീകരിച്ചിട്ടുള്ള ഈ ഉത്തരവിന്റെ പകർപ്പ് ഔദ്യോഗിക രേഖയായി ഉപയോഗിക്കാവുന്നതാണ്.</p>
+            
+            <br><br>
+            
+            <p class="signature-area">#ApprovedByName#</p>
+            <p class="signature-area">#ApprovedByDesignation#</p>
+            
+            <div class="receiver-section">
+                <p class="receiver-title">സ്വീകർത്താവ്</p>
+                <p class="receiver-text">ബന്ധപ്പെട്ട ജില്ലാ മെഡിക്കൽ ഓഫീസർ (ആരോഗ്യം) മാർ</p>
+            </div>
+            
+            <div class="copy-section">
+                <p>പകർപ്പ്:</p>
+                <p class="copy-item">1. ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ ഔദ്യോഗിക വെബ്സൈറ്റ്</p>
+                <p class="copy-item">2. ഫയൽ/കരുതൽ ഫയൽ</p>
+            </div>
+        </body>
+        </html>`;
+    
+    return html;
+}
+
+function exportWordGeneral() {
+    // General Transfer - English format matching desktop app exactly
+    // Group by district
+    const groupedData = {};
+    transferData.forEach(t => {
+        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
+        groupedData[t.fromDistrict].push(t);
+    });
+    
+    let html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+              xmlns:w="urn:schemas-microsoft-com:office:word" 
+              xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="utf-8">
+            <title>General Transfer List</title>
+            <!--[if gte mso 9]>
+            <xml>
+                <w:WordDocument>
+                    <w:View>Print</w:View>
+                    <w:Zoom>100</w:Zoom>
+                    <w:DoNotOptimizeForBrowser/>
+                </w:WordDocument>
+            </xml>
+            <![endif]-->
+            <style>
+                @page {
+                    size: A4 landscape;
+                    margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+                }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    font-size: 10pt;
+                    line-height: 1.3;
+                }
+                .header-section {
+                    text-align: center;
+                    margin-bottom: 15px;
+                }
+                .header-title {
+                    font-size: 14pt;
+                    font-weight: bold;
+                    margin: 5px 0;
+                }
+                .header-subtitle {
+                    font-size: 12pt;
+                    font-weight: bold;
+                    margin: 5px 0;
+                }
+                .header-underline {
+                    font-size: 12pt;
+                    font-weight: bold;
+                    text-decoration: underline;
+                    margin: 5px 0;
+                }
+                .cadre-info {
+                    font-size: 10pt;
+                    font-weight: bold;
+                    text-align: left;
+                    margin: 10px 0;
+                }
+                .district-header {
+                    font-size: 11pt;
+                    font-weight: bold;
+                    margin: 15px 0 8px 0;
+                    page-break-inside: avoid;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-bottom: 10px;
+                    page-break-inside: auto;
+                }
+                tr {
+                    page-break-inside: avoid;
+                    page-break-after: auto;
+                }
+                th, td {
+                    border: 1px solid black;
+                    padding: 4px 6px;
+                    font-size: 9pt;
+                    vertical-align: top;
+                }
+                th {
+                    background-color: #E0E0E0;
+                    font-weight: bold;
+                    text-align: center;
+                }
+                td.center { text-align: center; }
+                .col-slno { width: 5%; }
+                .col-pen { width: 8%; }
+                .col-name { width: 18%; }
+                .col-desig { width: 10%; }
+                .col-office { width: 24%; }
+                .col-from { width: 10%; }
+                .col-to { width: 10%; }
+                .col-protection { width: 15%; }
+                .signature-section {
+                    margin-top: 30px;
+                    text-align: right;
+                    page-break-inside: avoid;
+                }
+                .signature-text {
+                    font-size: 10pt;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header-section">
+                <p class="header-title">Government of Kerala</p>
+                <p class="header-subtitle">Department: Health Services</p>
+                <p class="header-underline">Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}</p>
+            </div>
+            <p class="cadre-info">Post/Cadre Name: Junior Public Health Nurse</p>
+    `;
+    
+    let slNo = 1;
+    
+    districts.forEach(district => {
+        if (!groupedData[district]) return;
+        
+        html += `<p class="district-header">District: ${district.toUpperCase()}</p>`;
+        html += `<table>
+            <tr>
+                <th class="col-slno">Sl. No.</th>
+                <th class="col-pen">PEN</th>
+                <th class="col-name">Name</th>
+                <th class="col-desig">Designation</th>
+                <th class="col-office">Office Transferred from</th>
+                <th class="col-from">From District</th>
+                <th class="col-to">To District</th>
+                <th class="col-protection">Protection If Any</th>
+            </tr>`;
+        
+        groupedData[district].forEach(t => {
+            const protection = t.weightage === 'Yes' ? (t.weightageDetails || '') : '';
+            html += `<tr>
+                <td class="center">${slNo++}</td>
+                <td>${t.pen}</td>
+                <td>${t.name || ''}</td>
+                <td>JPHN Gr I</td>
+                <td>${t.institution || ''}</td>
+                <td>${t.fromDistrict || ''}</td>
+                <td>${t.toDistrict || ''}</td>
+                <td>${protection}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    });
+    
+    // Add signature section
+    html += `
+            <div class="signature-section">
+                <p class="signature-text">
+                    <br><br><br>
+                    _________________________<br>
+                    <b>Authorized Signatory</b>
+                </p>
+            </div>
+        </body>
+        </html>`;
+    
+    return html;
+}
+
+function showPreferences(pen, name, p1, p2, p3, p4, p5, p6, p7, p8) {
+    const prefs = [p1, p2, p3, p4, p5, p6, p7, p8].filter(p => p && p !== 'None');
+    let html = `<h3>${name} (${pen})</h3><div class="pref-list">`;
+    prefs.forEach((p, i) => {
+        html += `<div class="pref-item"><span class="pref-num">${i+1}</span><span class="pref-value">${p}</span></div>`;
+    });
+    if (prefs.length === 0) {
+        html += '<p>No preferences set</p>';
+    }
+    html += '</div>';
+    document.getElementById('prefModalBody').innerHTML = html;
+    document.getElementById('prefModal').style.display = 'flex';
+}
+
+function closePrefModal() {
+    document.getElementById('prefModal').style.display = 'none';
+}
+
+// Search/Filter table
+function filterTable() {
+    const searchInput = document.getElementById('tableSearch');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const clearBtn = document.querySelector('.search-clear');
+    const table = document.getElementById('draftTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    clearBtn.style.display = searchTerm ? 'block' : 'none';
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        if (row.querySelector('.no-data')) return;
+        
+        const pen = (row.cells[1]?.textContent || '').toLowerCase();
+        const name = (row.cells[2]?.textContent || '').toLowerCase();
+        const institution = (row.cells[3]?.textContent || '').toLowerCase();
+        
+        if (pen.includes(searchTerm) || name.includes(searchTerm) || institution.includes(searchTerm)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update record count
+    const countEl = document.querySelector('.record-count');
+    if (countEl) {
+        countEl.textContent = `Showing: ${visibleCount} of {{ transfers|length }} transfer(s)`;
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('tableSearch');
+    searchInput.value = '';
+    filterTable();
+    searchInput.focus();
+    document.querySelector('.record-count').textContent = 'Total: {{ transfers|length }} transfer(s)';
+}
+
+function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+window.onclick = function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+    // Close dropdowns
+    if (!e.target.matches('.dropdown-toggle') && !e.target.closest('.dropdown-toggle')) {
+        document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('show'));
+    }
+}
+</script>
+
+<style>
+/* Active button state for sort buttons */
+.header-actions .btn.active {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
+    font-weight: bold;
+}
+
+.search-group {
+    min-width: 250px;
+}
+.search-box-inline {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+}
+.search-box-inline i.fa-search {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+.search-box-inline input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    outline: none;
+    min-width: 150px;
+}
+.search-box-inline input::placeholder {
+    color: var(--text-muted);
+}
+.search-box-inline .search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    display: none;
+}
+.search-box-inline .search-clear:hover {
+    color: var(--danger-color);
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
+    }
+    
+    /* Hide URL and other browser-added content */
+    html {
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin: 5mm;
+    }
+    
+    .page-header, .filter-section, .header-actions, 
+    .btn, .modal-overlay, .sidebar, nav, 
+    .search-group, footer, .record-count,
+    .export-dropdown, .summary-cards {
+        display: none !important;
+    }
+    
+    .page-container {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .table-container {
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+    
+    .data-table {
+        font-size: 8pt !important;
+        width: 100% !important;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 3px 5px !important;
+        border: 1px solid #333 !important;
+    }
+    
+    .data-table th {
+        background: #ddd !important;
+        font-weight: bold !important;
+    }
+    
+    .data-table th:last-child,
+    .data-table td.action-cell {
+        display: none !important;
+    }
+    
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    
+    .print-header h2 {
+        margin: 0;
+        font-size: 14pt;
+    }
+    
+    .print-header p {
+        margin: 5px 0;
+        font-size: 10pt;
+    }
+}
+
+.print-header {
+    display: none;
+}
+
+/* Context Menu Styles */
+.context-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1100;
+    min-width: 280px;
+    overflow: hidden;
+}
+.context-menu.show {
+    display: block;
+}
+.context-menu-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.context-menu-header i {
+    margin-right: 8px;
+}
+.context-menu-body {
+    padding: 15px;
+}
+.context-menu-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.context-menu-body select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+.context-menu-footer {
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* Highlight row on right-click */
+tr.context-active {
+    background: rgba(52, 152, 219, 0.15) !important;
+}
+
+/* Excluded Modal Styles */
+.excluded-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.excluded-modal-overlay.show {
+    display: flex;
+}
+.excluded-modal {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    width: 95%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.excluded-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.excluded-modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+.excluded-modal-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.excluded-modal-header .close-btn:hover {
+    color: var(--danger-color);
+}
+.excluded-modal-body {
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.excluded-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.excluded-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.excluded-table th, .excluded-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+}
+.excluded-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+.excluded-table tr:hover {
+    background: var(--bg-hover);
+}
+</style>
+
+<!-- Excluded Employees Modal -->
+<div class="excluded-modal-overlay" id="excludedModal">
+    <div class="excluded-modal">
+        <div class="excluded-modal-header">
+            <h3><i class="fas fa-user-minus"></i> Applied but Not Included in Draft List (<span id="excludedCount">0</span>)</h3>
+            <button class="close-btn" onclick="closeExcludedModal()">&times;</button>
+        </div>
+        <div class="excluded-modal-body">
+            <table class="excluded-table" id="excludedTable">
+                <thead>
+                    <tr>
+                        <th>Sl No</th>
+                        <th>PEN</th>
+                        <th>Name</th>
+                        <th>Institution</th>
+                        <th>District</th>
+                        <th>Duration</th>
+                        <th>Weightage</th>
+                        <th>Pref 1</th>
+                        <th>Pref 2</th>
+                        <th>Pref 3</th>
+                    </tr>
+                </thead>
+                <tbody id="excludedTableBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="excluded-modal-footer">
+            <span id="excludedInfo"></span>
+            <button class="btn btn-success" onclick="exportExcludedExcel()">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+function printTable() {
+    window.print();
+}
+
+let excludedEmployees = [];
+
+function showExcluded() {
+    fetch('/draft/excluded')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                excludedEmployees = data.employees;
+                document.getElementById('excludedCount').textContent = data.count;
+                document.getElementById('excludedInfo').textContent = `Total: ${data.count} employees applied but not included`;
+                
+                const tbody = document.getElementById('excludedTableBody');
+                tbody.innerHTML = '';
+                
+                data.employees.forEach((emp, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${emp.pen}</td>
+                        <td>${emp.name}</td>
+                        <td>${emp.institution}</td>
+                        <td>${emp.district}</td>
+                        <td>${emp.duration}</td>
+                        <td>${emp.weightage}</td>
+                        <td>${emp.pref1}</td>
+                        <td>${emp.pref2}</td>
+                        <td>${emp.pref3}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                document.getElementById('excludedModal').classList.add('show');
+            } else {
+                alert('Error loading excluded employees: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+}
+
+function closeExcludedModal() {
+    document.getElementById('excludedModal').classList.remove('show');
+}
+
+function exportExcludedExcel() {
+    if (excludedEmployees.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    const data = excludedEmployees.map((emp, index) => ({
+        'Sl No': index + 1,
+        'PEN': emp.pen,
+        'Name': emp.name,
+        'Institution': emp.institution,
+        'District': emp.district,
+        'Duration': emp.duration,
+        'Weightage': emp.weightage,
+        'Preference 1': emp.pref1,
+        'Preference 2': emp.pref2,
+        'Preference 3': emp.pref3
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Not Included in Draft');
+    XLSX.writeFile(wb, 'Not_Included_in_Draft_List.xlsx');
+}
+
+// Close modal on clicking outside
+document.getElementById('excludedModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeExcludedModal();
+    }
+});
+
+// ========== Context Menu for Manual Assignment ==========
+let contextMenuPen = null;
+let contextMenuRow = null;
+
+// Add right-click event listeners to employee name cells
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('draftTable');
+    if (table) {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            // Skip "no data" rows
+            if (row.querySelector('.no-data')) return;
+            
+            const nameCell = row.cells[2]; // Name column (index 2)
+            const penCell = row.cells[1];  // PEN column (index 1)
+            const toDistrictCell = row.cells[5]; // To District column (index 5)
+            
+            if (nameCell && penCell) {
+                nameCell.style.cursor = 'context-menu';
+                nameCell.title = 'Right-click to reassign district';
+                
+                nameCell.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showContextMenu(e, penCell.textContent.trim(), nameCell.textContent.trim(), toDistrictCell.textContent.trim(), row);
+                });
+            }
+        });
+    }
+});
+
+function showContextMenu(e, pen, name, currentDistrict, row) {
+    // Remove previous highlight
+    if (contextMenuRow) {
+        contextMenuRow.classList.remove('context-active');
+    }
+    
+    contextMenuPen = pen;
+    contextMenuRow = row;
+    row.classList.add('context-active');
+    
+    const menu = document.getElementById('contextMenu');
+    const select = document.getElementById('contextDistrictSelect');
+    
+    // Set current district as selected
+    select.value = currentDistrict;
+    
+    // Update header with employee name
+    document.getElementById('contextEmpName').textContent = name;
+    
+    // Position the menu
+    let x = e.pageX;
+    let y = e.pageY;
+    
+    // Ensure menu doesn't go off screen
+    const menuWidth = 280;
+    const menuHeight = 200;
+    
+    if (x + menuWidth > window.innerWidth + window.scrollX) {
+        x = window.innerWidth + window.scrollX - menuWidth - 10;
+    }
+    if (y + menuHeight > window.innerHeight + window.scrollY) {
+        y = window.innerHeight + window.scrollY - menuHeight - 10;
+    }
+    
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.classList.add('show');
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('contextMenu');
+    menu.classList.remove('show');
+    
+    if (contextMenuRow) {
+        contextMenuRow.classList.remove('context-active');
+    }
+    contextMenuPen = null;
+    contextMenuRow = null;
+}
+
+function confirmReassign() {
+    if (!contextMenuPen) return;
+    
+    const newDistrict = document.getElementById('contextDistrictSelect').value;
+    
+    if (!newDistrict) {
+        alert('Please select a district');
+        return;
+    }
+    
+    // Get current district from the row
+    const currentDistrict = contextMenuRow.cells[5].textContent.trim();
+    
+    if (newDistrict === currentDistrict) {
+        alert('Employee is already assigned to this district');
+        hideContextMenu();
+        return;
+    }
+    
+    if (!confirm(`Reassign this employee from ${currentDistrict} to ${newDistrict}?`)) {
+        return;
+    }
+    
+    // Send request to server
+    const formData = new FormData();
+    formData.append('pen', contextMenuPen);
+    formData.append('district', newDistrict);
+    
+    fetch('/draft/manual-assign', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the row in the table
+            contextMenuRow.cells[5].textContent = newDistrict;
+            contextMenuRow.cells[8].textContent = 'Manual: Changed from ' + data.old_district;
+            
+            // Flash success
+            contextMenuRow.style.transition = 'background 0.3s';
+            contextMenuRow.style.background = 'rgba(46, 204, 113, 0.3)';
+            setTimeout(() => {
+                contextMenuRow.style.background = '';
+            }, 1500);
+            
+            alert(data.message);
+        } else {
+            alert('Error: ' + data.error);
+        }
+        hideContextMenu();
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        hideContextMenu();
+    });
+}
+
+// Hide context menu when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.context-menu')) {
+        hideContextMenu();
+    }
+});
+
+// Hide context menu on scroll
+document.addEventListener('scroll', function() {
+    hideContextMenu();
+});
+
+// Hide context menu on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideContextMenu();
+        closeExcludedModal();
+        closePrefModal();
+    }
+});
+</script>
+{% endblock %}

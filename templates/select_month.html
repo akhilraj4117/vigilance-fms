@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Select Month - JPHN Transfer{% endblock %}
+
+{% block content %}
+<div class="selection-container">
+    <div class="selection-header">
+        <h1><i class="fas fa-calendar-alt"></i> Regular Transfer - Select Month & Year</h1>
+        <p>Choose month and year for regular transfer management</p>
+    </div>
+    
+    <form action="{{ url_for('set_session') }}" method="POST" class="selection-form">
+        <input type="hidden" name="transfer_type" value="regular">
+        
+        <div class="month-year-selection">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="month"><i class="fas fa-calendar-day"></i> Select Month</label>
+                    <select name="month" id="month" class="form-control">
+                        {% for m in months %}
+                        <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="year"><i class="fas fa-calendar-check"></i> Select Year</label>
+                    <select name="year" id="year" class="form-control">
+                        {% for y in range(current_year + 1, current_year - 5, -1) %}
+                        <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        {% if available_lists %}
+        <div class="existing-data">
+            <h3>Existing Transfer Data</h3>
+            <div class="month-badges">
+                {% for month, year in available_lists %}
+                <button type="button" class="month-badge" onclick="selectExisting('{{ month }}', '{{ year }}')">
+                    <i class="fas fa-database"></i> {{ month }} {{ year }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="form-actions">
+            <a href="{{ url_for('select_transfer') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i> Continue
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function selectExisting(month, year) {
+    document.getElementById('month').value = month;
+    document.getElementById('year').value = year;
+    document.querySelector('.selection-form').submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: jphn-transfer
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --timeout 120 --worker-class=gevent
+    envVars:
+      - key: FLASK_CONFIG
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jphn-db
+          property: connectionString
+
+databases:
+  - name: jphn-db
+    plan: free
