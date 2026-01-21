@@ -1017,6 +1017,15 @@ textarea.form-control {
     background: rgba(245, 158, 11, 0.05);
 }
 
+.row-manual {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-left: 3px solid #8b5cf6;
+}
+
+.row-manual td {
+    position: relative;
+}
+
 .action-cell {
     white-space: nowrap;
     display: flex;

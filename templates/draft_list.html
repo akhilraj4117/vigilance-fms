@@ -115,7 +115,7 @@
             </thead>
             <tbody>
                 {% for t in transfers %}
-                <tr class="{% if t[11] == 'Yes' %}row-special{% elif t[7] == 'Yes' %}row-weightage{% endif %}" {% if t[11] == 'Yes' %}title="Special Priority"{% endif %}>
+                <tr class="{% if t[10] and 'Manual' in t[10] %}row-manual{% elif t[11] == 'Yes' %}row-special{% elif t[7] == 'Yes' %}row-weightage{% endif %}" {% if t[11] == 'Yes' %}title="Special Priority"{% elif t[10] and 'Manual' in t[10] %}title="Manual Assignment by User"{% endif %}>
                     <td>{{ loop.index }}</td>
                     <td>{{ t[0] }}</td>
                     <td>{{ t[1] }}</td>
