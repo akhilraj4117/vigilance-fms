@@ -350,7 +350,7 @@
                     <tr><th>Category</th><th>Active</th><th>Closed</th><th>Total</th><th>Action</th></tr>
                 </thead>
                 <tbody>
-                    {% for cat, counts in stats.category_by_status.items() %}
+                    {% for cat, counts in (stats.get('category_by_status', {})).items() %}
                     <tr>
                         <td>{{ cat }}</td>
                         <td>{{ counts.Active }}</td>
@@ -372,7 +372,7 @@
                     <tr><th>Type of File</th><th>Active</th><th>Closed</th><th>Total</th><th>Action</th></tr>
                 </thead>
                 <tbody>
-                    {% for type, counts in stats.type_by_status.items() %}
+                    {% for type, counts in (stats.get('type_by_status', {})).items() %}
                     <tr>
                         <td>{{ type }}</td>
                         <td>{{ counts.Active }}</td>
