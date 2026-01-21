@@ -26,7 +26,7 @@
                     <a href="javascript:void(0)" onclick="exportCSV()" class="dropdown-item">
                         <i class="fas fa-file-csv"></i> CSV
                     </a>
-                    <a href="javascript:void(0)" onclick="exportExcel()" class="dropdown-item">
+                    <a href="javascript:void(0)" onclick="openExcelExportModal()" class="dropdown-item">
                         <i class="fas fa-file-excel"></i> Excel
                     </a>
                     <a href="javascript:void(0)" onclick="exportWord()" class="dropdown-item">
@@ -174,6 +174,29 @@
     </div>
 </div>
 
+<!-- Excel Export Options Modal -->
+<div id="excelExportModal" class="modal">
+    <div class="modal-content modal-sm">
+        <span class="modal-close" onclick="closeExcelExportModal()">&times;</span>
+        <h2><i class="fas fa-file-excel"></i> Excel Export Options</h2>
+        <div class="export-options">
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" id="includeWeightageDetails">
+                    <span>Include Weightage Details Column</span>
+                </label>
+                <p class="help-text">Add a column showing the weightage/protection reason for each employee</p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeExcelExportModal()">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="exportExcel()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Right-click Context Menu for Manual Assignment -->
 <div id="contextMenu" class="context-menu">
     <div class="context-menu-header">
@@ -260,18 +283,29 @@ function exportCSV() {
     saveAs(blob, getFileName('csv'));
 }
 
+function openExcelExportModal() {
+    document.getElementById('excelExportModal').style.display = 'flex';
+}
+
+function closeExcelExportModal() {
+    document.getElementById('excelExportModal').style.display = 'none';
+}
+
 function exportExcel() {
     // Use server-side Excel export with current filters
     const fromDistrict = document.getElementById('from_district').value;
     const toDistrict = document.getElementById('to_district').value;
     const sortBy = '{{ sort_by or "" }}';
+    const includeWeightageDetails = document.getElementById('includeWeightageDetails').checked;
     
     let url = '/draft/export-excel?';
     const params = [];
     if (fromDistrict) params.push('from_district=' + encodeURIComponent(fromDistrict));
     if (toDistrict) params.push('to_district=' + encodeURIComponent(toDistrict));
     if (sortBy) params.push('sort=' + encodeURIComponent(sortBy));
+    if (includeWeightageDetails) params.push('include_weightage_details=on');
     
+    closeExcelExportModal();
     window.location.href = url + params.join('&');
 }
 

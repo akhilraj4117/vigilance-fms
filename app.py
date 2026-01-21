@@ -2015,6 +2015,93 @@ def toggle_weightage_consider(pen):
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/applied/assign-district', methods=['POST'])
+@login_required
+@requires_transfer_session
+def assign_applied_to_district():
+    """Assign an applied employee directly to a specific district (adds to draft list)"""
+    prefix = get_table_prefix()
+    
+    pen = request.form.get('pen', '')
+    district = request.form.get('district', '')
+    
+    if not pen or not district:
+        return jsonify({'success': False, 'error': 'PEN and district required'})
+    
+    try:
+        # Check if employee is in applied list
+        applied_check = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE t.pen = :pen
+        """), {'pen': pen}).fetchone()
+        
+        if not applied_check:
+            return jsonify({'success': False, 'error': 'Employee not found in applied list'})
+        
+        emp_name = applied_check[1]
+        home_district = applied_check[2]
+        
+        # Check if already in draft list
+        draft_check = db.session.execute(db.text(f"""
+            SELECT pen, transfer_to_district FROM {prefix}transfer_draft WHERE pen = :pen
+        """), {'pen': pen}).fetchone()
+        
+        if draft_check:
+            old_district = draft_check[1]
+            if old_district == district:
+                return jsonify({'success': False, 'error': f'Already assigned to {district}'})
+            
+            # Update existing draft assignment
+            db.session.execute(db.text(f"""
+                UPDATE {prefix}transfer_draft
+                SET transfer_to_district = :district,
+                    remarks = :remarks,
+                    last_modified = :now
+                WHERE pen = :pen
+            """), {
+                'district': district,
+                'remarks': f'Manual: Changed from {old_district}',
+                'now': datetime.now().isoformat(),
+                'pen': pen
+            })
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'{emp_name} reassigned from {old_district} to {district}',
+                'action': 'updated',
+                'old_district': old_district,
+                'new_district': district
+            })
+        else:
+            # Add new entry to draft list
+            db.session.execute(db.text(f"""
+                INSERT INTO {prefix}transfer_draft (pen, transfer_to_district, added_date, remarks, last_modified)
+                VALUES (:pen, :district, :added_date, :remarks, :now)
+            """), {
+                'pen': pen,
+                'district': district,
+                'added_date': get_ist_now().strftime('%d-%m-%Y'),
+                'remarks': 'Manual Assignment',
+                'now': datetime.now().isoformat()
+            })
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'{emp_name} assigned to {district}',
+                'action': 'added',
+                'new_district': district
+            })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/applied/export-excel')
 @login_required
 @requires_transfer_session
@@ -2409,6 +2496,7 @@ def export_draft_excel():
     from_district = request.args.get('from_district', '')
     to_district = request.args.get('to_district', '')
     sort_by = request.args.get('sort', '')
+    include_weightage_details = request.args.get('include_weightage_details', '') == 'on'
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
@@ -2498,7 +2586,7 @@ def export_draft_excel():
     center_align = Alignment(horizontal='center', vertical='center')
     left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
     
-    # Set column widths
+    # Set column widths - dynamic based on include_weightage_details
     ws.column_dimensions['A'].width = 8    # Sl. No.
     ws.column_dimensions['B'].width = 12   # PEN
     ws.column_dimensions['C'].width = 25   # Name
@@ -2507,12 +2595,20 @@ def export_draft_excel():
     ws.column_dimensions['F'].width = 16   # To District
     ws.column_dimensions['G'].width = 12   # Duration
     ws.column_dimensions['H'].width = 10   # Weightage
-    ws.column_dimensions['I'].width = 18   # Remarks
-    ws.column_dimensions['J'].width = 14   # Pref 1
-    ws.column_dimensions['K'].width = 14   # Pref 2
-    ws.column_dimensions['L'].width = 14   # Pref 3
     
-    last_col = 'L'
+    if include_weightage_details:
+        ws.column_dimensions['I'].width = 30   # Weightage Details
+        ws.column_dimensions['J'].width = 18   # Remarks
+        ws.column_dimensions['K'].width = 14   # Pref 1
+        ws.column_dimensions['L'].width = 14   # Pref 2
+        ws.column_dimensions['M'].width = 14   # Pref 3
+        last_col = 'M'
+    else:
+        ws.column_dimensions['I'].width = 18   # Remarks
+        ws.column_dimensions['J'].width = 14   # Pref 1
+        ws.column_dimensions['K'].width = 14   # Pref 2
+        ws.column_dimensions['L'].width = 14   # Pref 3
+        last_col = 'L'
     
     # Title rows
     ws.merge_cells(f'A1:{last_col}1')
@@ -2543,9 +2639,13 @@ def export_draft_excel():
     ws['A3'] = f'Generated: {get_ist_now().strftime("%d-%m-%Y %I:%M %p")}'
     ws['A3'].alignment = center_align
     
-    # Column headers (row 5)
-    headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
-               'Duration', 'Weightage', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
+    # Column headers (row 5) - dynamic based on include_weightage_details
+    if include_weightage_details:
+        headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
+                   'Duration', 'Weightage', 'Weightage Details', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
+    else:
+        headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
+                   'Duration', 'Weightage', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
     
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=5, column=col_num, value=header)
@@ -2570,20 +2670,37 @@ def export_draft_excel():
             duration_str += f'{days}D'
         duration_str = duration_str.strip() or '-'
         
-        data = [
-            idx,                           # Sl. No.
-            transfer[0],                   # PEN
-            transfer[1],                   # Name
-            transfer[2],                   # Institution
-            transfer[3],                   # From District
-            transfer[4],                   # To District
-            duration_str,                  # Duration
-            transfer[6] or 'No',           # Weightage
-            transfer[8] or '',             # Remarks
-            transfer[9] or '',             # Pref 1
-            transfer[10] or '',            # Pref 2
-            transfer[11] or ''             # Pref 3
-        ]
+        if include_weightage_details:
+            data = [
+                idx,                           # Sl. No.
+                transfer[0],                   # PEN
+                transfer[1],                   # Name
+                transfer[2],                   # Institution
+                transfer[3],                   # From District
+                transfer[4],                   # To District
+                duration_str,                  # Duration
+                transfer[6] or 'No',           # Weightage
+                transfer[7] or '',             # Weightage Details
+                transfer[8] or '',             # Remarks
+                transfer[9] or '',             # Pref 1
+                transfer[10] or '',            # Pref 2
+                transfer[11] or ''             # Pref 3
+            ]
+        else:
+            data = [
+                idx,                           # Sl. No.
+                transfer[0],                   # PEN
+                transfer[1],                   # Name
+                transfer[2],                   # Institution
+                transfer[3],                   # From District
+                transfer[4],                   # To District
+                duration_str,                  # Duration
+                transfer[6] or 'No',           # Weightage
+                transfer[8] or '',             # Remarks
+                transfer[9] or '',             # Pref 1
+                transfer[10] or '',            # Pref 2
+                transfer[11] or ''             # Pref 3
+            ]
         
         for col_num, value in enumerate(data, 1):
             cell = ws.cell(row=row_num, column=col_num, value=value)

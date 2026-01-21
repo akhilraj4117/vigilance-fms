@@ -1269,6 +1269,23 @@ textarea.form-control {
     max-width: 700px;
 }
 
+.modal-content.modal-sm {
+    max-width: 400px;
+}
+
+.export-options {
+    padding: 1rem 0;
+}
+
+.export-options .checkbox-group {
+    padding: 0.5rem 0;
+}
+
+.export-options .help-text {
+    margin-top: 0.5rem;
+    margin-left: 1.75rem;
+}
+
 .modal-close {
     position: absolute;
     top: 1rem;

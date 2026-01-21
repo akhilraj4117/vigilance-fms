@@ -209,6 +209,29 @@
     </ul>
 </div>
 
+<!-- Assign District Context Menu (Right-click on Name) -->
+<div id="assignContextMenu" class="assign-context-menu">
+    <div class="context-menu-header">
+        <i class="fas fa-exchange-alt"></i> Assign to District
+        <span id="assignEmpName"></span>
+    </div>
+    <div class="context-menu-body">
+        <label>Select District:</label>
+        <select id="assignDistrictSelect" class="form-control">
+            {% for d in districts %}
+            <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+        </select>
+        <div class="assign-info" id="assignInfo"></div>
+    </div>
+    <div class="context-menu-footer">
+        <button class="btn btn-sm btn-secondary" onclick="hideAssignContextMenu()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmAssignDistrict()">
+            <i class="fas fa-check"></i> Assign
+        </button>
+    </div>
+</div>
+
 <!-- Details Modal -->
 <div id="detailsModal" class="modal">
     <div class="modal-content">
@@ -921,6 +944,154 @@ function unlockAll() {
         alert('Error: ' + error);
     });
 }
+
+// ========== Assign District Context Menu ==========
+let assignContextMenuPen = null;
+let assignContextMenuRow = null;
+let assignContextMenuName = '';
+let assignContextMenuPrefs = [];
+
+// Add right-click event listeners to employee name cells
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('appliedTable');
+    if (table) {
+        const rows = table.querySelectorAll('tbody tr[data-pen]');
+        rows.forEach(row => {
+            const nameCell = row.cells[2]; // Name column (index 2)
+            const penCell = row.cells[1];  // PEN column (index 1)
+            const pen = row.dataset.pen;
+            
+            if (nameCell && pen) {
+                nameCell.style.cursor = 'context-menu';
+                nameCell.title = 'Right-click to assign to a district';
+                
+                nameCell.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    const name = nameCell.textContent.trim();
+                    showAssignContextMenu(e, pen, name, row);
+                });
+            }
+        });
+    }
+});
+
+function showAssignContextMenu(e, pen, name, row) {
+    // Remove previous highlight
+    if (assignContextMenuRow) {
+        assignContextMenuRow.classList.remove('context-active');
+    }
+    
+    assignContextMenuPen = pen;
+    assignContextMenuRow = row;
+    assignContextMenuName = name;
+    row.classList.add('context-active');
+    
+    const menu = document.getElementById('assignContextMenu');
+    const select = document.getElementById('assignDistrictSelect');
+    
+    // Update header with employee name
+    document.getElementById('assignEmpName').textContent = ` - ${name}`;
+    
+    // Clear info text
+    document.getElementById('assignInfo').textContent = 'This will add the employee to the Draft List';
+    
+    // Position the menu
+    let x = e.pageX;
+    let y = e.pageY;
+    
+    // Ensure menu doesn't go off screen
+    const menuWidth = 300;
+    const menuHeight = 220;
+    
+    if (x + menuWidth > window.innerWidth + window.scrollX) {
+        x = window.innerWidth + window.scrollX - menuWidth - 10;
+    }
+    if (y + menuHeight > window.innerHeight + window.scrollY) {
+        y = window.innerHeight + window.scrollY - menuHeight - 10;
+    }
+    
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.classList.add('show');
+}
+
+function hideAssignContextMenu() {
+    const menu = document.getElementById('assignContextMenu');
+    menu.classList.remove('show');
+    
+    if (assignContextMenuRow) {
+        assignContextMenuRow.classList.remove('context-active');
+    }
+    assignContextMenuPen = null;
+    assignContextMenuRow = null;
+    assignContextMenuName = '';
+}
+
+function confirmAssignDistrict() {
+    if (!assignContextMenuPen) return;
+    
+    const district = document.getElementById('assignDistrictSelect').value;
+    
+    if (!district) {
+        alert('Please select a district');
+        return;
+    }
+    
+    if (!confirm(`Assign ${assignContextMenuName} to ${district}? This will add them to the Draft List.`)) {
+        return;
+    }
+    
+    // Send request to server
+    const formData = new FormData();
+    formData.append('pen', assignContextMenuPen);
+    formData.append('district', district);
+    
+    fetch('/applied/assign-district', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Flash success on the row
+            if (assignContextMenuRow) {
+                assignContextMenuRow.style.transition = 'background 0.3s';
+                assignContextMenuRow.style.background = 'rgba(46, 204, 113, 0.3)';
+                setTimeout(() => {
+                    assignContextMenuRow.style.background = '';
+                }, 1500);
+            }
+            
+            alert(data.message + '\n\nGo to Draft List to view the assignment.');
+        } else {
+            alert('Error: ' + data.error);
+        }
+        hideAssignContextMenu();
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        hideAssignContextMenu();
+    });
+}
+
+// Hide assign context menu when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.assign-context-menu')) {
+        hideAssignContextMenu();
+    }
+});
+
+// Hide assign context menu on scroll
+document.addEventListener('scroll', function() {
+    hideAssignContextMenu();
+});
+
+// Hide context menus on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideAssignContextMenu();
+    }
+});
 </script>
 
 <style>
@@ -961,6 +1132,75 @@ function unlockAll() {
 }
 .text-success {
     color: #27ae60 !important;
+}
+
+/* Assign District Context Menu Styles */
+.assign-context-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 10001;
+    min-width: 300px;
+    overflow: hidden;
+}
+.assign-context-menu.show {
+    display: block;
+}
+.assign-context-menu .context-menu-header {
+    background: linear-gradient(135deg, var(--primary-color, #3498db), #2980b9);
+    color: white;
+    padding: 10px 15px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.assign-context-menu .context-menu-header i {
+    margin-right: 8px;
+}
+.assign-context-menu .context-menu-body {
+    padding: 15px;
+}
+.assign-context-menu .context-menu-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary, #333);
+    font-size: 0.9rem;
+}
+.assign-context-menu .context-menu-body select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    background: var(--bg-primary, #fff);
+    color: var(--text-primary, #333);
+    font-size: 0.9rem;
+}
+.assign-context-menu .context-menu-body select:focus {
+    outline: none;
+    border-color: var(--primary-color, #3498db);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+.assign-context-menu .assign-info {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted, #666);
+    font-style: italic;
+}
+.assign-context-menu .context-menu-footer {
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color, #ddd);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: var(--bg-secondary, #f8f9fa);
+}
+
+/* Highlight row when context menu is open */
+tr.context-active {
+    background: rgba(52, 152, 219, 0.15) !important;
 }
 
 /* Weightage Cell Styles */
