@@ -917,6 +917,7 @@ textarea.form-control {
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
 /* Table container for sticky header support */
@@ -924,6 +925,7 @@ textarea.form-control {
 .vacancy-table-container {
     max-height: calc(100vh - 300px);
     overflow-y: auto;
+    overflow-x: auto;
     position: relative;
 }
 
