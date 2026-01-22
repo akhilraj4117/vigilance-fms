@@ -357,18 +357,22 @@ function exportPDF() {
 }
 
 function exportWord() {
-    let html;
+    let fileNumber = '';
     
     if (transferType === 'regular') {
-        // Regular Transfer - Malayalam format (Portrait, 6 columns, no district grouping)
-        html = exportWordRegular();
-    } else {
-        // General Transfer - English format (Landscape, 8 columns, grouped by district)
-        html = exportWordGeneral();
+        // For regular transfer (Malayalam format), prompt for file number
+        fileNumber = prompt('Enter File Number (ഉത്തരവ് നം.):');
+        if (fileNumber === null) return; // User cancelled
+        fileNumber = (fileNumber || '').trim();
     }
     
-    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
-    saveAs(blob, getFileName('doc'));
+    // Build URL with file number parameter if provided
+    let url = `/export/word/final`;
+    if (fileNumber) {
+        url += `?file_number=${encodeURIComponent(fileNumber)}`;
+    }
+    
+    window.location.href = url;
 }
 
 function exportWordRegular() {

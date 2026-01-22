@@ -4508,6 +4508,9 @@ def export_word(list_type):
     year = session.get('year', '')
     month = session.get('month', '')
     
+    # Get file number from request args (for final list Malayalam format)
+    file_number = request.args.get('file_number', '')
+    
     if list_type == 'draft':
         query = f"""
             SELECT j.pen, j.name, j.designation, j.institution, j.district, d.transfer_to_district,
@@ -4560,11 +4563,13 @@ def export_word(list_type):
     header1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header1.runs[0].bold = True
     header1.runs[0].font.size = Pt(14)
+    header1.runs[0].font.name = 'Arial'
     
     header2 = doc.add_paragraph('Department: Health Services')
     header2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header2.runs[0].bold = True
     header2.runs[0].font.size = Pt(12)
+    header2.runs[0].font.name = 'Arial'
     
     if transfer_type == 'regular':
         title_text = f'Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}'
@@ -4575,11 +4580,21 @@ def export_word(list_type):
     header3.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header3.runs[0].bold = True
     header3.runs[0].font.size = Pt(12)
+    header3.runs[0].font.name = 'Arial'
     header3.runs[0].underline = True
+    
+    # Add Malayalam order info for regular transfer
+    if transfer_type == 'regular' and list_type == 'final':
+        order_para = doc.add_paragraph()
+        order_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        order_run = order_para.add_run(f'ഉത്തരവ് നം. {file_number}, തീയതി: {get_ist_now().strftime("%d-%m-%Y")}')
+        order_run.bold = True
+        order_run.font.size = Pt(12)
     
     cadre = doc.add_paragraph(f'{list_type.title()} Transfer List')
     cadre.runs[0].bold = True
     cadre.runs[0].font.size = Pt(10)
+    cadre.runs[0].font.name = 'Arial'
     
     doc.add_paragraph()
     
@@ -4587,8 +4602,8 @@ def export_word(list_type):
     headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 
               'From District', 'To District', 'Protection If Any']
     
-    # Column widths in inches
-    col_widths = [0.5, 0.8, 1.8, 1.2, 2.5, 1.2, 1.2, 1.3]
+    # Column widths in inches - adjusted to fit better within margins
+    col_widths = [0.4, 0.7, 1.6, 1.0, 2.2, 1.0, 1.0, 1.2]
     
     for district in DISTRICTS:
         if district not in district_groups:
@@ -4600,6 +4615,7 @@ def export_word(list_type):
         district_para = doc.add_paragraph(f'District: {district.upper()}')
         district_para.runs[0].bold = True
         district_para.runs[0].font.size = Pt(11)
+        district_para.runs[0].font.name = 'Arial'
         
         # Create table
         table = doc.add_table(rows=1 + len(records), cols=8)
@@ -4618,6 +4634,7 @@ def export_word(list_type):
             cell.text = header
             cell.paragraphs[0].runs[0].bold = True
             cell.paragraphs[0].runs[0].font.size = Pt(9)
+            cell.paragraphs[0].runs[0].font.name = 'Arial'
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Data rows
@@ -4633,7 +4650,9 @@ def export_word(list_type):
             for col_idx, value in enumerate(data):
                 cell = row.cells[col_idx]
                 cell.text = str(value) if value else ''
-                cell.paragraphs[0].runs[0].font.size = Pt(9)
+                if cell.paragraphs[0].runs:
+                    cell.paragraphs[0].runs[0].font.size = Pt(9)
+                    cell.paragraphs[0].runs[0].font.name = 'Arial'
                 if col_idx == 0:
                     cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             
@@ -4647,9 +4666,11 @@ def export_word(list_type):
     sig_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     sig_run = sig_para.add_run('_________________________\n')
     sig_run.font.size = Pt(10)
+    sig_run.font.name = 'Arial'
     sig_run2 = sig_para.add_run('Authorized Signatory')
     sig_run2.bold = True
     sig_run2.font.size = Pt(10)
+    sig_run2.font.name = 'Arial'
     
     # Save to BytesIO
     output = io.BytesIO()
