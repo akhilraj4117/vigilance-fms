@@ -430,117 +430,122 @@ function exportWordRegular(fileNumber, orderDate) {
             <style>
                 @page {
                     size: A4 portrait;
-                    margin: 2cm 1.5cm 2cm 1.5cm;
+                    margin: 1.5cm 1cm 1.5cm 1cm;
+                    mso-page-orientation: portrait;
                 }
                 body { 
                     font-family: 'MANDARAM', 'Noto Sans Malayalam', Arial, sans-serif; 
-                    font-size: 13pt;
-                    line-height: 1.15;
+                    font-size: 12pt;
+                    line-height: 1.1;
                 }
                 .title-section {
                     text-align: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 10px;
                 }
                 .title-text {
-                    font-size: 16pt;
+                    font-size: 14pt;
                     font-weight: bold;
                     text-decoration: underline;
                 }
                 .subject-table {
                     width: 100%;
                     border: none;
-                    margin: 12px 0;
+                    margin: 10px 0;
                 }
                 .subject-table td {
                     border: none;
-                    padding: 6px 0;
-                    font-size: 13pt;
+                    padding: 4px 0;
+                    font-size: 12pt;
                     vertical-align: top;
                 }
                 .subject-label {
-                    width: 100px;
+                    width: 80px;
                     text-align: right;
-                    padding-right: 10px;
+                    padding-right: 8px;
                 }
                 .subject-text {
                     text-align: justify;
                 }
                 .order-section {
                     text-align: center;
-                    margin: 12px 0;
+                    margin: 10px 0;
                 }
                 .order-text {
-                    font-size: 15pt;
+                    font-size: 13pt;
                     font-weight: bold;
                     text-decoration: underline;
                 }
                 .body-text {
                     text-align: justify;
-                    text-indent: 36px;
-                    margin: 12px 0;
-                    font-size: 13pt;
+                    text-indent: 30px;
+                    margin: 10px 0;
+                    font-size: 12pt;
                 }
                 table.data-table {
                     border-collapse: collapse;
                     width: 100%;
-                    margin: 12px 0;
+                    margin: 10px 0;
                     page-break-inside: auto;
                     table-layout: fixed;
+                    mso-table-layout-alt: fixed;
                 }
                 table.data-table th, table.data-table td {
                     border: 1px solid black;
-                    padding: 4px 6px;
-                    font-size: 11pt;
+                    padding: 2px 4px;
+                    font-size: 9pt;
                     vertical-align: top;
                     word-wrap: break-word;
                     overflow-wrap: break-word;
+                    mso-line-height-rule: exactly;
                 }
                 table.data-table th {
                     text-align: center;
                     font-weight: bold;
                     font-family: Arial, sans-serif;
+                    font-size: 9pt;
+                    background-color: #f0f0f0;
                 }
                 table.data-table td {
                     font-family: Arial, sans-serif;
                 }
                 td.center { text-align: center; }
                 td.justify { text-align: justify; }
-                .col-slno { width: 6%; }
-                .col-pen { width: 10%; }
-                .col-name { width: 22%; }
-                .col-inst { width: 27%; }
-                .col-from { width: 17%; }
-                .col-to { width: 18%; }
+                col.col-slno { width: 28pt; }
+                col.col-pen { width: 45pt; }
+                col.col-name { width: 100pt; }
+                col.col-inst { width: 130pt; }
+                col.col-from { width: 80pt; }
+                col.col-to { width: 80pt; }
                 .instruction {
                     text-align: justify;
-                    text-indent: 36px;
-                    margin: 12px 0;
-                    font-size: 13pt;
+                    text-indent: 30px;
+                    margin: 10px 0;
+                    font-size: 12pt;
                 }
                 .signature-area {
-                    margin-top: 30px;
-                    text-indent: 252px;
-                    font-size: 13pt;
+                    margin-top: 25px;
+                    text-indent: 220px;
+                    font-size: 12pt;
                     font-weight: bold;
                 }
                 .receiver-section {
-                    margin-top: 20px;
-                    font-size: 13pt;
+                    margin-top: 15px;
+                    font-size: 12pt;
                 }
                 .receiver-title {
-                    margin-bottom: 6px;
+                    margin-bottom: 5px;
                 }
                 .receiver-text {
-                    text-indent: 36px;
+                    text-indent: 30px;
                     font-weight: bold;
                 }
                 .copy-section {
-                    margin-top: 12px;
-                    font-size: 13pt;
+                    margin-top: 10px;
+                    font-size: 12pt;
                 }
                 .copy-item {
-                    margin-left: 36px;
-                    margin-top: 6px;
+                    margin-left: 30px;
+                    margin-top: 5px;
                 }
             </style>
         </head>
@@ -568,13 +573,21 @@ function exportWordRegular(fileNumber, orderDate) {
             <p class="body-text">വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും മേൽ പരാമർശ പ്രകാരം ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I – ജീവനക്കാരുടെ സ്ഥലംമാറ്റത്തിനുള്ള അപേക്ഷകൾ പരിഗണിച്ച്, ചുവടെ ചേർക്കുന്ന ജീവനക്കാർക്ക് അവരുടെ പേരിന് നേരെ രേഖപ്പെടുത്തിയിട്ടുള്ള ജില്ലകളിലേക്ക് സ്ഥലം മാറ്റം നൽകി ഉത്തരവാകുന്നു.</p>
             
             <table class="data-table">
+                <colgroup>
+                    <col class="col-slno">
+                    <col class="col-pen">
+                    <col class="col-name">
+                    <col class="col-inst">
+                    <col class="col-from">
+                    <col class="col-to">
+                </colgroup>
                 <tr>
-                    <th class="col-slno">Sl. No.</th>
-                    <th class="col-pen">PEN</th>
-                    <th class="col-name">Name</th>
-                    <th class="col-inst">Present Institution</th>
-                    <th class="col-from">Present District</th>
-                    <th class="col-to">Allotted District</th>
+                    <th>Sl. No.</th>
+                    <th>PEN</th>
+                    <th>Name</th>
+                    <th>Present Institution</th>
+                    <th>Present District</th>
+                    <th>Allotted District</th>
                 </tr>`;
     
     // Add all records in sorted order (by transfer_to_district, then seniority)
