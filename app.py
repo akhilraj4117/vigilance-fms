@@ -4736,6 +4736,9 @@ def export_pdf(list_type):
     result = db.session.execute(db.text(query))
     rows = result.fetchall()
     
+    # Debug: Log the number of rows fetched
+    print(f"PDF Export Debug: Fetched {len(rows)} rows for {list_type} list")
+    
     # Group by district
     district_groups = {}
     for row in rows:
@@ -4743,6 +4746,8 @@ def export_pdf(list_type):
         if from_district not in district_groups:
             district_groups[from_district] = []
         district_groups[from_district].append(row)
+    
+    print(f"PDF Export Debug: Grouped into {len(district_groups)} districts")
     
     # Create PDF
     output = io.BytesIO()
