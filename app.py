@@ -4497,32 +4497,16 @@ def export_word(list_type):
     try:
         from docx import Document
         from docx.shared import Inches, Pt, Cm
-        from docx.enum.table import WD_TABLE_ALIGNMENT
+        from docx.enum.table import Wd_Table_Alignment
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        print("Word Export Debug: All imports successful")
-    except ImportError as e:
-        flash(f'Error importing python-docx: {str(e)}. Full error details logged.', 'error')
-        print(f"DOCX Import Error Details: {e}")
-        import traceback
-        traceback.print_exc()
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        flash(f'Unexpected error during imports: {str(e)}', 'error')
-        print(f"Unexpected import error: {e}")
-        import traceback
-        traceback.print_exc()
+    except ImportError:
+        flash('python-docx library not installed. Please install with: pip install python-docx', 'error')
         return redirect(url_for('dashboard'))
     
-    try:
-        prefix = get_table_prefix()
-        transfer_type = session.get('transfer_type', 'general')
-        year = session.get('year', '')
-        month = session.get('month', '')
-        
-        print(f"Word Export Debug: Starting export for {list_type} list, transfer_type={transfer_type}, year={year}, month={month}")
-        
-        # Get file number from request args (for final list Malayalam format)
-        file_number = request.args.get('file_number', '')
+    prefix = get_table_prefix()
+    transfer_type = session.get('transfer_type', 'general')
+    year = session.get('year', '')
+    month = session.get('month', '')
     
     if list_type == 'draft':
         query = f"""
@@ -4547,9 +4531,6 @@ def export_word(list_type):
     result = db.session.execute(db.text(query))
     rows = result.fetchall()
     
-    # Debug: Log the number of rows fetched
-    print(f"Word Export Debug: Fetched {len(rows)} rows for {list_type} list")
-    
     # Group by district
     district_groups = {}
     for row in rows:
@@ -4557,8 +4538,6 @@ def export_word(list_type):
         if from_district not in district_groups:
             district_groups[from_district] = []
         district_groups[from_district].append(row)
-    
-    print(f"Word Export Debug: Grouped into {len(district_groups)} districts")
     
     # Create Word document
     doc = Document()
@@ -4581,13 +4560,11 @@ def export_word(list_type):
     header1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header1.runs[0].bold = True
     header1.runs[0].font.size = Pt(14)
-    header1.runs[0].font.name = 'Arial'
     
     header2 = doc.add_paragraph('Department: Health Services')
     header2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header2.runs[0].bold = True
     header2.runs[0].font.size = Pt(12)
-    header2.runs[0].font.name = 'Arial'
     
     if transfer_type == 'regular':
         title_text = f'Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}'
@@ -4598,21 +4575,11 @@ def export_word(list_type):
     header3.alignment = WD_ALIGN_PARAGRAPH.CENTER
     header3.runs[0].bold = True
     header3.runs[0].font.size = Pt(12)
-    header3.runs[0].font.name = 'Arial'
     header3.runs[0].underline = True
-    
-    # Add Malayalam order info for regular transfer
-    if transfer_type == 'regular' and list_type == 'final':
-        order_para = doc.add_paragraph()
-        order_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        order_run = order_para.add_run(f'ഉത്തരവ് നം. {file_number}, തീയതി: {get_ist_now().strftime("%d-%m-%Y")}')
-        order_run.bold = True
-        order_run.font.size = Pt(12)
     
     cadre = doc.add_paragraph(f'{list_type.title()} Transfer List')
     cadre.runs[0].bold = True
     cadre.runs[0].font.size = Pt(10)
-    cadre.runs[0].font.name = 'Arial'
     
     doc.add_paragraph()
     
@@ -4620,8 +4587,8 @@ def export_word(list_type):
     headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 
               'From District', 'To District', 'Protection If Any']
     
-    # Column widths in inches - adjusted to fit better within margins
-    col_widths = [0.4, 0.7, 1.6, 1.0, 2.2, 1.0, 1.0, 1.2]
+    # Column widths in inches
+    col_widths = [0.5, 0.8, 1.8, 1.2, 2.5, 1.2, 1.2, 1.3]
     
     for district in DISTRICTS:
         if district not in district_groups:
@@ -4633,12 +4600,11 @@ def export_word(list_type):
         district_para = doc.add_paragraph(f'District: {district.upper()}')
         district_para.runs[0].bold = True
         district_para.runs[0].font.size = Pt(11)
-        district_para.runs[0].font.name = 'Arial'
         
         # Create table
         table = doc.add_table(rows=1 + len(records), cols=8)
         table.style = 'Table Grid'
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.alignment = Wd_Table_Alignment.CENTER
         
         # Set column widths
         for i, width in enumerate(col_widths):
@@ -4652,7 +4618,6 @@ def export_word(list_type):
             cell.text = header
             cell.paragraphs[0].runs[0].bold = True
             cell.paragraphs[0].runs[0].font.size = Pt(9)
-            cell.paragraphs[0].runs[0].font.name = 'Arial'
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Data rows
@@ -4668,9 +4633,7 @@ def export_word(list_type):
             for col_idx, value in enumerate(data):
                 cell = row.cells[col_idx]
                 cell.text = str(value) if value else ''
-                if cell.paragraphs[0].runs:
-                    cell.paragraphs[0].runs[0].font.size = Pt(9)
-                    cell.paragraphs[0].runs[0].font.name = 'Arial'
+                cell.paragraphs[0].runs[0].font.size = Pt(9)
                 if col_idx == 0:
                     cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             
@@ -4684,18 +4647,14 @@ def export_word(list_type):
     sig_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     sig_run = sig_para.add_run('_________________________\n')
     sig_run.font.size = Pt(10)
-    sig_run.font.name = 'Arial'
     sig_run2 = sig_para.add_run('Authorized Signatory')
     sig_run2.bold = True
     sig_run2.font.size = Pt(10)
-    sig_run2.font.name = 'Arial'
     
     # Save to BytesIO
     output = io.BytesIO()
     doc.save(output)
     output.seek(0)
-    
-    print(f"Word Export Debug: Document created successfully, size={output.getbuffer().nbytes} bytes")
     
     return send_file(
         output,
@@ -4703,28 +4662,19 @@ def export_word(list_type):
         as_attachment=True,
         download_name=f'{list_type}_transfer_list_{get_ist_now().strftime("%Y%m%d")}.docx'
     )
-    
-    except Exception as e:
-        print(f"Word Export Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f'Error creating Word document: {str(e)}', 'error')
-        return redirect(url_for('dashboard'))
 
 
 @app.route('/export/pdf/<list_type>')
 @login_required
 @requires_transfer_session
 def export_pdf(list_type):
-    """Export list to PDF - matching Word document format"""
+    """Export list to PDF - matching desktop app format"""
     try:
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch, cm
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
     except ImportError:
         flash('reportlab library not installed. Please install with: pip install reportlab', 'error')
         return redirect(url_for('dashboard'))
@@ -4733,9 +4683,6 @@ def export_pdf(list_type):
     transfer_type = session.get('transfer_type', 'general')
     year = session.get('year', '')
     month = session.get('month', '')
-    
-    # Get file number from request args (for final list Malayalam format)
-    file_number = request.args.get('file_number', '')
     
     if list_type == 'draft':
         query = f"""
@@ -4760,9 +4707,6 @@ def export_pdf(list_type):
     result = db.session.execute(db.text(query))
     rows = result.fetchall()
     
-    # Debug: Log the number of rows fetched
-    print(f"PDF Export Debug: Fetched {len(rows)} rows for {list_type} list")
-    
     # Group by district
     district_groups = {}
     for row in rows:
@@ -4771,74 +4715,35 @@ def export_pdf(list_type):
             district_groups[from_district] = []
         district_groups[from_district].append(row)
     
-    print(f"PDF Export Debug: Grouped into {len(district_groups)} districts")
-    
     # Create PDF
     output = io.BytesIO()
-    
-    # Use landscape for general transfer, portrait for regular
-    if transfer_type == 'general':
-        pagesize = landscape(A4)
-        margins = (1.5*cm, 1.5*cm, 2*cm, 2*cm)  # left, right, top, bottom
-    else:
-        pagesize = A4
-        margins = (2*cm, 2*cm, 2*cm, 2*cm)
-    
-    doc = SimpleDocTemplate(output, pagesize=pagesize,
-                           leftMargin=margins[0], rightMargin=margins[1],
-                           topMargin=margins[2], bottomMargin=margins[3])
+    doc = SimpleDocTemplate(output, pagesize=landscape(A4), 
+                           rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     
     elements = []
     styles = getSampleStyleSheet()
     
-    # Custom styles matching Word format
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], 
-                                 alignment=1, fontSize=14, fontName='Helvetica-Bold',
-                                 spaceAfter=6)
-    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], 
-                                    alignment=1, fontSize=12, fontName='Helvetica-Bold',
-                                    spaceAfter=6)
-    subtitle_underline_style = ParagraphStyle('SubtitleUnderline', parent=styles['Heading2'],
-                                             alignment=1, fontSize=12, fontName='Helvetica-Bold',
-                                             spaceAfter=6, underline=True)
-    order_style = ParagraphStyle('Order', parent=styles['Normal'],
-                                alignment=1, fontSize=12, fontName='Helvetica-Bold',
-                                spaceAfter=6)
-    list_title_style = ParagraphStyle('ListTitle', parent=styles['Normal'],
-                                     fontSize=10, fontName='Helvetica-Bold',
-                                     spaceAfter=12)
-    district_style = ParagraphStyle('District', parent=styles['Heading3'],
-                                   fontSize=11, fontName='Helvetica-Bold',
-                                   spaceBefore=12, spaceAfter=6)
+    # Custom styles
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], alignment=1, fontSize=14, spaceAfter=6)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], alignment=1, fontSize=12, spaceAfter=6)
+    district_style = ParagraphStyle('District', parent=styles['Heading3'], fontSize=11, spaceBefore=12, spaceAfter=6)
     
     # Header
-    elements.append(Paragraph('<b>Government of Kerala</b>', title_style))
-    elements.append(Paragraph('<b>Department: Health Services</b>', subtitle_style))
+    elements.append(Paragraph('Government of Kerala', title_style))
+    elements.append(Paragraph('Department: Health Services', subtitle_style))
     
     if transfer_type == 'regular':
-        title_text = f'<b><u>Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}</u></b>'
+        title_text = f'Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}'
     else:
-        title_text = f'<b><u>Norms Based General Transfer for Junior Public Health Nurse Gr. I - {year}</u></b>'
+        title_text = f'Norms Based General Transfer for Junior Public Health Nurse Gr. I - {year}'
     
-    elements.append(Paragraph(title_text, subtitle_underline_style))
-    
-    # Add Malayalam order info for regular transfer final list
-    if transfer_type == 'regular' and list_type == 'final' and file_number:
-        elements.append(Paragraph(f'<b>ഉത്തരവ് നം. {file_number}, തീയതി: {get_ist_now().strftime("%d-%m-%Y")}</b>', 
-                                order_style))
-    
-    elements.append(Paragraph(f'<b>{list_type.title()} Transfer List</b>', list_title_style))
-    elements.append(Spacer(1, 12))
+    elements.append(Paragraph(title_text, subtitle_style))
+    elements.append(Paragraph(f'{list_type.title()} Transfer List', 
+                             ParagraphStyle('ListTitle', parent=styles['Normal'], fontSize=10, spaceBefore=6, spaceAfter=12)))
     
     sl_no = 1
-    headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 
-              'From District', 'To District', 'Protection If Any']
-    
-    # Adjust column widths based on page orientation
-    if transfer_type == 'general':
-        col_widths = [0.4*inch, 0.7*inch, 1.6*inch, 1.0*inch, 2.2*inch, 1.0*inch, 1.0*inch, 1.2*inch]
-    else:
-        col_widths = [0.3*inch, 0.6*inch, 1.4*inch, 0.9*inch, 1.8*inch, 0.9*inch, 0.9*inch, 1.0*inch]
+    headers = ['Sl.No', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']
+    col_widths = [0.4*inch, 0.7*inch, 1.6*inch, 1.0*inch, 2.2*inch, 1.0*inch, 1.0*inch, 1.2*inch]
     
     for district in DISTRICTS:
         if district not in district_groups:
@@ -4847,14 +4752,14 @@ def export_pdf(list_type):
         records = district_groups[district]
         
         # District header
-        elements.append(Paragraph(f'<b>District: {district.upper()}</b>', district_style))
+        elements.append(Paragraph(f'District: {district.upper()}', district_style))
         
         # Table data
         table_data = [headers]
         for record in records:
             protection = ""
             if record[6] == 'Yes' and record[7]:
-                protection = str(record[7])
+                protection = record[7][:30] + '...' if len(str(record[7])) > 30 else record[7]
             
             table_data.append([
                 str(sl_no), 
@@ -4868,37 +4773,28 @@ def export_pdf(list_type):
             ])
             sl_no += 1
         
-        # Create table with styles matching Word format
+        # Create table
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D9D9D9')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (0, -1), 'CENTER'),  # Sl. No. center
-            ('ALIGN', (1, 0), (-1, 0), 'CENTER'),  # All headers centered
-            ('ALIGN', (1, 1), (1, -1), 'LEFT'),    # PEN left
-            ('ALIGN', (2, 1), (2, -1), 'LEFT'),    # Name left
-            ('ALIGN', (3, 1), (3, -1), 'LEFT'),    # Designation left
-            ('ALIGN', (4, 1), (4, -1), 'LEFT'),    # Office left
-            ('ALIGN', (5, 1), (5, -1), 'LEFT'),    # From District left
-            ('ALIGN', (6, 1), (6, -1), 'LEFT'),    # To District left
-            ('ALIGN', (7, 1), (7, -1), 'LEFT'),    # Protection left
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (2, 1), (4, -1), 'LEFT'),  # Name, Designation, Office left align
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')])
         ]))
         
         elements.append(table)
         elements.append(Spacer(1, 12))
     
-    # Signature area
+    # Signature
     elements.append(Spacer(1, 30))
-    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], 
-                              alignment=2, fontSize=10, fontName='Helvetica-Bold')
-    elements.append(Paragraph('_________________________<br/><b>Authorized Signatory</b>', sig_style))
+    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], alignment=2, fontSize=10)
+    elements.append(Paragraph('_________________________<br/>Authorized Signatory', sig_style))
     
     doc.build(elements)
     output.seek(0)
