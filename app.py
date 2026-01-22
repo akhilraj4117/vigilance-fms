@@ -4499,20 +4499,30 @@ def export_word(list_type):
         from docx.shared import Inches, Pt, Cm
         from docx.enum.table import WD_TABLE_ALIGNMENT
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        print("Word Export Debug: All imports successful")
     except ImportError as e:
         flash(f'Error importing python-docx: {str(e)}. Full error details logged.', 'error')
         print(f"DOCX Import Error Details: {e}")
         import traceback
         traceback.print_exc()
         return redirect(url_for('dashboard'))
+    except Exception as e:
+        flash(f'Unexpected error during imports: {str(e)}', 'error')
+        print(f"Unexpected import error: {e}")
+        import traceback
+        traceback.print_exc()
+        return redirect(url_for('dashboard'))
     
-    prefix = get_table_prefix()
-    transfer_type = session.get('transfer_type', 'general')
-    year = session.get('year', '')
-    month = session.get('month', '')
-    
-    # Get file number from request args (for final list Malayalam format)
-    file_number = request.args.get('file_number', '')
+    try:
+        prefix = get_table_prefix()
+        transfer_type = session.get('transfer_type', 'general')
+        year = session.get('year', '')
+        month = session.get('month', '')
+        
+        print(f"Word Export Debug: Starting export for {list_type} list, transfer_type={transfer_type}, year={year}, month={month}")
+        
+        # Get file number from request args (for final list Malayalam format)
+        file_number = request.args.get('file_number', '')
     
     if list_type == 'draft':
         query = f"""
@@ -4537,6 +4547,9 @@ def export_word(list_type):
     result = db.session.execute(db.text(query))
     rows = result.fetchall()
     
+    # Debug: Log the number of rows fetched
+    print(f"Word Export Debug: Fetched {len(rows)} rows for {list_type} list")
+    
     # Group by district
     district_groups = {}
     for row in rows:
@@ -4544,6 +4557,8 @@ def export_word(list_type):
         if from_district not in district_groups:
             district_groups[from_district] = []
         district_groups[from_district].append(row)
+    
+    print(f"Word Export Debug: Grouped into {len(district_groups)} districts")
     
     # Create Word document
     doc = Document()
@@ -4680,12 +4695,21 @@ def export_word(list_type):
     doc.save(output)
     output.seek(0)
     
+    print(f"Word Export Debug: Document created successfully, size={output.getbuffer().nbytes} bytes")
+    
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         as_attachment=True,
         download_name=f'{list_type}_transfer_list_{get_ist_now().strftime("%Y%m%d")}.docx'
     )
+    
+    except Exception as e:
+        print(f"Word Export Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Error creating Word document: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
 
 
 @app.route('/export/pdf/<list_type>')
