@@ -4497,7 +4497,7 @@ def export_word(list_type):
     try:
         from docx import Document
         from docx.shared import Inches, Pt, Cm
-        from docx.enum.table import Wd_Table_Alignment
+        from docx.enum.table import WD_TABLE_ALIGNMENT
         from docx.enum.text import WD_ALIGN_PARAGRAPH
     except ImportError as e:
         flash(f'Error importing python-docx: {str(e)}. Full error details logged.', 'error')
@@ -4623,7 +4623,7 @@ def export_word(list_type):
         # Create table
         table = doc.add_table(rows=1 + len(records), cols=8)
         table.style = 'Table Grid'
-        table.alignment = Wd_Table_Alignment.CENTER
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
         
         # Set column widths
         for i, width in enumerate(col_widths):
