@@ -4689,13 +4689,15 @@ def export_word(list_type):
 @login_required
 @requires_transfer_session
 def export_pdf(list_type):
-    """Export list to PDF - matching desktop app format"""
+    """Export list to PDF - matching Word document format"""
     try:
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch, cm
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
     except ImportError:
         flash('reportlab library not installed. Please install with: pip install reportlab', 'error')
         return redirect(url_for('dashboard'))
@@ -4704,6 +4706,9 @@ def export_pdf(list_type):
     transfer_type = session.get('transfer_type', 'general')
     year = session.get('year', '')
     month = session.get('month', '')
+    
+    # Get file number from request args (for final list Malayalam format)
+    file_number = request.args.get('file_number', '')
     
     if list_type == 'draft':
         query = f"""
@@ -4738,33 +4743,70 @@ def export_pdf(list_type):
     
     # Create PDF
     output = io.BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=landscape(A4), 
-                           rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    
+    # Use landscape for general transfer, portrait for regular
+    if transfer_type == 'general':
+        pagesize = landscape(A4)
+        margins = (1.5*cm, 1.5*cm, 2*cm, 2*cm)  # left, right, top, bottom
+    else:
+        pagesize = A4
+        margins = (2*cm, 2*cm, 2*cm, 2*cm)
+    
+    doc = SimpleDocTemplate(output, pagesize=pagesize,
+                           leftMargin=margins[0], rightMargin=margins[1],
+                           topMargin=margins[2], bottomMargin=margins[3])
     
     elements = []
     styles = getSampleStyleSheet()
     
-    # Custom styles
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], alignment=1, fontSize=14, spaceAfter=6)
-    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], alignment=1, fontSize=12, spaceAfter=6)
-    district_style = ParagraphStyle('District', parent=styles['Heading3'], fontSize=11, spaceBefore=12, spaceAfter=6)
+    # Custom styles matching Word format
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], 
+                                 alignment=1, fontSize=14, fontName='Helvetica-Bold',
+                                 spaceAfter=6)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], 
+                                    alignment=1, fontSize=12, fontName='Helvetica-Bold',
+                                    spaceAfter=6)
+    subtitle_underline_style = ParagraphStyle('SubtitleUnderline', parent=styles['Heading2'],
+                                             alignment=1, fontSize=12, fontName='Helvetica-Bold',
+                                             spaceAfter=6, underline=True)
+    order_style = ParagraphStyle('Order', parent=styles['Normal'],
+                                alignment=1, fontSize=12, fontName='Helvetica-Bold',
+                                spaceAfter=6)
+    list_title_style = ParagraphStyle('ListTitle', parent=styles['Normal'],
+                                     fontSize=10, fontName='Helvetica-Bold',
+                                     spaceAfter=12)
+    district_style = ParagraphStyle('District', parent=styles['Heading3'],
+                                   fontSize=11, fontName='Helvetica-Bold',
+                                   spaceBefore=12, spaceAfter=6)
     
     # Header
-    elements.append(Paragraph('Government of Kerala', title_style))
-    elements.append(Paragraph('Department: Health Services', subtitle_style))
+    elements.append(Paragraph('<b>Government of Kerala</b>', title_style))
+    elements.append(Paragraph('<b>Department: Health Services</b>', subtitle_style))
     
     if transfer_type == 'regular':
-        title_text = f'Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}'
+        title_text = f'<b><u>Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}</u></b>'
     else:
-        title_text = f'Norms Based General Transfer for Junior Public Health Nurse Gr. I - {year}'
+        title_text = f'<b><u>Norms Based General Transfer for Junior Public Health Nurse Gr. I - {year}</u></b>'
     
-    elements.append(Paragraph(title_text, subtitle_style))
-    elements.append(Paragraph(f'{list_type.title()} Transfer List', 
-                             ParagraphStyle('ListTitle', parent=styles['Normal'], fontSize=10, spaceBefore=6, spaceAfter=12)))
+    elements.append(Paragraph(title_text, subtitle_underline_style))
+    
+    # Add Malayalam order info for regular transfer final list
+    if transfer_type == 'regular' and list_type == 'final' and file_number:
+        elements.append(Paragraph(f'<b>ഉത്തരവ് നം. {file_number}, തീയതി: {get_ist_now().strftime("%d-%m-%Y")}</b>', 
+                                order_style))
+    
+    elements.append(Paragraph(f'<b>{list_type.title()} Transfer List</b>', list_title_style))
+    elements.append(Spacer(1, 12))
     
     sl_no = 1
-    headers = ['Sl.No', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']
-    col_widths = [0.4*inch, 0.7*inch, 1.6*inch, 1.0*inch, 2.2*inch, 1.0*inch, 1.0*inch, 1.2*inch]
+    headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 
+              'From District', 'To District', 'Protection If Any']
+    
+    # Adjust column widths based on page orientation
+    if transfer_type == 'general':
+        col_widths = [0.4*inch, 0.7*inch, 1.6*inch, 1.0*inch, 2.2*inch, 1.0*inch, 1.0*inch, 1.2*inch]
+    else:
+        col_widths = [0.3*inch, 0.6*inch, 1.4*inch, 0.9*inch, 1.8*inch, 0.9*inch, 0.9*inch, 1.0*inch]
     
     for district in DISTRICTS:
         if district not in district_groups:
@@ -4773,14 +4815,14 @@ def export_pdf(list_type):
         records = district_groups[district]
         
         # District header
-        elements.append(Paragraph(f'District: {district.upper()}', district_style))
+        elements.append(Paragraph(f'<b>District: {district.upper()}</b>', district_style))
         
         # Table data
         table_data = [headers]
         for record in records:
             protection = ""
             if record[6] == 'Yes' and record[7]:
-                protection = record[7][:30] + '...' if len(str(record[7])) > 30 else record[7]
+                protection = str(record[7])
             
             table_data.append([
                 str(sl_no), 
@@ -4794,28 +4836,37 @@ def export_pdf(list_type):
             ])
             sl_no += 1
         
-        # Create table
+        # Create table with styles matching Word format
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D9D9D9')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('ALIGN', (2, 1), (4, -1), 'LEFT'),  # Name, Designation, Office left align
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),  # Sl. No. center
+            ('ALIGN', (1, 0), (-1, 0), 'CENTER'),  # All headers centered
+            ('ALIGN', (1, 1), (1, -1), 'LEFT'),    # PEN left
+            ('ALIGN', (2, 1), (2, -1), 'LEFT'),    # Name left
+            ('ALIGN', (3, 1), (3, -1), 'LEFT'),    # Designation left
+            ('ALIGN', (4, 1), (4, -1), 'LEFT'),    # Office left
+            ('ALIGN', (5, 1), (5, -1), 'LEFT'),    # From District left
+            ('ALIGN', (6, 1), (6, -1), 'LEFT'),    # To District left
+            ('ALIGN', (7, 1), (7, -1), 'LEFT'),    # Protection left
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')])
         ]))
         
         elements.append(table)
         elements.append(Spacer(1, 12))
     
-    # Signature
+    # Signature area
     elements.append(Spacer(1, 30))
-    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], alignment=2, fontSize=10)
-    elements.append(Paragraph('_________________________<br/>Authorized Signatory', sig_style))
+    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], 
+                              alignment=2, fontSize=10, fontName='Helvetica-Bold')
+    elements.append(Paragraph('_________________________<br/><b>Authorized Signatory</b>', sig_style))
     
     doc.build(elements)
     output.seek(0)
