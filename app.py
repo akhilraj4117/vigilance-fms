@@ -4499,8 +4499,11 @@ def export_word(list_type):
         from docx.shared import Inches, Pt, Cm
         from docx.enum.table import Wd_Table_Alignment
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-    except ImportError:
-        flash('python-docx library not installed. Please install with: pip install python-docx', 'error')
+    except ImportError as e:
+        flash(f'Error importing python-docx: {str(e)}. Full error details logged.', 'error')
+        print(f"DOCX Import Error Details: {e}")
+        import traceback
+        traceback.print_exc()
         return redirect(url_for('dashboard'))
     
     prefix = get_table_prefix()
