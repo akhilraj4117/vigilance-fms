@@ -2419,7 +2419,7 @@ def draft_list():
     # Order based on sort option
     # Use dynamically calculated duration for accurate seniority ordering
     if sort_by == 'to_district':
-        # To District Sort: by transfer_to_district (South to North), then by seniority (with weightage priority)
+        # To District Sort: by transfer_to_district (South to North), then by seniority
         query += """ ORDER BY CASE d.transfer_to_district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
@@ -2436,13 +2436,11 @@ def draft_list():
             WHEN 'Kannur' THEN 13
             WHEN 'Kasaragod' THEN 14
             ELSE 15 END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes') THEN 0 ELSE 1 END,
             CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                  ELSE 0 END DESC"""
     else:
-        # Default: by current district (South to North), then by seniority (with weightage priority)
+        # Default: by current district (South to North), then by seniority
         query += """ ORDER BY CASE j.district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
@@ -2459,8 +2457,6 @@ def draft_list():
             WHEN 'Kannur' THEN 13
             WHEN 'Kasaragod' THEN 14
             ELSE 15 END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes') THEN 0 ELSE 1 END,
             CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                  ELSE 0 END DESC"""
@@ -4142,7 +4138,7 @@ def final_list():
         query += " AND f.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    # Order by transfer_to_district from South to North (Kerala geography)
+    # Order by transfer_to_district from South to North (Kerala geography), then by seniority
     query += """ ORDER BY CASE f.transfer_to_district
         WHEN 'Thiruvananthapuram' THEN 1
         WHEN 'Kollam' THEN 2
@@ -4158,7 +4154,10 @@ def final_list():
         WHEN 'Wayanad' THEN 12
         WHEN 'Kannur' THEN 13
         WHEN 'Kasaragod' THEN 14
-        ELSE 15 END, j.duration_days DESC"""
+        ELSE 15 END,
+        CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+             THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+             ELSE 0 END DESC"""
     
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
