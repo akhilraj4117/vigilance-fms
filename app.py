@@ -514,12 +514,12 @@ def delete_database():
 def select_year(transfer_type):
     """Select year for General Transfer or month/year for Regular Transfer"""
     if transfer_type == 'general':
-        # Get available years from existing tables
+        # Get available years from existing tables - use pg_tables for faster query
         available_years = []
         try:
             result = db.session.execute(db.text("""
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name LIKE 'general_%_jphn'
+                SELECT tablename FROM pg_tables 
+                WHERE schemaname = 'public' AND tablename LIKE 'general_%_jphn'
             """))
             for row in result:
                 try:
@@ -536,12 +536,12 @@ def select_year(transfer_type):
                              available_years=sorted(available_years, reverse=True),
                              current_year=datetime.now().year)
     else:
-        # Regular Transfer - select month/year
+        # Regular Transfer - select month/year - use pg_tables for faster query
         available_lists = []
         try:
             result = db.session.execute(db.text("""
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name LIKE 'regular_%_jphn'
+                SELECT tablename FROM pg_tables 
+                WHERE schemaname = 'public' AND tablename LIKE 'regular_%_jphn'
             """))
             for row in result:
                 try:
