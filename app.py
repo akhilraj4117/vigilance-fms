@@ -278,6 +278,24 @@ def ensure_tables():
     
     db.session.commit()
     
+    # Create indexes for faster queries
+    indexes_sql = [
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}jphn_district ON {prefix}jphn (district)",
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}jphn_weightage ON {prefix}jphn (weightage)",
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}applied_pref1 ON {prefix}transfer_applied (pref1)",
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}applied_pref2 ON {prefix}transfer_applied (pref2)",
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}applied_special ON {prefix}transfer_applied (special_priority)",
+        f"CREATE INDEX IF NOT EXISTS idx_{prefix}draft_district ON {prefix}transfer_draft (transfer_to_district)",
+    ]
+    
+    for idx_sql in indexes_sql:
+        try:
+            db.session.execute(db.text(idx_sql))
+        except Exception as e:
+            print(f"Index creation warning: {e}")
+    
+    db.session.commit()
+    
     # Initialize vacancy table with districts
     for district in DISTRICTS:
         try:
