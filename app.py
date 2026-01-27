@@ -2419,7 +2419,7 @@ def draft_list():
     # Order based on sort option
     # Use dynamically calculated duration for accurate seniority ordering
     if sort_by == 'to_district':
-        # To District Sort: by transfer_to_district (South to North), then by seniority (with weightage priority)
+        # To District Sort: by transfer_to_district (South to North), then by seniority
         query += """ ORDER BY CASE d.transfer_to_district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
@@ -2436,13 +2436,11 @@ def draft_list():
             WHEN 'Kannur' THEN 13
             WHEN 'Kasaragod' THEN 14
             ELSE 15 END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes') THEN 0 ELSE 1 END,
             CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                  ELSE 0 END DESC"""
     else:
-        # Default: by current district (South to North), then by seniority (with weightage priority)
+        # Default: by current district (South to North), then by seniority
         query += """ ORDER BY CASE j.district
             WHEN 'Thiruvananthapuram' THEN 1
             WHEN 'Kollam' THEN 2
@@ -2459,8 +2457,6 @@ def draft_list():
             WHEN 'Kannur' THEN 13
             WHEN 'Kasaragod' THEN 14
             ELSE 15 END,
-            CASE WHEN t.special_priority = 'Yes' THEN 0 ELSE 1 END,
-            CASE WHEN j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes') THEN 0 ELSE 1 END,
             CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                  ELSE 0 END DESC"""
@@ -4142,7 +4138,7 @@ def final_list():
         query += " AND f.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    # Order by transfer_to_district from South to North (Kerala geography)
+    # Order by transfer_to_district from South to North (Kerala geography), then by seniority
     query += """ ORDER BY CASE f.transfer_to_district
         WHEN 'Thiruvananthapuram' THEN 1
         WHEN 'Kollam' THEN 2
@@ -4158,7 +4154,10 @@ def final_list():
         WHEN 'Wayanad' THEN 12
         WHEN 'Kannur' THEN 13
         WHEN 'Kasaragod' THEN 14
-        ELSE 15 END, j.duration_days DESC"""
+        ELSE 15 END,
+        CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+             THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+             ELSE 0 END DESC"""
     
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
@@ -4668,13 +4667,14 @@ def export_word(list_type):
 @login_required
 @requires_transfer_session
 def export_pdf(list_type):
-    """Export list to PDF - matching desktop app format"""
+    """Export list to PDF - matching Word export format exactly"""
     try:
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.pagesizes import A4
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch, cm
+        from reportlab.lib.units import inch, cm, mm
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
     except ImportError:
         flash('reportlab library not installed. Please install with: pip install reportlab', 'error')
         return redirect(url_for('dashboard'))
@@ -4684,21 +4684,32 @@ def export_pdf(list_type):
     year = session.get('year', '')
     month = session.get('month', '')
     
+    # District order for sorting (South to North)
+    district_order = {
+        'Thiruvananthapuram': 1, 'Kollam': 2, 'Pathanamthitta': 3, 'Alappuzha': 4,
+        'Kottayam': 5, 'Idukki': 6, 'Ernakulam': 7, 'Thrissur': 8, 'Palakkad': 9,
+        'Malappuram': 10, 'Kozhikode': 11, 'Wayanad': 12, 'Kannur': 13, 'Kasaragod': 14
+    }
+    
     if list_type == 'draft':
         query = f"""
-            SELECT j.pen, j.name, j.designation, j.institution, j.district, d.transfer_to_district,
-                   j.weightage, j.weightage_details
+            SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
+                   j.weightage,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
-            ORDER BY j.district, j.name
         """
     elif list_type == 'final':
         query = f"""
-            SELECT j.pen, j.name, j.designation, j.institution, j.district, f.transfer_to_district,
-                   j.weightage, j.weightage_details
+            SELECT j.pen, j.name, j.institution, j.district, f.transfer_to_district,
+                   j.weightage,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_final f ON j.pen = f.pen
-            ORDER BY j.district, j.name
         """
     else:
         flash('Invalid export type!', 'error')
@@ -4707,94 +4718,146 @@ def export_pdf(list_type):
     result = db.session.execute(db.text(query))
     rows = result.fetchall()
     
-    # Group by district
-    district_groups = {}
+    # Convert to list of dicts for sorting
+    data_list = []
     for row in rows:
-        from_district = row[4]
-        if from_district not in district_groups:
-            district_groups[from_district] = []
-        district_groups[from_district].append(row)
+        data_list.append({
+            'pen': row[0],
+            'name': row[1],
+            'institution': row[2],
+            'fromDistrict': row[3],
+            'toDistrict': row[4],
+            'weightage': row[5],
+            'duration': row[6] or 0
+        })
     
-    # Create PDF
+    # Sort by transfer_to_district (South to North), then weightage, then seniority
+    data_list.sort(key=lambda x: (
+        district_order.get(x['toDistrict'], 15),
+        0 if x['weightage'] == 'Yes' else 1,
+        -(x['duration'] or 0)
+    ))
+    
+    # Create PDF - Portrait A4 matching Word format
     output = io.BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=landscape(A4), 
-                           rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    doc = SimpleDocTemplate(output, pagesize=A4, 
+                           rightMargin=1*cm, leftMargin=1*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
     
     elements = []
     styles = getSampleStyleSheet()
     
-    # Custom styles
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], alignment=1, fontSize=14, spaceAfter=6)
-    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], alignment=1, fontSize=12, spaceAfter=6)
-    district_style = ParagraphStyle('District', parent=styles['Heading3'], fontSize=11, spaceBefore=12, spaceAfter=6)
+    # Custom styles matching Word format
+    title_style = ParagraphStyle('Title', parent=styles['Normal'], alignment=TA_CENTER, 
+                                  fontSize=12, fontName='Helvetica-Bold', spaceAfter=3,
+                                  underline=True)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], alignment=TA_JUSTIFY,
+                                 fontSize=10, firstLineIndent=20, spaceBefore=6, spaceAfter=6)
+    order_style = ParagraphStyle('Order', parent=styles['Normal'], alignment=TA_CENTER,
+                                  fontSize=11, fontName='Helvetica-Bold', spaceBefore=6, spaceAfter=6,
+                                  underline=True)
+    instruction_style = ParagraphStyle('Instruction', parent=styles['Normal'], alignment=TA_JUSTIFY,
+                                        fontSize=10, firstLineIndent=20, spaceBefore=6, spaceAfter=6)
+    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], alignment=TA_LEFT,
+                                fontSize=10, fontName='Helvetica-Bold', leftIndent=300)
+    receiver_style = ParagraphStyle('Receiver', parent=styles['Normal'], fontSize=10, spaceBefore=10)
+    receiver_bold = ParagraphStyle('ReceiverBold', parent=styles['Normal'], fontSize=10, 
+                                    fontName='Helvetica-Bold', leftIndent=20)
+    copy_style = ParagraphStyle('Copy', parent=styles['Normal'], fontSize=10, leftIndent=20)
     
-    # Header
-    elements.append(Paragraph('Government of Kerala', title_style))
-    elements.append(Paragraph('Department: Health Services', subtitle_style))
+    # Header section (Malayalam content as placeholder - will show in PDF)
+    elements.append(Paragraph('<u>തിരുവനന്തപുരം, ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ കാര്യാലയത്തിലെ</u>', title_style))
+    elements.append(Paragraph('<u>അഡീഷണൽ ഡയറക്ടർ (എ & റ്റി) – യുടെ നടപടിക്രമം</u>', title_style))
+    elements.append(Spacer(1, 10))
     
-    if transfer_type == 'regular':
-        title_text = f'Regular Transfer for Junior Public Health Nurse Gr. I - {month} {year}'
-    else:
-        title_text = f'Norms Based General Transfer for Junior Public Health Nurse Gr. I - {year}'
+    # Subject table
+    subject_data = [
+        ['വിഷയം :', 'ആ.വ. – ആ.വ.ഡ - ജൂനിയർ പബ്ലിക് ഹെൽത്ത് നഴ്‌സ് ഗ്രേഡ് 1 തസ്തികയിലെ ജീവനക്കാർക്ക് സ്ഥലംമാറ്റം അനുവദിച്ച് ഉത്തരവ് പുറപ്പെടുവിക്കുന്നു.'],
+        ['പരാമർശം :', 'വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I ജീവനക്കാരുടെ അപേക്ഷകൾ.']
+    ]
+    subject_table = Table(subject_data, colWidths=[60, 430])
+    subject_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+    ]))
+    elements.append(subject_table)
+    elements.append(Spacer(1, 10))
     
-    elements.append(Paragraph(title_text, subtitle_style))
-    elements.append(Paragraph(f'{list_type.title()} Transfer List', 
-                             ParagraphStyle('ListTitle', parent=styles['Normal'], fontSize=10, spaceBefore=6, spaceAfter=12)))
+    # Order number line
+    elements.append(Paragraph('<u>ഉത്തരവ് നം. __________, തീയതി: __________</u>', order_style))
+    elements.append(Spacer(1, 6))
     
-    sl_no = 1
-    headers = ['Sl.No', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']
-    col_widths = [0.4*inch, 0.7*inch, 1.6*inch, 1.0*inch, 2.2*inch, 1.0*inch, 1.0*inch, 1.2*inch]
+    # Body text
+    elements.append(Paragraph(
+        'വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും മേൽ പരാമർശ പ്രകാരം ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I – ജീവനക്കാരുടെ സ്ഥലംമാറ്റത്തിനുള്ള അപേക്ഷകൾ പരിഗണിച്ച്, ചുവടെ ചേർക്കുന്ന ജീവനക്കാർക്ക് അവരുടെ പേരിന് നേരെ രേഖപ്പെടുത്തിയിട്ടുള്ള ജില്ലകളിലേക്ക് സ്ഥലം മാറ്റം നൽകി ഉത്തരവാകുന്നു.',
+        body_style
+    ))
+    elements.append(Spacer(1, 10))
     
-    for district in DISTRICTS:
-        if district not in district_groups:
-            continue
-        
-        records = district_groups[district]
-        
-        # District header
-        elements.append(Paragraph(f'District: {district.upper()}', district_style))
-        
-        # Table data
-        table_data = [headers]
-        for record in records:
-            protection = ""
-            if record[6] == 'Yes' and record[7]:
-                protection = record[7][:30] + '...' if len(str(record[7])) > 30 else record[7]
-            
-            table_data.append([
-                str(sl_no), 
-                record[0] or '', 
-                record[1] or '', 
-                record[2] or 'JPHN Gr I',
-                record[3] or '', 
-                record[4] or '', 
-                record[5] or '', 
-                protection
-            ])
-            sl_no += 1
-        
-        # Create table
-        table = Table(table_data, colWidths=col_widths, repeatRows=1)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D9D9D9')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('ALIGN', (2, 1), (4, -1), 'LEFT'),  # Name, Designation, Office left align
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')])
-        ]))
-        
-        elements.append(table)
-        elements.append(Spacer(1, 12))
+    # Data table - 6 columns matching Word format
+    headers = ['Sl. No.', 'PEN', 'Name', 'Present Institution', 'Present District', 'Allotted District']
+    col_widths = [35, 55, 110, 160, 85, 85]  # Total ~530 points for A4 portrait with 1cm margins
     
-    # Signature
-    elements.append(Spacer(1, 30))
-    sig_style = ParagraphStyle('Signature', parent=styles['Normal'], alignment=2, fontSize=10)
-    elements.append(Paragraph('_________________________<br/>Authorized Signatory', sig_style))
+    table_data = [headers]
+    for idx, record in enumerate(data_list, 1):
+        table_data.append([
+            str(idx),
+            record['pen'] or '',
+            record['name'] or '',
+            record['institution'] or '',
+            (record['fromDistrict'] or '').upper(),
+            (record['toDistrict'] or '').upper()
+        ])
+    
+    # Create table
+    data_table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    data_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),  # Headers centered
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Sl.No centered
+        ('ALIGN', (1, 1), (-1, -1), 'LEFT'),   # Data left aligned
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(data_table)
+    elements.append(Spacer(1, 10))
+    
+    # Instructions
+    elements.append(Paragraph(
+        'ബന്ധപ്പെട്ട ജില്ലാ മെഡിക്കൽ ഓഫീസർമാർ ജീവനക്കാർക്ക് നിയമന ഉത്തരവ് നൽകേണ്ടതും നിയമന ഉത്തരവ് ലഭിച്ച ശേഷം സ്ഥാപന മേധാവികൾ ജീവനക്കാരെ വിടുതൽ ചെയ്യേണ്ടതും, ടി വിവരം യഥാസമയേ ഈ കാര്യാലയത്തിൽ റിപ്പോർട്ട് ചെയ്യേണ്ടതുമാണ്.',
+        instruction_style
+    ))
+    elements.append(Paragraph(
+        'ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ ഔദ്യോഗിക വെബ്സൈറ്റിൽ പ്രസിദ്ധീകരിച്ചിട്ടുള്ള ഈ ഉത്തരവിന്റെ പകർപ്പ് ഔദ്യോഗിക രേഖയായി ഉപയോഗിക്കാവുന്നതാണ്.',
+        instruction_style
+    ))
+    elements.append(Spacer(1, 25))
+    
+    # Signature area
+    elements.append(Paragraph('#ApprovedByName#', sig_style))
+    elements.append(Paragraph('#ApprovedByDesignation#', sig_style))
+    elements.append(Spacer(1, 15))
+    
+    # Receiver section
+    elements.append(Paragraph('സ്വീകർത്താവ്', receiver_style))
+    elements.append(Paragraph('ബന്ധപ്പെട്ട ജില്ലാ മെഡിക്കൽ ഓഫീസർ (ആരോഗ്യം) മാർ', receiver_bold))
+    elements.append(Spacer(1, 10))
+    
+    # Copy section
+    elements.append(Paragraph('പകർപ്പ്:', receiver_style))
+    elements.append(Paragraph('1. ആരോഗ്യവകുപ്പ് ഡയറക്ടറുടെ ഔദ്യോഗിക വെബ്സൈറ്റ്', copy_style))
+    elements.append(Paragraph('2. ഫയൽ/കരുതൽ ഫയൽ', copy_style))
     
     doc.build(elements)
     output.seek(0)

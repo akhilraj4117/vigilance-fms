@@ -357,21 +357,59 @@ function exportPDF() {
 }
 
 function exportWord() {
+    // Show file number modal first
+    document.getElementById('fileNumberModal').classList.add('show');
+}
+
+function doExportWord() {
+    const fileNumber = document.getElementById('fileNumberInput').value.trim();
+    const orderDate = document.getElementById('orderDateInput').value.trim();
+    
+    document.getElementById('fileNumberModal').classList.remove('show');
+    
     let html;
     
     if (transferType === 'regular') {
         // Regular Transfer - Malayalam format (Portrait, 6 columns, no district grouping)
-        html = exportWordRegular();
+        html = exportWordRegular(fileNumber, orderDate);
     } else {
         // General Transfer - English format (Landscape, 8 columns, grouped by district)
-        html = exportWordGeneral();
+        html = exportWordGeneral(fileNumber, orderDate);
     }
     
     const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
     saveAs(blob, getFileName('doc'));
 }
 
-function exportWordRegular() {
+function closeFileNumberModal() {
+    document.getElementById('fileNumberModal').classList.remove('show');
+}
+
+function exportWordRegular(fileNumber, orderDate) {
+    // Sort data by transfer_to_district (South to North), then by seniority (duration desc)
+    // Weightage employees come first within each destination district
+    const districtOrder = {
+        'Thiruvananthapuram': 1, 'Kollam': 2, 'Pathanamthitta': 3, 'Alappuzha': 4,
+        'Kottayam': 5, 'Idukki': 6, 'Ernakulam': 7, 'Thrissur': 8, 'Palakkad': 9,
+        'Malappuram': 10, 'Kozhikode': 11, 'Wayanad': 12, 'Kannur': 13, 'Kasaragod': 14
+    };
+    
+    const sortedData = [...transferData].sort((a, b) => {
+        // First by transfer_to_district (South to North)
+        const distA = districtOrder[a.toDistrict] || 15;
+        const distB = districtOrder[b.toDistrict] || 15;
+        if (distA !== distB) return distA - distB;
+        // Then weightage first
+        if (a.weightage === 'Yes' && b.weightage !== 'Yes') return -1;
+        if (a.weightage !== 'Yes' && b.weightage === 'Yes') return 1;
+        // Then by duration desc (seniority)
+        return (b.duration || 0) - (a.duration || 0);
+    });
+    
+    // Format the order line with file number if provided
+    const orderNumberText = fileNumber ? fileNumber : '__________';
+    const orderDateText = orderDate ? orderDate : '__________';
+    
     // Regular Transfer - Malayalam format matching desktop app exactly
     let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" 
@@ -392,110 +430,122 @@ function exportWordRegular() {
             <style>
                 @page {
                     size: A4 portrait;
-                    margin: 2cm 2cm 2cm 2cm;
+                    margin: 1.5cm 1cm 1.5cm 1cm;
+                    mso-page-orientation: portrait;
                 }
                 body { 
                     font-family: 'MANDARAM', 'Noto Sans Malayalam', Arial, sans-serif; 
-                    font-size: 14pt;
-                    line-height: 1.15;
+                    font-size: 12pt;
+                    line-height: 1.1;
                 }
                 .title-section {
                     text-align: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 10px;
                 }
                 .title-text {
-                    font-size: 17pt;
+                    font-size: 14pt;
                     font-weight: bold;
                     text-decoration: underline;
                 }
                 .subject-table {
                     width: 100%;
                     border: none;
-                    margin: 12px 0;
+                    margin: 10px 0;
                 }
                 .subject-table td {
                     border: none;
-                    padding: 6px 0;
-                    font-size: 14pt;
+                    padding: 4px 0;
+                    font-size: 12pt;
                     vertical-align: top;
                 }
                 .subject-label {
-                    width: 100px;
+                    width: 80px;
                     text-align: right;
-                    padding-right: 10px;
+                    padding-right: 8px;
                 }
                 .subject-text {
                     text-align: justify;
                 }
                 .order-section {
                     text-align: center;
-                    margin: 12px 0;
+                    margin: 10px 0;
                 }
                 .order-text {
-                    font-size: 16pt;
+                    font-size: 13pt;
                     font-weight: bold;
                     text-decoration: underline;
                 }
                 .body-text {
                     text-align: justify;
-                    text-indent: 36px;
-                    margin: 12px 0;
-                    font-size: 14pt;
+                    text-indent: 30px;
+                    margin: 10px 0;
+                    font-size: 12pt;
                 }
                 table.data-table {
                     border-collapse: collapse;
                     width: 100%;
-                    margin: 12px 0;
+                    margin: 10px 0;
                     page-break-inside: auto;
+                    table-layout: fixed;
+                    mso-table-layout-alt: fixed;
                 }
                 table.data-table th, table.data-table td {
                     border: 1px solid black;
-                    padding: 6px 8px;
-                    font-size: 14pt;
+                    padding: 2px 4px;
+                    font-size: 9pt;
                     vertical-align: top;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    mso-line-height-rule: exactly;
                 }
                 table.data-table th {
                     text-align: center;
                     font-weight: bold;
+                    font-family: Arial, sans-serif;
+                    font-size: 9pt;
+                    background-color: #f0f0f0;
+                }
+                table.data-table td {
+                    font-family: Arial, sans-serif;
                 }
                 td.center { text-align: center; }
                 td.justify { text-align: justify; }
-                .col-slno { width: 8%; }
-                .col-pen { width: 12%; }
-                .col-name { width: 25%; }
-                .col-inst { width: 25%; }
-                .col-from { width: 15%; }
-                .col-to { width: 15%; }
+                col.col-slno { width: 28pt; }
+                col.col-pen { width: 45pt; }
+                col.col-name { width: 100pt; }
+                col.col-inst { width: 130pt; }
+                col.col-from { width: 80pt; }
+                col.col-to { width: 80pt; }
                 .instruction {
                     text-align: justify;
-                    text-indent: 36px;
-                    margin: 12px 0;
-                    font-size: 14pt;
+                    text-indent: 30px;
+                    margin: 10px 0;
+                    font-size: 12pt;
                 }
                 .signature-area {
-                    margin-top: 30px;
-                    text-indent: 252px;
-                    font-size: 14pt;
+                    margin-top: 25px;
+                    text-indent: 220px;
+                    font-size: 12pt;
                     font-weight: bold;
                 }
                 .receiver-section {
-                    margin-top: 20px;
-                    font-size: 14pt;
+                    margin-top: 15px;
+                    font-size: 12pt;
                 }
                 .receiver-title {
-                    margin-bottom: 6px;
+                    margin-bottom: 5px;
                 }
                 .receiver-text {
-                    text-indent: 36px;
+                    text-indent: 30px;
                     font-weight: bold;
                 }
                 .copy-section {
-                    margin-top: 12px;
-                    font-size: 14pt;
+                    margin-top: 10px;
+                    font-size: 12pt;
                 }
                 .copy-item {
-                    margin-left: 36px;
-                    margin-top: 6px;
+                    margin-left: 30px;
+                    margin-top: 5px;
                 }
             </style>
         </head>
@@ -517,30 +567,38 @@ function exportWordRegular() {
             </table>
             
             <div class="order-section">
-                <span class="order-text">ഉത്തരവ് നം. __________, തീയതി: __________</span>
+                <span class="order-text">ഉത്തരവ് നം. ${orderNumberText}, തീയതി: ${orderDateText}</span>
             </div>
             
             <p class="body-text">വിവിധ ജില്ലാ മെഡിക്കൽ ഓഫീസ് (ആരോഗ്യം) - ൽ നിന്നും മേൽ പരാമർശ പ്രകാരം ലഭ്യമായ ജൂനിയർ പബ്ലിക്ക് ഹെൽത്ത് നഴ്സ് ഗ്രേഡ് I – ജീവനക്കാരുടെ സ്ഥലംമാറ്റത്തിനുള്ള അപേക്ഷകൾ പരിഗണിച്ച്, ചുവടെ ചേർക്കുന്ന ജീവനക്കാർക്ക് അവരുടെ പേരിന് നേരെ രേഖപ്പെടുത്തിയിട്ടുള്ള ജില്ലകളിലേക്ക് സ്ഥലം മാറ്റം നൽകി ഉത്തരവാകുന്നു.</p>
             
             <table class="data-table">
+                <colgroup>
+                    <col class="col-slno">
+                    <col class="col-pen">
+                    <col class="col-name">
+                    <col class="col-inst">
+                    <col class="col-from">
+                    <col class="col-to">
+                </colgroup>
                 <tr>
-                    <th class="col-slno">Sl. No.</th>
-                    <th class="col-pen">PEN</th>
-                    <th class="col-name">Name</th>
-                    <th class="col-inst">Present Institution</th>
-                    <th class="col-from">Present District</th>
-                    <th class="col-to">Allotted District</th>
+                    <th>Sl. No.</th>
+                    <th>PEN</th>
+                    <th>Name</th>
+                    <th>Present Institution</th>
+                    <th>Present District</th>
+                    <th>Allotted District</th>
                 </tr>`;
     
-    // Add all records without district grouping
-    transferData.forEach((t, idx) => {
+    // Add all records in sorted order (by transfer_to_district, then seniority)
+    sortedData.forEach((t, idx) => {
         html += `<tr>
                 <td class="center">${idx + 1}</td>
-                <td class="justify">${t.pen}</td>
-                <td class="justify">${t.name || ''}</td>
-                <td class="justify">${t.institution || ''}</td>
-                <td class="justify">${(t.fromDistrict || '').toUpperCase()}</td>
-                <td class="justify">${(t.toDistrict || '').toUpperCase()}</td>
+                <td>${t.pen}</td>
+                <td>${t.name || ''}</td>
+                <td>${t.institution || ''}</td>
+                <td>${(t.fromDistrict || '').toUpperCase()}</td>
+                <td>${(t.toDistrict || '').toUpperCase()}</td>
             </tr>`;
     });
     
@@ -571,13 +629,37 @@ function exportWordRegular() {
     return html;
 }
 
-function exportWordGeneral() {
-    // General Transfer - English format matching desktop app exactly
-    // Group by district
+function exportWordGeneral(fileNumber, orderDate) {
+    // Sort data by transfer_to_district (South to North), then by seniority (duration desc)
+    // Weightage employees come first within each destination district
+    const districtOrder = {
+        'Thiruvananthapuram': 1, 'Kollam': 2, 'Pathanamthitta': 3, 'Alappuzha': 4,
+        'Kottayam': 5, 'Idukki': 6, 'Ernakulam': 7, 'Thrissur': 8, 'Palakkad': 9,
+        'Malappuram': 10, 'Kozhikode': 11, 'Wayanad': 12, 'Kannur': 13, 'Kasaragod': 14
+    };
+    
+    // Group by transfer_to_district for general transfer
     const groupedData = {};
     transferData.forEach(t => {
-        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
-        groupedData[t.fromDistrict].push(t);
+        const toDistrict = t.toDistrict;
+        if (!groupedData[toDistrict]) groupedData[toDistrict] = [];
+        groupedData[toDistrict].push(t);
+    });
+    
+    // Sort within each group by weightage first, then seniority
+    Object.keys(groupedData).forEach(dist => {
+        groupedData[dist].sort((a, b) => {
+            // Weightage first
+            if (a.weightage === 'Yes' && b.weightage !== 'Yes') return -1;
+            if (a.weightage !== 'Yes' && b.weightage === 'Yes') return 1;
+            // Then by duration desc (seniority)
+            return (b.duration || 0) - (a.duration || 0);
+        });
+    });
+    
+    // Order districts from South to North
+    const sortedDistricts = Object.keys(groupedData).sort((a, b) => {
+        return (districtOrder[a] || 15) - (districtOrder[b] || 15);
     });
     
     let html = `
@@ -599,7 +681,7 @@ function exportWordGeneral() {
             <style>
                 @page {
                     size: A4 landscape;
-                    margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+                    margin: 1.2cm 1cm 1.2cm 1cm;
                 }
                 body { 
                     font-family: Arial, sans-serif; 
@@ -614,35 +696,41 @@ function exportWordGeneral() {
                     font-size: 14pt;
                     font-weight: bold;
                     margin: 5px 0;
+                    font-family: Arial, sans-serif;
                 }
                 .header-subtitle {
                     font-size: 12pt;
                     font-weight: bold;
                     margin: 5px 0;
+                    font-family: Arial, sans-serif;
                 }
                 .header-underline {
                     font-size: 12pt;
                     font-weight: bold;
                     text-decoration: underline;
                     margin: 5px 0;
+                    font-family: Arial, sans-serif;
                 }
                 .cadre-info {
                     font-size: 10pt;
                     font-weight: bold;
                     text-align: left;
                     margin: 10px 0;
+                    font-family: Arial, sans-serif;
                 }
                 .district-header {
                     font-size: 11pt;
                     font-weight: bold;
                     margin: 15px 0 8px 0;
                     page-break-inside: avoid;
+                    font-family: Arial, sans-serif;
                 }
                 table {
                     border-collapse: collapse;
                     width: 100%;
                     margin-bottom: 10px;
                     page-break-inside: auto;
+                    table-layout: fixed;
                 }
                 tr {
                     page-break-inside: avoid;
@@ -650,9 +738,12 @@ function exportWordGeneral() {
                 }
                 th, td {
                     border: 1px solid black;
-                    padding: 4px 6px;
+                    padding: 3px 5px;
                     font-size: 9pt;
                     vertical-align: top;
+                    font-family: Arial, sans-serif;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
                 }
                 th {
                     background-color: #E0E0E0;
@@ -660,21 +751,23 @@ function exportWordGeneral() {
                     text-align: center;
                 }
                 td.center { text-align: center; }
-                .col-slno { width: 5%; }
-                .col-pen { width: 8%; }
-                .col-name { width: 18%; }
-                .col-desig { width: 10%; }
-                .col-office { width: 24%; }
-                .col-from { width: 10%; }
-                .col-to { width: 10%; }
-                .col-protection { width: 15%; }
+                .col-slno { width: 4%; }
+                .col-pen { width: 7%; }
+                .col-name { width: 16%; }
+                .col-desig { width: 9%; }
+                .col-office { width: 26%; }
+                .col-from { width: 12%; }
+                .col-to { width: 12%; }
+                .col-protection { width: 14%; }
                 .signature-section {
                     margin-top: 30px;
                     text-align: right;
                     page-break-inside: avoid;
+                    font-family: Arial, sans-serif;
                 }
                 .signature-text {
                     font-size: 10pt;
+                    font-family: Arial, sans-serif;
                 }
             </style>
         </head>
@@ -689,10 +782,10 @@ function exportWordGeneral() {
     
     let slNo = 1;
     
-    districts.forEach(district => {
+    sortedDistricts.forEach(district => {
         if (!groupedData[district]) return;
         
-        html += `<p class="district-header">District: ${district.toUpperCase()}</p>`;
+        html += `<p class="district-header">Allotted District: ${district.toUpperCase()}</p>`;
         html += `<table>
             <tr>
                 <th class="col-slno">Sl. No.</th>
@@ -932,7 +1025,120 @@ window.onclick = function(e) {
 .excluded-table tr:hover {
     background: var(--bg-hover);
 }
+
+/* File Number Modal Styles */
+.file-number-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.file-number-modal-overlay.show {
+    display: flex;
+}
+.file-number-modal {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.file-number-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.file-number-modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+.file-number-modal-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.file-number-modal-header .close-btn:hover {
+    color: var(--danger-color);
+}
+.file-number-modal-body {
+    padding: 1.5rem;
+}
+.file-number-modal-body .form-group {
+    margin-bottom: 1rem;
+}
+.file-number-modal-body label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.file-number-modal-body input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+.file-number-modal-body input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+.file-number-modal-body .hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+.file-number-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+}
 </style>
+
+<!-- File Number Input Modal -->
+<div class="file-number-modal-overlay" id="fileNumberModal">
+    <div class="file-number-modal">
+        <div class="file-number-modal-header">
+            <h3><i class="fas fa-file-word"></i> Word Export - Order Details</h3>
+            <button class="close-btn" onclick="closeFileNumberModal()">&times;</button>
+        </div>
+        <div class="file-number-modal-body">
+            <div class="form-group">
+                <label for="fileNumberInput">ഉത്തരവ് നം. (Order Number)</label>
+                <input type="text" id="fileNumberInput" placeholder="e.g., A3-12345/2025/DHS">
+                <p class="hint">Enter the file/order number to include in the document</p>
+            </div>
+            <div class="form-group">
+                <label for="orderDateInput">തീയതി (Date)</label>
+                <input type="text" id="orderDateInput" placeholder="e.g., 15-01-2025">
+                <p class="hint">Enter the order date</p>
+            </div>
+        </div>
+        <div class="file-number-modal-footer">
+            <button class="btn btn-secondary" onclick="closeFileNumberModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button class="btn btn-primary" onclick="doExportWord()">
+                <i class="fas fa-file-word"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Excluded Employees Modal -->
 <div class="excluded-modal-overlay" id="excludedModal">
