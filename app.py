@@ -129,22 +129,11 @@ def check_autofill_ran():
     if not session.get('transfer_type'):
         return False
     
-    # Check session flag first (set when autofill is run)
+    # Check session flag first (set when autofill is run) - NO DB query needed
     if session.get('autofill_ran'):
         return True
     
-    # Also check database for draft entries (for existing sessions)
-    try:
-        prefix = get_table_prefix()
-        result = db.session.execute(db.text(f"""
-            SELECT COUNT(*) FROM {prefix}transfer_draft 
-            WHERE remarks LIKE 'Vacancy by Transfer%%' 
-               OR remarks LIKE 'Pref %%' 
-               OR against_info LIKE 'Displaced for%%'
-        """))
-        return result.fetchone()[0] > 0
-    except:
-        return False
+    return False  # Don't query DB on every request - rely on session flag
 
 
 def check_final_exists():
@@ -152,12 +141,37 @@ def check_final_exists():
     if not session.get('transfer_type'):
         return False
     
+    # Check session flag first - NO DB query needed
+    if session.get('final_exists'):
+        return True
+    
+    return False  # Don't query DB on every request - rely on session flag
+
+
+def refresh_status_flags():
+    """Refresh autofill_ran and final_exists flags by checking database.
+    Call this only when needed (after operations that change these states)."""
+    if not session.get('transfer_type'):
+        return
+    
     try:
         prefix = get_table_prefix()
-        result = db.session.execute(db.text(f"SELECT COUNT(*) FROM {prefix}transfer_final"))
-        return result.fetchone()[0] > 0
+        
+        # Check autofill status
+        result = db.session.execute(db.text(f"""
+            SELECT COUNT(*) FROM {prefix}transfer_draft 
+            WHERE remarks LIKE 'Vacancy by Transfer%%' 
+               OR remarks LIKE 'Pref %%' 
+               OR against_info LIKE 'Displaced for%%'
+            LIMIT 1
+        """))
+        session['autofill_ran'] = result.fetchone()[0] > 0
+        
+        # Check final exists
+        result = db.session.execute(db.text(f"SELECT 1 FROM {prefix}transfer_final LIMIT 1"))
+        session['final_exists'] = result.fetchone() is not None
     except:
-        return False
+        pass
 
 
 @app.context_processor
@@ -599,11 +613,15 @@ def set_session():
     session['year'] = int(year)
     session['month'] = month
     
-    # Clear autofill flag when changing session
+    # Clear status flags when changing session
     session.pop('autofill_ran', None)
+    session.pop('final_exists', None)
     
     # Ensure tables exist
     ensure_tables()
+    
+    # Refresh status flags from database (only once when session starts)
+    refresh_status_flags()
     
     flash(f'Session set: {transfer_type.title()} Transfer - {month + " " if month else ""}{year}', 'success')
     return redirect(url_for('dashboard'))
