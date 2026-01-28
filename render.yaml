@@ -3,7 +3,7 @@ services:
     name: jphn-transfer
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --timeout 180 --workers 1 --worker-class=sync --preload --max-requests 100 --max-requests-jitter 10
+    startCommand: gunicorn app:app --timeout 180 --workers 1 --worker-class=sync --max-requests 100 --max-requests-jitter 10
     healthCheckPath: /health
     envVars:
       - key: FLASK_CONFIG
