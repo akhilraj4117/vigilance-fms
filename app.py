@@ -1547,6 +1547,11 @@ def application_list():
     if not district_filter:
         district_filter = 'All Districts'
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 30  # Show 30 records per page for Render free tier
+    offset = (page - 1) * per_page
+    
     try:
         # Get last applied employee (by last_modified timestamp)
         last_applied_result = db.session.execute(db.text(f"""
@@ -1559,8 +1564,15 @@ def application_list():
         
         # Check if "All Districts" is selected
         if district_filter == 'All Districts':
-            # Get employees NOT in transfer_applied from ALL districts
-            # Calculate duration dynamically for accurate display
+            # Get total count first
+            count_result = db.session.execute(db.text(f"""
+                SELECT COUNT(*) FROM {prefix}jphn j
+                WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+            """))
+            total_count = count_result.fetchone()[0]
+            total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+            
+            # Get employees NOT in transfer_applied from ALL districts with pagination
             result = db.session.execute(db.text(f"""
                 SELECT j.pen, j.name, j.institution, 
                        CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
@@ -1570,6 +1582,7 @@ def application_list():
                 FROM {prefix}jphn j
                 WHERE j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
                 ORDER BY j.district, duration_days DESC
+                LIMIT {per_page} OFFSET {offset}
             """))
             
             employees = result.fetchall()
@@ -1580,8 +1593,16 @@ def application_list():
             """))
             applied_count = applied_result.fetchone()[0] or 0
         else:
-            # Get employees NOT in transfer_applied for this district
-            # Calculate duration dynamically for accurate display
+            # Get total count for this district
+            count_result = db.session.execute(db.text(f"""
+                SELECT COUNT(*) FROM {prefix}jphn j
+                WHERE j.district = :district
+                AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
+            """), {'district': district_filter})
+            total_count = count_result.fetchone()[0]
+            total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+            
+            # Get employees NOT in transfer_applied for this district with pagination
             result = db.session.execute(db.text(f"""
                 SELECT j.pen, j.name, j.institution,
                        CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
@@ -1591,6 +1612,7 @@ def application_list():
                 WHERE j.district = :district
                 AND j.pen NOT IN (SELECT pen FROM {prefix}transfer_applied)
                 ORDER BY duration_days DESC
+                LIMIT {per_page} OFFSET {offset}
             """), {'district': district_filter})
             
             employees = result.fetchall()
@@ -1603,11 +1625,8 @@ def application_list():
             """), {'district': district_filter})
             applied_count = applied_result.fetchone()[0] or 0
         
-        # Get all applied PENs for comparison feature
-        applied_pens_result = db.session.execute(db.text(f"""
-            SELECT pen FROM {prefix}transfer_applied
-        """))
-        applied_pens = [row[0] for row in applied_pens_result.fetchall()]
+        # Get applied PENs for current page employees only (for comparison feature)
+        applied_pens = []
         
     except Exception as e:
         db.session.rollback()
@@ -1615,6 +1634,8 @@ def application_list():
         applied_count = 0
         last_applied = None
         applied_pens = []
+        total_count = 0
+        total_pages = 1
         flash(f'Error loading employees: {str(e)}', 'error')
     
     return render_template('application.html',
@@ -1624,7 +1645,11 @@ def application_list():
                          applied_count=applied_count,
                          last_applied=last_applied,
                          applied_pens=applied_pens,
-                         format_duration=format_duration)
+                         format_duration=format_duration,
+                         page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         per_page=per_page)
 
 
 @app.route('/application/check/<pen>')
