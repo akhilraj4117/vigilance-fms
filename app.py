@@ -645,30 +645,24 @@ def dashboard():
     }
     
     try:
-        result = db.session.execute(db.text(f"SELECT COUNT(*) FROM {prefix}jphn"))
-        stats['total_employees'] = result.fetchone()[0] or 0
-        
-        result = db.session.execute(db.text(f"SELECT COUNT(*) FROM {prefix}transfer_applied"))
-        stats['applied_employees'] = result.fetchone()[0] or 0
-        
-        result = db.session.execute(db.text(f"SELECT COUNT(*) FROM {prefix}transfer_draft"))
-        stats['draft_transfers'] = result.fetchone()[0] or 0
-        
-        result = db.session.execute(db.text(f"SELECT COUNT(*) FROM {prefix}transfer_final"))
-        stats['confirmed_transfers'] = result.fetchone()[0] or 0
-        
-        result = db.session.execute(db.text(f"SELECT SUM(vacancy_reported) FROM {prefix}vacancy"))
-        stats['total_vacancy'] = result.fetchone()[0] or 0
-        
-        # Check if autofill has been run (look for autofill-specific remarks)
-        # Autofill sets remarks like "Vacancy by Transfer", "Pref N:", or against_info "Displaced for X"
+        # Single optimized query to get all counts at once
         result = db.session.execute(db.text(f"""
-            SELECT COUNT(*) FROM {prefix}transfer_draft 
-            WHERE remarks LIKE 'Vacancy by Transfer%%' 
-               OR remarks LIKE 'Pref %%' 
-               OR against_info LIKE 'Displaced for%%'
+            SELECT 
+                (SELECT COUNT(*) FROM {prefix}jphn) as total_employees,
+                (SELECT COUNT(*) FROM {prefix}transfer_applied) as applied_employees,
+                (SELECT COUNT(*) FROM {prefix}transfer_draft) as draft_transfers,
+                (SELECT COUNT(*) FROM {prefix}transfer_final) as confirmed_transfers,
+                (SELECT COALESCE(SUM(vacancy_reported), 0) FROM {prefix}vacancy) as total_vacancy
         """))
-        autofill_ran = result.fetchone()[0] > 0
+        row = result.fetchone()
+        stats['total_employees'] = row[0] or 0
+        stats['applied_employees'] = row[1] or 0
+        stats['draft_transfers'] = row[2] or 0
+        stats['confirmed_transfers'] = row[3] or 0
+        stats['total_vacancy'] = row[4] or 0
+        
+        # Check session flag for autofill status (already optimized)
+        autofill_ran = session.get('autofill_ran', False)
         
         # Only count filled vacancy if autofill has been run
         if autofill_ran:
@@ -1689,6 +1683,72 @@ def check_applied(pen):
         return jsonify({'applied': False})
     except:
         return jsonify({'applied': False})
+
+
+@app.route('/application/search')
+@login_required
+@requires_transfer_session
+def search_employees():
+    """AJAX search for employees across entire database"""
+    prefix = get_table_prefix()
+    query = request.args.get('q', '').strip()
+    district_filter = request.args.get('district', 'All Districts')
+    
+    if not query or len(query) < 2:
+        return jsonify({'employees': [], 'count': 0})
+    
+    try:
+        search_term = f'%{query}%'
+        
+        if district_filter == 'All Districts':
+            result = db.session.execute(db.text(f"""
+                SELECT j.pen, j.name, j.institution, 
+                       CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                            THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                            ELSE 0 END as duration_days,
+                       j.district,
+                       CASE WHEN t.pen IS NOT NULL THEN true ELSE false END as applied
+                FROM {prefix}jphn j
+                LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
+                WHERE (j.name ILIKE :term OR j.pen ILIKE :term)
+                ORDER BY j.district, duration_days DESC
+                LIMIT 50
+            """), {'term': search_term})
+        else:
+            result = db.session.execute(db.text(f"""
+                SELECT j.pen, j.name, j.institution,
+                       CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                            THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                            ELSE 0 END as duration_days,
+                       j.district,
+                       CASE WHEN t.pen IS NOT NULL THEN true ELSE false END as applied
+                FROM {prefix}jphn j
+                LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
+                WHERE j.district = :district
+                AND (j.name ILIKE :term OR j.pen ILIKE :term)
+                ORDER BY duration_days DESC
+                LIMIT 50
+            """), {'district': district_filter, 'term': search_term})
+        
+        employees = []
+        for row in result:
+            duration = row[3] or 0
+            years = duration // 365
+            months = (duration % 365) // 30
+            duration_str = f"{years}y {months}m" if years else f"{months}m"
+            
+            employees.append({
+                'pen': row[0],
+                'name': row[1],
+                'institution': row[2],
+                'duration': duration_str,
+                'district': row[4],
+                'applied': row[5]
+            })
+        
+        return jsonify({'employees': employees, 'count': len(employees)})
+    except Exception as e:
+        return jsonify({'employees': [], 'count': 0, 'error': str(e)})
 
 
 @app.route('/application/mark', methods=['POST'])

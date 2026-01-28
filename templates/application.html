@@ -765,71 +765,113 @@ document.getElementById('applicationForm')?.addEventListener('submit', function(
     }
 });
 
-// Search/Filter employees
-let checkAppliedTimeout = null;
+// Search/Filter employees - AJAX based for full database search
+let searchTimeout = null;
+let isSearchActive = false;
+const originalRows = document.querySelectorAll('.employee-row');
 
 function filterEmployees() {
     const searchInput = document.getElementById('employeeSearch');
-    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchTerm = searchInput.value.trim();
     const clearBtn = document.querySelector('.search-clear');
-    const rows = document.querySelectorAll('.employee-row');
     const noResults = document.getElementById('noSearchResults');
     const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
+    const employeeList = document.querySelector('.employee-list-scroll');
     
     // Show/hide clear button
     clearBtn.style.display = searchTerm ? 'block' : 'none';
     
     // Hide already applied alert initially
-    alreadyAppliedAlert.style.display = 'none';
+    if (alreadyAppliedAlert) alreadyAppliedAlert.style.display = 'none';
     
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const name = row.getAttribute('data-name') || '';
-        const pen = row.getAttribute('data-pen') || '';
-        const district = row.getAttribute('data-district') || '';
-        
-        if (name.includes(searchTerm) || pen.includes(searchTerm) || district.includes(searchTerm)) {
-            row.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            row.classList.add('hidden');
+    // If search is empty, show original paginated list
+    if (!searchTerm || searchTerm.length < 2) {
+        if (isSearchActive) {
+            // Restore original rows
+            originalRows.forEach(row => row.classList.remove('hidden'));
+            document.querySelectorAll('.search-result-row').forEach(r => r.remove());
+            isSearchActive = false;
         }
-    });
-    
-    // Update count and show/hide no results message
-    document.getElementById('visibleCount').textContent = visibleCount;
-    if (noResults) {
-        noResults.style.display = (visibleCount === 0 && searchTerm) ? 'block' : 'none';
+        document.getElementById('visibleCount').textContent = originalRows.length;
+        if (noResults) noResults.style.display = 'none';
+        return;
     }
     
-    // Check if the search term looks like a PEN number (numeric) and employee is not found
-    if (searchTerm && /^\d+$/.test(searchTerm) && searchTerm.length >= 3) {
-        // Clear previous timeout
-        if (checkAppliedTimeout) clearTimeout(checkAppliedTimeout);
-        
-        // Debounce the check
-        checkAppliedTimeout = setTimeout(() => {
-            checkIfAlreadyApplied(searchTerm);
-        }, 300);
-    }
+    // Debounce AJAX search
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performAjaxSearch(searchTerm);
+    }, 300);
 }
 
-function checkIfAlreadyApplied(pen) {
-    fetch(`/application/check/${pen}`)
+function performAjaxSearch(searchTerm) {
+    const district = '{{ district_filter }}';
+    const employeeList = document.querySelector('.employee-list-scroll');
+    const noResults = document.getElementById('noSearchResults');
+    
+    // Show loading state
+    document.getElementById('visibleCount').textContent = '...';
+    
+    fetch(`/application/search?q=${encodeURIComponent(searchTerm)}&district=${encodeURIComponent(district)}`)
         .then(response => response.json())
         .then(data => {
-            const alreadyAppliedAlert = document.getElementById('alreadyAppliedAlert');
-            if (data.applied) {
-                document.getElementById('alreadyAppliedMessage').innerHTML = 
-                    `<strong>${data.name}</strong> (PEN: ${pen}) from <strong>${data.district}</strong> has already applied!`;
-                alreadyAppliedAlert.style.display = 'flex';
-            } else {
-                alreadyAppliedAlert.style.display = 'none';
+            isSearchActive = true;
+            
+            // Hide original rows
+            originalRows.forEach(row => row.classList.add('hidden'));
+            
+            // Remove previous search results
+            document.querySelectorAll('.search-result-row').forEach(r => r.remove());
+            
+            if (data.employees.length === 0) {
+                document.getElementById('visibleCount').textContent = '0';
+                if (noResults) noResults.style.display = 'block';
+                return;
             }
+            
+            if (noResults) noResults.style.display = 'none';
+            document.getElementById('visibleCount').textContent = data.employees.length;
+            
+            // Insert search results before noSearchResults
+            const container = document.querySelector('.employee-list-scroll');
+            const noResultsDiv = document.getElementById('noSearchResults');
+            
+            data.employees.forEach(emp => {
+                const row = document.createElement('div');
+                row.className = 'employee-row search-result-row' + (emp.applied ? ' already-applied-row' : '');
+                row.id = `emp-row-${emp.pen}`;
+                row.setAttribute('data-name', emp.name.toLowerCase());
+                row.setAttribute('data-pen', emp.pen);
+                row.setAttribute('data-district', emp.district.toLowerCase());
+                
+                const districtInfo = district === 'All Districts' ? ` | <strong>${emp.district}</strong>` : '';
+                
+                if (emp.applied) {
+                    row.innerHTML = `
+                        <div class="emp-info">
+                            <span class="emp-name">${emp.name} <span class="applied-badge">APPLIED</span></span>
+                            <span class="emp-details">${emp.pen} | ${emp.institution} | ${emp.duration}${districtInfo}</span>
+                        </div>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <div class="emp-info">
+                            <span class="emp-name">${emp.name}</span>
+                            <span class="emp-details">${emp.pen} | ${emp.institution} | ${emp.duration}${districtInfo}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary mark-btn" 
+                                onclick="openApplicationForm('${emp.pen}', '${emp.name.replace(/'/g, "\\'")}', '${emp.institution.replace(/'/g, "\\'")}', '${emp.duration}', '${district === 'All Districts' ? emp.district : ''}')">
+                            <i class="fas fa-plus"></i> Mark as Applied
+                        </button>
+                    `;
+                }
+                
+                container.insertBefore(row, noResultsDiv);
+            });
         })
-        .catch(() => {
-            // Silently fail
+        .catch(err => {
+            console.error('Search error:', err);
+            document.getElementById('visibleCount').textContent = '?';
         });
 }
 
@@ -837,7 +879,14 @@ function clearSearch() {
     const searchInput = document.getElementById('employeeSearch');
     searchInput.value = '';
     document.getElementById('alreadyAppliedAlert').style.display = 'none';
-    filterEmployees();
+    
+    // Restore original rows
+    originalRows.forEach(row => row.classList.remove('hidden'));
+    document.querySelectorAll('.search-result-row').forEach(r => r.remove());
+    isSearchActive = false;
+    
+    document.getElementById('visibleCount').textContent = originalRows.length;
+    document.getElementById('noSearchResults').style.display = 'none';
     searchInput.focus();
 }
 
@@ -884,6 +933,23 @@ function clearSearch() {
 .already-applied-alert i {
     color: #ffc107;
     font-size: 1rem;
+}
+
+.already-applied-row {
+    background: #f8f9fa;
+    opacity: 0.7;
+}
+.already-applied-row .emp-name {
+    color: var(--text-muted);
+}
+.applied-badge {
+    background: #28a745;
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+    font-weight: 600;
 }
 
 /* Compare Modal Styles */
