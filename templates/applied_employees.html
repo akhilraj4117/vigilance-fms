@@ -836,46 +836,100 @@ function toggleEditWeightage() {
     document.getElementById('editWeightageFields').style.display = checked ? 'block' : 'none';
 }
 
-// Search/Filter table
+// Search/Filter table - AJAX based for full database search
+let searchTimeout = null;
+let isSearchActive = false;
+const originalTable = document.querySelector('#appliedTable tbody').innerHTML;
+
 function filterTable() {
     const searchInput = document.getElementById('tableSearch');
-    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchTerm = searchInput.value.trim();
     const clearBtn = document.querySelector('.search-clear');
-    const table = document.getElementById('appliedTable');
-    const rows = table.querySelectorAll('tbody tr');
     
     clearBtn.style.display = searchTerm ? 'block' : 'none';
     
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        if (row.querySelector('.no-data')) return;
-        
-        const pen = (row.cells[1]?.textContent || '').toLowerCase();
-        const name = (row.cells[2]?.textContent || '').toLowerCase();
-        const institution = (row.cells[3]?.textContent || '').toLowerCase();
-        
-        if (pen.includes(searchTerm) || name.includes(searchTerm) || institution.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
+    // If search is empty or too short, restore original table
+    if (!searchTerm || searchTerm.length < 2) {
+        if (isSearchActive) {
+            document.querySelector('#appliedTable tbody').innerHTML = originalTable;
+            isSearchActive = false;
         }
-    });
-    
-    // Update record count
-    const countEl = document.querySelector('.record-count');
-    if (countEl) {
-        countEl.textContent = `Showing: ${visibleCount} of {{ employees|length }} employee(s)`;
+        document.querySelector('.record-count').textContent = 'Showing {{ employees|length }} of {{ total_count }} employee(s) (Page {{ page }} of {{ total_pages }})';
+        return;
     }
+    
+    // Debounce AJAX search
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performAjaxSearch(searchTerm);
+    }, 300);
+}
+
+function performAjaxSearch(searchTerm) {
+    const district = '{{ district_filter }}';
+    const tbody = document.querySelector('#appliedTable tbody');
+    
+    // Show loading
+    document.querySelector('.record-count').textContent = 'Searching...';
+    
+    fetch(`/applied/search?q=${encodeURIComponent(searchTerm)}&district=${encodeURIComponent(district)}`)
+        .then(response => response.json())
+        .then(data => {
+            isSearchActive = true;
+            
+            if (data.employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted no-data">No employees found matching your search</td></tr>';
+                document.querySelector('.record-count').textContent = 'Showing: 0 results';
+                return;
+            }
+            
+            document.querySelector('.record-count').textContent = `Showing: ${data.employees.length} results (from all pages)`;
+            
+            let html = '';
+            data.employees.forEach((emp, index) => {
+                const weightageClass = emp.weightage === 'Yes' ? 'weightage-yes' : '';
+                const spClass = emp.special_priority === 'Yes' ? 'sp-yes' : '';
+                
+                html += `
+                    <tr data-pen="${emp.pen}" class="${weightageClass} ${spClass}">
+                        <td>${index + 1}</td>
+                        <td>${emp.pen}</td>
+                        <td>${emp.name}</td>
+                        <td>${emp.institution}</td>
+                        <td>${emp.district}</td>
+                        <td>${emp.duration}</td>
+                        <td>${emp.receipt}</td>
+                        <td>${emp.applied_date}</td>
+                        <td class="prefs-cell">${emp.preferences}</td>
+                        <td>${emp.weightage}</td>
+                        <td>
+                            <a href="/applied/edit/${emp.pen}" class="btn btn-sm btn-warning" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Search error:', err);
+            document.querySelector('.record-count').textContent = 'Search error';
+        });
 }
 
 function clearSearch() {
     const searchInput = document.getElementById('tableSearch');
     searchInput.value = '';
-    filterTable();
-    searchInput.focus();
+    
+    if (isSearchActive) {
+        document.querySelector('#appliedTable tbody').innerHTML = originalTable;
+        isSearchActive = false;
+    }
+    
     document.querySelector('.record-count').textContent = 'Showing {{ employees|length }} of {{ total_count }} employee(s) (Page {{ page }} of {{ total_pages }})';
+    searchInput.focus();
 }
 
 // Toggle Lock/Unlock

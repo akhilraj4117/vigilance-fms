@@ -1737,13 +1737,17 @@ def search_employees():
             months = (duration % 365) // 30
             duration_str = f"{years}y {months}m" if years else f"{months}m"
             
+            # Ensure applied is a proper boolean (PostgreSQL may return 't'/'f' or True/False)
+            applied_val = row[5]
+            is_applied = bool(applied_val) if applied_val not in (None, 'f', 'F', False, 0) else False
+            
             employees.append({
                 'pen': row[0],
                 'name': row[1],
                 'institution': row[2],
                 'duration': duration_str,
                 'district': row[4],
-                'applied': row[5]
+                'applied': is_applied
             })
         
         return jsonify({'employees': employees, 'count': len(employees)})
@@ -1817,6 +1821,71 @@ def mark_applied():
     
     # Redirect to All Districts with focus_search parameter to focus search field
     return redirect(url_for('application_list', focus_search='1'))
+
+
+@app.route('/applied/search')
+@login_required
+@requires_transfer_session
+def search_applied_employees():
+    """AJAX search for applied employees across entire database"""
+    prefix = get_table_prefix()
+    query = request.args.get('q', '').strip()
+    district_filter = request.args.get('district', '')
+    
+    if not query or len(query) < 2:
+        return jsonify({'employees': [], 'count': 0})
+    
+    try:
+        search_term = f'%{query}%'
+        
+        sql = f"""
+            SELECT j.pen, j.name, j.institution, j.district,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   t.receipt_numbers, t.applied_date,
+                   t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
+                   j.weightage, t.special_priority
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE (j.name ILIKE :term OR j.pen ILIKE :term)
+        """
+        params = {'term': search_term}
+        
+        if district_filter:
+            sql += " AND j.district = :district"
+            params['district'] = district_filter
+        
+        sql += " ORDER BY duration_days DESC LIMIT 50"
+        
+        result = db.session.execute(db.text(sql), params)
+        
+        employees = []
+        for row in result:
+            duration = row[4] or 0
+            years = duration // 365
+            months = (duration % 365) // 30
+            duration_str = f"{years}y {months}m" if years else f"{months}m"
+            
+            prefs = [row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14]]
+            prefs_str = ' → '.join([p for p in prefs if p])
+            
+            employees.append({
+                'pen': row[0],
+                'name': row[1],
+                'institution': row[2],
+                'district': row[3],
+                'duration': duration_str,
+                'receipt': row[5] or '',
+                'applied_date': row[6] or '',
+                'preferences': prefs_str,
+                'weightage': row[15] or 'No',
+                'special_priority': row[16] or 'No'
+            })
+        
+        return jsonify({'employees': employees, 'count': len(employees)})
+    except Exception as e:
+        return jsonify({'employees': [], 'count': 0, 'error': str(e)})
 
 
 @app.route('/applied')
