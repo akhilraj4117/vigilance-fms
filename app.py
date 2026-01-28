@@ -679,6 +679,25 @@ def cadre_list():
     district_filter = request.args.get('district', '')
     search = request.args.get('search', '').lower()
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 30  # Show 30 records per page for Render free tier
+    offset = (page - 1) * per_page
+    
+    # Get total count first
+    count_query = f"SELECT COUNT(*) FROM {prefix}jphn WHERE 1=1"
+    count_params = {}
+    if district_filter:
+        count_query += " AND district = :district"
+        count_params['district'] = district_filter
+    if search:
+        count_query += """ AND (LOWER(name) LIKE :search OR LOWER(pen) LIKE :search 
+                    OR LOWER(institution) LIKE :search)"""
+        count_params['search'] = f'%{search}%'
+    
+    total_count = db.session.execute(db.text(count_query), count_params).fetchone()[0]
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+    
     # Calculate duration dynamically instead of using stored stale value
     query = f"""
         SELECT pen, name, designation, institution, district, entry_date,
@@ -703,14 +722,18 @@ def cadre_list():
                     OR LOWER(institution) LIKE :search)"""
         params['search'] = f'%{search}%'
     
-    query += " ORDER BY district, name"
+    query += f" ORDER BY district, name LIMIT {per_page} OFFSET {offset}"
     
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
     
-    # Get applied PENs
-    applied_result = db.session.execute(db.text(f"SELECT pen FROM {prefix}transfer_applied"))
-    applied_pens = set(row[0] for row in applied_result.fetchall())
+    # Get applied PENs (only for current page employees)
+    if employees:
+        pens = [emp[0] for emp in employees]
+        applied_result = db.session.execute(db.text(f"SELECT pen FROM {prefix}transfer_applied WHERE pen IN :pens"), {'pens': tuple(pens)})
+        applied_pens = set(row[0] for row in applied_result.fetchall())
+    else:
+        applied_pens = set()
     
     return render_template('cadre_list.html',
                          employees=employees,
@@ -718,7 +741,11 @@ def cadre_list():
                          districts=DISTRICTS,
                          district_filter=district_filter,
                          search=search,
-                         format_duration=format_duration)
+                         format_duration=format_duration,
+                         page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         per_page=per_page)
 
 
 @app.route('/cadre/upload', methods=['POST'])
@@ -1701,7 +1728,7 @@ def applied_employees():
     
     # Pagination parameters
     page = request.args.get('page', 1, type=int)
-    per_page = 100  # Show 100 employees per page to reduce memory
+    per_page = 30  # Show 30 employees per page for Render free tier
     offset = (page - 1) * per_page
     
     # Get total count first (lightweight query)
@@ -2448,7 +2475,7 @@ def draft_list():
     
     # Pagination parameters
     page = request.args.get('page', 1, type=int)
-    per_page = 100  # Show 100 records per page to reduce memory
+    per_page = 30  # Show 30 records per page for Render free tier
     offset = (page - 1) * per_page
     
     # Get total count first (lightweight query)
@@ -4200,6 +4227,28 @@ def final_list():
     from_district = request.args.get('from_district', '')
     to_district = request.args.get('to_district', '')
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 30  # Show 30 records per page for Render free tier
+    offset = (page - 1) * per_page
+    
+    # Get total count first
+    count_query = f"""
+        SELECT COUNT(*) FROM {prefix}jphn j
+        INNER JOIN {prefix}transfer_final f ON j.pen = f.pen
+        WHERE 1=1
+    """
+    count_params = {}
+    if from_district:
+        count_query += " AND j.district = :from_district"
+        count_params['from_district'] = from_district
+    if to_district:
+        count_query += " AND f.transfer_to_district = :to_district"
+        count_params['to_district'] = to_district
+    
+    total_count = db.session.execute(db.text(count_query), count_params).fetchone()[0]
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+    
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, f.transfer_to_district,
                j.district_join_date,
@@ -4242,6 +4291,9 @@ def final_list():
              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
              ELSE 0 END DESC"""
     
+    # Add pagination
+    query += f" LIMIT {per_page} OFFSET {offset}"
+    
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
     
@@ -4250,7 +4302,11 @@ def final_list():
                          districts=DISTRICTS,
                          from_district=from_district,
                          to_district=to_district,
-                         format_duration=format_duration)
+                         format_duration=format_duration,
+                         page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         per_page=per_page)
 
 
 @app.route('/final/delete/<pen>', methods=['POST'])
