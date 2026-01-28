@@ -94,7 +94,7 @@
     <div class="print-header">
         <h2>JPHN Transfer Management System - Draft Transfer List</h2>
         <p>Generated on: {{ now().strftime('%d-%m-%Y %I:%M %p') if now else '' }}</p>
-        <p>Total Transfers: {{ transfers|length }}</p>
+        <p>Total Transfers: {{ total_count }}</p>
     </div>
     
     <div class="table-container">
@@ -116,7 +116,7 @@
             <tbody>
                 {% for t in transfers %}
                 <tr class="{% if t[10] and 'Manual' in t[10] %}row-manual{% elif t[11] == 'Yes' %}row-special{% elif t[7] == 'Yes' %}row-weightage{% endif %}" {% if t[11] == 'Yes' %}title="Special Priority"{% elif t[10] and 'Manual' in t[10] %}title="Manual Assignment by User"{% endif %}>
-                    <td>{{ loop.index }}</td>
+                    <td>{{ (page - 1) * per_page + loop.index }}</td>
                     <td>{{ t[0] }}</td>
                     <td>{{ t[1] }}</td>
                     <td>{{ t[2] }}</td>
@@ -161,7 +161,37 @@
     </div>
     
     <div class="table-footer">
-        <span class="record-count">Total: {{ transfers|length }} transfer(s)</span>
+        <span class="record-count">Showing {{ transfers|length }} of {{ total_count }} transfer(s) (Page {{ page }} of {{ total_pages }})</span>
+        
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('draft_list', page=1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="First Page">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="{{ url_for('draft_list', page=page-1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Previous Page">
+                <i class="fas fa-angle-left"></i>
+            </a>
+            {% endif %}
+            
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+            <a href="{{ url_for('draft_list', page=p, from_district=from_district, to_district=to_district, sort=sort_by) }}" 
+               class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+            {% endfor %}
+            
+            {% if page < total_pages %}
+            <a href="{{ url_for('draft_list', page=page+1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Next Page">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="{{ url_for('draft_list', page=total_pages, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Last Page">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -818,7 +848,7 @@ function filterTable() {
     // Update record count
     const countEl = document.querySelector('.record-count');
     if (countEl) {
-        countEl.textContent = `Showing: ${visibleCount} of {{ transfers|length }} transfer(s)`;
+        countEl.textContent = `Showing: ${visibleCount} of {{ total_count }} transfer(s)`;
     }
 }
 
@@ -827,7 +857,7 @@ function clearSearch() {
     searchInput.value = '';
     filterTable();
     searchInput.focus();
-    document.querySelector('.record-count').textContent = 'Total: {{ transfers|length }} transfer(s)';
+    document.querySelector('.record-count').textContent = 'Showing {{ transfers|length }} of {{ total_count }} transfer(s) (Page {{ page }} of {{ total_pages }})';
 }
 
 function toggleDropdown(id) {
@@ -852,6 +882,52 @@ window.onclick = function(e) {
 .header-actions .btn.active {
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
     font-weight: bold;
+}
+
+/* Pagination Styles */
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 0 0 8px 8px;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.page-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.page-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 .search-group {

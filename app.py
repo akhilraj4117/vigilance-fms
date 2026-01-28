@@ -2446,6 +2446,28 @@ def draft_list():
     to_district = request.args.get('to_district', '')
     sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 100  # Show 100 records per page to reduce memory
+    offset = (page - 1) * per_page
+    
+    # Get total count first (lightweight query)
+    count_query = f"""
+        SELECT COUNT(*) FROM {prefix}jphn j
+        INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
+        WHERE 1=1
+    """
+    count_params = {}
+    if from_district:
+        count_query += " AND j.district = :from_district"
+        count_params['from_district'] = from_district
+    if to_district:
+        count_query += " AND d.transfer_to_district = :to_district"
+        count_params['to_district'] = to_district
+    
+    total_count = db.session.execute(db.text(count_query), count_params).fetchone()[0]
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+    
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
                j.district_join_date, 
@@ -2515,6 +2537,9 @@ def draft_list():
                  THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                  ELSE 0 END DESC"""
     
+    # Add pagination LIMIT and OFFSET
+    query += f" LIMIT {per_page} OFFSET {offset}"
+    
     result = db.session.execute(db.text(query), params)
     transfers = result.fetchall()
     
@@ -2525,7 +2550,11 @@ def draft_list():
                          to_district=to_district,
                          sort_by=sort_by,
                          format_duration=format_duration,
-                         now=datetime.now)
+                         now=datetime.now,
+                         page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         per_page=per_page)
 
 
 @app.route('/draft/export-excel')
