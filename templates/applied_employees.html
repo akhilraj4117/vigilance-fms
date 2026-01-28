@@ -72,7 +72,7 @@
     <div class="print-header">
         <h2>JPHN Transfer Management System - Applied Employees List</h2>
         <p>Generated on: {{ now().strftime('%d-%m-%Y %I:%M %p') if now else '' }}</p>
-        <p>Total Employees: {{ employees|length }}</p>
+        <p>Total Employees: {{ total_count }} (Page {{ page }} of {{ total_pages }})</p>
     </div>
     
     <div class="table-container">
@@ -115,7 +115,7 @@
                 </tr>
                 {% endif %}
                 <tr class="{% if emp[20] == 'Yes' %}row-locked{% endif %} {% if emp[10] == 'Yes' %}row-special{% elif emp[6] == 'Yes' %}row-weightage{% endif %}" {% if emp[10] == 'Yes' %}title="Special Priority"{% endif %} data-pen="{{ emp[0] }}" data-locked="{{ emp[20] }}" data-weightage="{{ emp[6] }}" data-weightage-consider="{{ emp[21] }}">
-                    <td>{{ loop.index }}</td>
+                    <td>{{ (page - 1) * per_page + loop.index }}</td>
                     <td>
                         {{ emp[0] }}
                         {% if emp[20] == 'Yes' %}
@@ -193,7 +193,31 @@
     </div>
     
     <div class="table-footer">
-        <span class="record-count">Total: {{ employees|length }} employee(s)</span>
+        <span class="record-count">Showing {{ employees|length }} of {{ total_count }} employee(s) (Page {{ page }} of {{ total_pages }})</span>
+        
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('applied_employees', district=district_filter, pref_district=pref_district, sort=sort_by, page=1) }}" class="btn btn-sm btn-secondary" title="First Page">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="{{ url_for('applied_employees', district=district_filter, pref_district=pref_district, sort=sort_by, page=page-1) }}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-angle-left"></i> Prev
+            </a>
+            {% endif %}
+            
+            <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+            
+            {% if page < total_pages %}
+            <a href="{{ url_for('applied_employees', district=district_filter, pref_district=pref_district, sort=sort_by, page=page+1) }}" class="btn btn-sm btn-secondary">
+                Next <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="{{ url_for('applied_employees', district=district_filter, pref_district=pref_district, sort=sort_by, page=total_pages) }}" class="btn btn-sm btn-secondary" title="Last Page">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -851,7 +875,7 @@ function clearSearch() {
     searchInput.value = '';
     filterTable();
     searchInput.focus();
-    document.querySelector('.record-count').textContent = 'Total: {{ employees|length }} employee(s)';
+    document.querySelector('.record-count').textContent = 'Showing {{ employees|length }} of {{ total_count }} employee(s) (Page {{ page }} of {{ total_pages }})';
 }
 
 // Toggle Lock/Unlock
@@ -1601,6 +1625,32 @@ tr.context-active {
 
 .print-header {
     display: none;
+}
+
+/* Pagination Styles */
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.pagination .btn {
+    padding: 0.4rem 0.75rem;
+}
+.page-info {
+    padding: 0.4rem 0.75rem;
+    background: var(--bg-card, white);
+    border-radius: var(--border-radius);
+    font-weight: 500;
 }
 </style>
 

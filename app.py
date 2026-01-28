@@ -1699,6 +1699,30 @@ def applied_employees():
     pref_district = request.args.get('pref_district', '')
     sort_by = request.args.get('sort', '')  # 'to_district' for To District Sort
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 100  # Show 100 employees per page to reduce memory
+    offset = (page - 1) * per_page
+    
+    # Get total count first (lightweight query)
+    count_query = f"""
+        SELECT COUNT(*) FROM {prefix}jphn j
+        INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
+        WHERE 1=1
+    """
+    count_params = {}
+    if district_filter:
+        count_query += " AND j.district = :district"
+        count_params['district'] = district_filter
+    if pref_district:
+        count_query += """ AND (t.pref1 = :pref_district OR t.pref2 = :pref_district OR t.pref3 = :pref_district 
+                    OR t.pref4 = :pref_district OR t.pref5 = :pref_district OR t.pref6 = :pref_district 
+                    OR t.pref7 = :pref_district OR t.pref8 = :pref_district)"""
+        count_params['pref_district'] = pref_district
+    
+    total_count = db.session.execute(db.text(count_query), count_params).fetchone()[0]
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+    
     # Calculate duration dynamically for accurate display
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district,
@@ -1785,6 +1809,9 @@ def applied_employees():
         COALESCE(j.weightage_priority, 5),
         j.duration_days DESC"""
     
+    # Add pagination LIMIT and OFFSET
+    query += f" LIMIT {per_page} OFFSET {offset}"
+    
     result = db.session.execute(db.text(query), params)
     employees = result.fetchall()
     
@@ -1812,7 +1839,11 @@ def applied_employees():
                          sort_by=sort_by,
                          pref_counts=pref_counts,
                          format_duration=format_duration,
-                         now=datetime.now)
+                         now=datetime.now,
+                         page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         per_page=per_page)
 
 
 @app.route('/applied/remove/<pen>', methods=['POST'])
