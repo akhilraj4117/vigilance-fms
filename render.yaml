@@ -3,7 +3,8 @@ services:
     name: jphn-transfer
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --timeout 120 --worker-class=gevent
+    startCommand: gunicorn app:app --timeout 180 --workers 1 --worker-class=sync --preload --max-requests 100 --max-requests-jitter 10
+    healthCheckPath: /health
     envVars:
       - key: FLASK_CONFIG
         value: production
@@ -13,6 +14,8 @@ services:
         fromDatabase:
           name: jphn-db
           property: connectionString
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
 databases:
   - name: jphn-db

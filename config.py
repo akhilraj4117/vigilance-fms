@@ -19,12 +19,17 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'pool_size': 5,
-        'max_overflow': 10,
+        'pool_recycle': 180,
+        'pool_size': 2,
+        'max_overflow': 3,
+        'pool_timeout': 20,
         'connect_args': {
-            'connect_timeout': 30,
-            'options': '-c statement_timeout=30000'
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=25000',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5
         }
     }
     

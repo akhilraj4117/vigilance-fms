@@ -41,9 +41,14 @@ VALID_USERS = app.config['VALID_USERS']
 # ==================== HEALTH CHECK & ERROR HANDLING ====================
 @app.route('/health')
 def health_check():
-    """Health check endpoint for Render"""
+    """Lightweight health check endpoint for Render - no DB query to reduce load"""
+    return jsonify({'status': 'healthy'}), 200
+
+
+@app.route('/health/db')
+def health_check_db():
+    """Full health check with DB test - use sparingly"""
     try:
-        # Test database connection
         db.session.execute(db.text('SELECT 1'))
         db.session.commit()
         return jsonify({'status': 'healthy', 'database': 'connected'}), 200
