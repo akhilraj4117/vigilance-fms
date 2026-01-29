@@ -2775,6 +2775,73 @@ def draft_list():
                          per_page=per_page)
 
 
+@app.route('/draft/search')
+@login_required
+@requires_transfer_session
+def search_draft():
+    """AJAX search for draft list across entire database"""
+    prefix = get_table_prefix()
+    query = request.args.get('q', '').strip()
+    from_district = request.args.get('from_district', '')
+    to_district = request.args.get('to_district', '')
+    
+    if not query or len(query) < 2:
+        return jsonify({'transfers': [], 'count': 0})
+    
+    try:
+        search_term = f'%{query}%'
+        
+        sql = f"""
+            SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   j.weightage, d.against_info, d.remarks,
+                   t.special_priority
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
+            LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
+            WHERE (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term OR j.institution ILIKE :term)
+        """
+        params = {'term': search_term}
+        
+        if from_district:
+            sql += " AND j.district = :from_district"
+            params['from_district'] = from_district
+        if to_district:
+            sql += " AND d.transfer_to_district = :to_district"
+            params['to_district'] = to_district
+        
+        sql += " ORDER BY duration_days DESC LIMIT 50"
+        
+        result = db.session.execute(db.text(sql), params)
+        
+        transfers = []
+        for row in result:
+            duration = row[5] or 0
+            years = duration // 365
+            months = (duration % 365) // 30
+            duration_str = f"{years}y {months}m" if years else f"{months}m"
+            
+            transfers.append({
+                'pen': row[0],
+                'name': row[1],
+                'institution': row[2],
+                'from_district': row[3],
+                'to_district': row[4],
+                'duration': duration_str,
+                'weightage': row[6] or 'No',
+                'against_info': row[7] or '',
+                'remarks': row[8] or '',
+                'special_priority': row[9] or 'No'
+            })
+        
+        return jsonify({'transfers': transfers, 'count': len(transfers)})
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'transfers': [], 'count': 0})
+
+
 @app.route('/draft/export-excel')
 @login_required
 @requires_transfer_session
@@ -4498,6 +4565,68 @@ def final_list():
                          total_pages=total_pages,
                          total_count=total_count,
                          per_page=per_page)
+
+
+@app.route('/final/search')
+@login_required
+@requires_transfer_session
+def search_final():
+    """AJAX search for final list across entire database"""
+    prefix = get_table_prefix()
+    query = request.args.get('q', '').strip()
+    from_district = request.args.get('from_district', '')
+    to_district = request.args.get('to_district', '')
+    
+    if not query or len(query) < 2:
+        return jsonify({'transfers': [], 'count': 0})
+    
+    try:
+        search_term = f'%{query}%'
+        
+        sql = f"""
+            SELECT j.pen, j.name, j.institution, j.district, f.transfer_to_district,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   j.weightage
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_final f ON j.pen = f.pen
+            WHERE (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term OR j.institution ILIKE :term)
+        """
+        params = {'term': search_term}
+        
+        if from_district:
+            sql += " AND j.district = :from_district"
+            params['from_district'] = from_district
+        if to_district:
+            sql += " AND f.transfer_to_district = :to_district"
+            params['to_district'] = to_district
+        
+        sql += " ORDER BY duration_days DESC LIMIT 50"
+        
+        result = db.session.execute(db.text(sql), params)
+        
+        transfers = []
+        for row in result:
+            duration = row[5] or 0
+            years = duration // 365
+            months = (duration % 365) // 30
+            duration_str = f"{years}y {months}m" if years else f"{months}m"
+            
+            transfers.append({
+                'pen': row[0],
+                'name': row[1],
+                'institution': row[2],
+                'from_district': row[3],
+                'to_district': row[4],
+                'duration': duration_str,
+                'weightage': row[6] or 'No'
+            })
+        
+        return jsonify({'transfers': transfers, 'count': len(transfers)})
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'transfers': [], 'count': 0})
 
 
 @app.route('/final/delete/<pen>', methods=['POST'])

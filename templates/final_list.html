@@ -885,46 +885,103 @@ if (transferData.length > 0) {
     }
 }
 
-// Search/Filter table
+// Search/Filter table - AJAX based for full database search
+let searchTimeout = null;
+let isSearchActive = false;
+const originalTable = document.querySelector('#finalTable tbody').innerHTML;
+
 function filterTable() {
     const searchInput = document.getElementById('tableSearch');
-    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchTerm = searchInput.value.trim();
     const clearBtn = document.querySelector('.search-clear');
-    const table = document.getElementById('finalTable');
-    const rows = table.querySelectorAll('tbody tr');
     
     clearBtn.style.display = searchTerm ? 'block' : 'none';
     
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        if (row.querySelector('.no-data')) return;
-        
-        const pen = (row.cells[1]?.textContent || '').toLowerCase();
-        const name = (row.cells[2]?.textContent || '').toLowerCase();
-        const institution = (row.cells[3]?.textContent || '').toLowerCase();
-        
-        if (pen.includes(searchTerm) || name.includes(searchTerm) || institution.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
+    // If search is empty or too short, restore original table
+    if (!searchTerm || searchTerm.length < 2) {
+        if (isSearchActive) {
+            document.querySelector('#finalTable tbody').innerHTML = originalTable;
+            isSearchActive = false;
         }
-    });
-    
-    // Update record count
-    const countEl = document.querySelector('.record-count');
-    if (countEl) {
-        countEl.textContent = `Showing: ${visibleCount} of {{ total_count }} confirmed transfer(s)`;
+        document.querySelector('.record-count').textContent = 'Showing {{ transfers|length }} of {{ total_count }} confirmed transfer(s) (Page {{ page }} of {{ total_pages }})';
+        return;
     }
+    
+    // Debounce AJAX search
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performAjaxSearch(searchTerm);
+    }, 300);
+}
+
+function performAjaxSearch(searchTerm) {
+    const fromDistrict = '{{ from_district }}';
+    const toDistrict = '{{ to_district }}';
+    const tbody = document.querySelector('#finalTable tbody');
+    
+    // Show loading
+    document.querySelector('.record-count').textContent = 'Searching...';
+    
+    fetch(`/final/search?q=${encodeURIComponent(searchTerm)}&from_district=${encodeURIComponent(fromDistrict)}&to_district=${encodeURIComponent(toDistrict)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(response => {
+            if (!response.ok) throw new Error('Search failed');
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error('Search error:', data.error);
+                document.querySelector('.record-count').textContent = 'Search failed';
+                return;
+            }
+            isSearchActive = true;
+            
+            if (data.transfers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted no-data">No transfers found matching your search</td></tr>';
+                document.querySelector('.record-count').textContent = 'Showing: 0 results';
+                return;
+            }
+            
+            document.querySelector('.record-count').textContent = `Showing: ${data.transfers.length} results (from all pages)`;
+            
+            let html = '';
+            data.transfers.forEach((t, index) => {
+                const weightageClass = t.weightage === 'Yes' ? 'row-weightage' : '';
+                
+                html += `
+                    <tr data-pen="${t.pen}" class="${weightageClass}">
+                        <td>${index + 1}</td>
+                        <td>${t.pen}</td>
+                        <td>${t.name}</td>
+                        <td>${t.institution}</td>
+                        <td>${t.from_district}</td>
+                        <td>${t.duration}</td>
+                        <td><strong class="to-district">${t.to_district}</strong></td>
+                        <td>${t.weightage}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Search error:', err);
+            document.querySelector('.record-count').textContent = 'Search error';
+        });
 }
 
 function clearSearch() {
     const searchInput = document.getElementById('tableSearch');
     searchInput.value = '';
-    filterTable();
-    searchInput.focus();
+    
+    if (isSearchActive) {
+        document.querySelector('#finalTable tbody').innerHTML = originalTable;
+        isSearchActive = false;
+    }
+    
     document.querySelector('.record-count').textContent = 'Showing {{ transfers|length }} of {{ total_count }} confirmed transfer(s) (Page {{ page }} of {{ total_pages }})';
+    searchInput.focus();
 }
 
 function toggleDropdown(id) {
