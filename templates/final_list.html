@@ -226,164 +226,209 @@ function getFileName(ext) {
 }
 
 function exportCSV() {
-    const headers = ['Sl No', 'PEN', 'Name', 'Institution', 'From District', 'To District', 'Duration', 'Weightage'];
-    let csv = headers.join(',') + '\n';
-    
-    transferData.forEach((t, i) => {
-        const row = [
-            i + 1,
-            t.pen,
-            `"${(t.name || '').replace(/"/g, '""')}"`,
-            `"${(t.institution || '').replace(/"/g, '""')}"`,
-            t.fromDistrict,
-            t.toDistrict,
-            formatDuration(t.duration),
-            t.weightage || 'No'
-        ];
-        csv += row.join(',') + '\n';
+    // Fetch ALL data from server
+    fetch('/final/export-data', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        const allTransfers = data.transfers;
+        const headers = ['Sl No', 'PEN', 'Name', 'Institution', 'From District', 'To District', 'Duration', 'Weightage'];
+        let csv = headers.join(',') + '\n';
+        
+        allTransfers.forEach((t, i) => {
+            const row = [
+                i + 1,
+                t.pen,
+                `"${(t.name || '').replace(/"/g, '""')}"`,
+                `"${(t.institution || '').replace(/"/g, '""')}"`,
+                t.fromDistrict,
+                t.toDistrict,
+                formatDuration(t.duration),
+                t.weightage || 'No'
+            ];
+            csv += row.join(',') + '\n';
+        });
+        
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        saveAs(blob, getFileName('csv'));
+    })
+    .catch(err => {
+        console.error('Export error:', err);
+        alert('Error exporting CSV');
     });
-    
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, getFileName('csv'));
 }
 
 function exportExcel() {
-    const wb = XLSX.utils.book_new();
-    
-    // Create data grouped by district
-    const groupedData = {};
-    transferData.forEach(t => {
-        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
-        groupedData[t.fromDistrict].push(t);
+    // Fetch ALL data from server
+    fetch('/final/export-data', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        const allTransfers = data.transfers;
+        const wb = XLSX.utils.book_new();
+        
+        // Create data grouped by district
+        const groupedData = {};
+        allTransfers.forEach(t => {
+            if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
+            groupedData[t.fromDistrict].push(t);
+        });
+        
+        // Create worksheet data
+        const wsData = [];
+        
+        // Header rows
+        wsData.push(['Government of Kerala']);
+        wsData.push(['Department: Health Services']);
+        let titleText = transferType === 'regular' 
+            ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
+            : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
+        wsData.push([titleText]);
+        wsData.push([`${listType} Transfer List`]);
+        wsData.push([]);
+        
+        let slNo = 1;
+        const headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 'From District', 'To District', 'Protection If Any'];
+        
+        districts.forEach(district => {
+            if (!groupedData[district]) return;
+            
+            wsData.push([`District: ${district.toUpperCase()}`]);
+            wsData.push(headers);
+            
+            groupedData[district].forEach(t => {
+                wsData.push([
+                    slNo++,
+                    t.pen,
+                    t.name,
+                    'JPHN Gr I',
+                    t.institution,
+                    t.fromDistrict,
+                    t.toDistrict,
+                    t.weightage === 'Yes' ? (t.weightageDetails || '') : ''
+                ]);
+            });
+            wsData.push([]);
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Set column widths
+        ws['!cols'] = [
+            {wch: 8}, {wch: 12}, {wch: 25}, {wch: 15}, {wch: 35}, {wch: 15}, {wch: 15}, {wch: 20}
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, ws, 'Final Transfer List');
+        XLSX.writeFile(wb, getFileName('xlsx'));
+    })
+    .catch(err => {
+        console.error('Export error:', err);
+        alert('Error exporting Excel');
     });
-    
-    // Create worksheet data
-    const wsData = [];
-    
-    // Header rows
-    wsData.push(['Government of Kerala']);
-    wsData.push(['Department: Health Services']);
-    let titleText = transferType === 'regular' 
-        ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
-        : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
-    wsData.push([titleText]);
-    wsData.push([`${listType} Transfer List`]);
-    wsData.push([]);
-    
-    let slNo = 1;
-    const headers = ['Sl. No.', 'PEN', 'Name', 'Designation', 'Office Transferred from', 'From District', 'To District', 'Protection If Any'];
-    
-    districts.forEach(district => {
-        if (!groupedData[district]) return;
+}
+
+function exportPDF() {
+    // Fetch ALL data from server
+    fetch('/final/export-data', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
         
-        wsData.push([`District: ${district.toUpperCase()}`]);
-        wsData.push(headers);
+        const allTransfers = data.transfers;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
         
-        groupedData[district].forEach(t => {
-            wsData.push([
+        // Header
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Government of Kerala', 148, 15, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.text('Department: Health Services', 148, 22, { align: 'center' });
+        
+        let titleText = transferType === 'regular' 
+            ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
+            : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
+        doc.text(titleText, 148, 29, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.text(`${listType} Transfer List`, 14, 38);
+        
+        // Group by district
+        const groupedData = {};
+        allTransfers.forEach(t => {
+            if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
+            groupedData[t.fromDistrict].push(t);
+        });
+        
+        let slNo = 1;
+        let startY = 45;
+        const headers = [['Sl.', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']];
+        
+        districts.forEach(district => {
+            if (!groupedData[district]) return;
+            
+            // Check if need new page
+            if (startY > 170) {
+                doc.addPage();
+                startY = 15;
+            }
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`District: ${district.toUpperCase()}`, 14, startY);
+            startY += 5;
+            
+            const rows = groupedData[district].map(t => [
                 slNo++,
                 t.pen,
                 t.name,
                 'JPHN Gr I',
-                t.institution,
+                t.institution || '',
                 t.fromDistrict,
                 t.toDistrict,
                 t.weightage === 'Yes' ? (t.weightageDetails || '') : ''
             ]);
-        });
-        wsData.push([]);
-    });
-    
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    
-    // Set column widths
-    ws['!cols'] = [
-        {wch: 8}, {wch: 12}, {wch: 25}, {wch: 15}, {wch: 35}, {wch: 15}, {wch: 15}, {wch: 20}
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, ws, 'Final Transfer List');
-    XLSX.writeFile(wb, getFileName('xlsx'));
-}
-
-function exportPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
-    
-    // Header
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Government of Kerala', 148, 15, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.text('Department: Health Services', 148, 22, { align: 'center' });
-    
-    let titleText = transferType === 'regular' 
-        ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
-        : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
-    doc.text(titleText, 148, 29, { align: 'center' });
-    
-    doc.setFontSize(11);
-    doc.text(`${listType} Transfer List`, 14, 38);
-    
-    // Group by district
-    const groupedData = {};
-    transferData.forEach(t => {
-        if (!groupedData[t.fromDistrict]) groupedData[t.fromDistrict] = [];
-        groupedData[t.fromDistrict].push(t);
-    });
-    
-    let slNo = 1;
-    let startY = 45;
-    const headers = [['Sl.', 'PEN', 'Name', 'Designation', 'Office', 'From', 'To', 'Protection']];
-    
-    districts.forEach(district => {
-        if (!groupedData[district]) return;
-        
-        // Check if need new page
-        if (startY > 170) {
-            doc.addPage();
-            startY = 15;
-        }
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`District: ${district.toUpperCase()}`, 14, startY);
-        startY += 5;
-        
-        const rows = groupedData[district].map(t => [
-            slNo++,
-            t.pen,
-            t.name,
-            'JPHN Gr I',
-            t.institution || '',
-            t.fromDistrict,
-            t.toDistrict,
-            t.weightage === 'Yes' ? (t.weightageDetails || '') : ''
-        ]);
-        
-        doc.autoTable({
-            head: headers,
-            body: rows,
-            startY: startY,
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 1 },
-            headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 18 },
-                2: { cellWidth: 35 },
-                3: { cellWidth: 20 },
-                4: { cellWidth: 50 },
-                5: { cellWidth: 25 },
-                6: { cellWidth: 25 },
-                7: { cellWidth: 30 }
-            }
+            
+            doc.autoTable({
+                head: headers,
+                body: rows,
+                startY: startY,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 1 },
+                headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 18 },
+                    2: { cellWidth: 35 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 50 },
+                    5: { cellWidth: 25 },
+                    6: { cellWidth: 25 },
+                    7: { cellWidth: 30 }
+                }
+            });
+            
+            startY = doc.lastAutoTable.finalY + 8;
         });
         
-        startY = doc.lastAutoTable.finalY + 8;
+        doc.save(getFileName('pdf'));
+    })
+    .catch(err => {
+        console.error('Export error:', err);
+        alert('Error exporting PDF');
     });
-    
-    doc.save(getFileName('pdf'));
 }
 
 function exportWord() {
@@ -394,28 +439,54 @@ function exportWord() {
 function doExportWord() {
     const fileNumber = document.getElementById('fileNumberInput').value.trim();
     const orderDate = document.getElementById('orderDateInput').value.trim();
+    const exportBtn = document.querySelector('#fileNumberModal .btn-primary');
     
-    document.getElementById('fileNumberModal').classList.remove('show');
+    // Show loading state
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading all data...';
     
-    let html;
-    
-    if (transferType === 'regular') {
-        // Regular Transfer - Malayalam format (Portrait, 6 columns, no district grouping)
-        html = exportWordRegular(fileNumber, orderDate);
-    } else {
-        // General Transfer - English format (Landscape, 8 columns, grouped by district)
-        html = exportWordGeneral(fileNumber, orderDate);
-    }
-    
-    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
-    saveAs(blob, getFileName('doc'));
+    // Fetch ALL data from server (not just current page)
+    fetch('/final/export-data', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('fileNumberModal').classList.remove('show');
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<i class="fas fa-file-word"></i> Export Word';
+        
+        if (data.error) {
+            alert('Error loading data: ' + data.error);
+            return;
+        }
+        
+        const allTransfers = data.transfers;
+        console.log(`Exporting ${allTransfers.length} transfers`);
+        
+        let html;
+        if (transferType === 'regular') {
+            html = exportWordRegular(fileNumber, orderDate, allTransfers);
+        } else {
+            html = exportWordGeneral(fileNumber, orderDate, allTransfers);
+        }
+        
+        const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+        saveAs(blob, getFileName('doc'));
+    })
+    .catch(err => {
+        document.getElementById('fileNumberModal').classList.remove('show');
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<i class="fas fa-file-word"></i> Export Word';
+        console.error('Export error:', err);
+        alert('Error exporting: ' + err.message);
+    });
 }
 
 function closeFileNumberModal() {
     document.getElementById('fileNumberModal').classList.remove('show');
 }
 
-function exportWordRegular(fileNumber, orderDate) {
+function exportWordRegular(fileNumber, orderDate, allTransfers) {
     // Sort data by transfer_to_district (South to North), then by seniority (duration desc)
     // Weightage employees come first within each destination district
     const districtOrder = {
@@ -424,7 +495,7 @@ function exportWordRegular(fileNumber, orderDate) {
         'Malappuram': 10, 'Kozhikode': 11, 'Wayanad': 12, 'Kannur': 13, 'Kasaragod': 14
     };
     
-    const sortedData = [...transferData].sort((a, b) => {
+    const sortedData = [...allTransfers].sort((a, b) => {
         // First by transfer_to_district (South to North)
         const distA = districtOrder[a.toDistrict] || 15;
         const distB = districtOrder[b.toDistrict] || 15;
@@ -659,7 +730,7 @@ function exportWordRegular(fileNumber, orderDate) {
     return html;
 }
 
-function exportWordGeneral(fileNumber, orderDate) {
+function exportWordGeneral(fileNumber, orderDate, allTransfers) {
     // Sort data by transfer_to_district (South to North), then by seniority (duration desc)
     // Weightage employees come first within each destination district
     const districtOrder = {
@@ -670,7 +741,7 @@ function exportWordGeneral(fileNumber, orderDate) {
     
     // Group by transfer_to_district for general transfer
     const groupedData = {};
-    transferData.forEach(t => {
+    allTransfers.forEach(t => {
         const toDistrict = t.toDistrict;
         if (!groupedData[toDistrict]) groupedData[toDistrict] = [];
         groupedData[toDistrict].push(t);

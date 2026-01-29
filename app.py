@@ -4629,6 +4629,64 @@ def search_final():
         return jsonify({'error': str(e), 'transfers': [], 'count': 0})
 
 
+@app.route('/final/export-data')
+@login_required
+@requires_transfer_session
+def final_export_data():
+    """Get ALL final list data for Word/PDF export (no pagination)"""
+    prefix = get_table_prefix()
+    
+    try:
+        query = f"""
+            SELECT j.pen, j.name, j.institution, j.district, f.transfer_to_district,
+                   j.district_join_date,
+                   CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                        THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                        ELSE 0 END as duration_days,
+                   j.weightage, j.weightage_details
+            FROM {prefix}jphn j
+            INNER JOIN {prefix}transfer_final f ON j.pen = f.pen
+            ORDER BY CASE f.transfer_to_district
+                WHEN 'Thiruvananthapuram' THEN 1
+                WHEN 'Kollam' THEN 2
+                WHEN 'Pathanamthitta' THEN 3
+                WHEN 'Alappuzha' THEN 4
+                WHEN 'Kottayam' THEN 5
+                WHEN 'Idukki' THEN 6
+                WHEN 'Ernakulam' THEN 7
+                WHEN 'Thrissur' THEN 8
+                WHEN 'Palakkad' THEN 9
+                WHEN 'Malappuram' THEN 10
+                WHEN 'Kozhikode' THEN 11
+                WHEN 'Wayanad' THEN 12
+                WHEN 'Kannur' THEN 13
+                WHEN 'Kasaragod' THEN 14
+                ELSE 15 END,
+                duration_days DESC
+        """
+        
+        result = db.session.execute(db.text(query))
+        
+        transfers = []
+        for row in result:
+            transfers.append({
+                'pen': row[0],
+                'name': row[1],
+                'institution': row[2],
+                'fromDistrict': row[3],
+                'toDistrict': row[4],
+                'joinDate': row[5],
+                'duration': row[6] or 0,
+                'weightage': row[7] or 'No',
+                'weightageDetails': row[8] or ''
+            })
+        
+        return jsonify({'transfers': transfers, 'count': len(transfers)})
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'transfers': [], 'count': 0})
+
+
 @app.route('/final/delete/<pen>', methods=['POST'])
 @login_required
 @requires_transfer_session
