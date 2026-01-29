@@ -18,18 +18,19 @@ class Config:
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 180,
-        'pool_size': 2,
-        'max_overflow': 3,
-        'pool_timeout': 20,
+        'pool_pre_ping': True,      # Test connections before using
+        'pool_recycle': 120,        # Recycle connections every 2 minutes (Supabase drops idle)
+        'pool_size': 3,             # Slightly more connections for free tier
+        'max_overflow': 2,          # Allow 2 extra connections under load
+        'pool_timeout': 15,         # Don't wait too long for connections
+        'pool_reset_on_return': 'rollback',  # Clean up connections properly
         'connect_args': {
-            'connect_timeout': 10,
-            'options': '-c statement_timeout=25000',
+            'connect_timeout': 8,   # Faster connection timeout
+            'options': '-c statement_timeout=20000',  # 20 second query timeout
             'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5
+            'keepalives_idle': 20,   # Send keepalive earlier
+            'keepalives_interval': 5,
+            'keepalives_count': 3
         }
     }
     

@@ -45,6 +45,22 @@ def health_check():
     return jsonify({'status': 'healthy'}), 200
 
 
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Ensure database session is properly closed after each request"""
+    db.session.remove()
+
+
+@app.after_request
+def after_request(response):
+    """Commit or rollback after each request"""
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+    return response
+
+
 @app.route('/health/db')
 def health_check_db():
     """Full health check with DB test - use sparingly"""
@@ -1710,7 +1726,7 @@ def search_employees():
                        CASE WHEN t.pen IS NOT NULL THEN true ELSE false END as applied
                 FROM {prefix}jphn j
                 LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
-                WHERE (j.name ILIKE :term OR j.pen ILIKE :term)
+                WHERE (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term)
                 ORDER BY j.district, duration_days DESC
                 LIMIT 50
             """), {'term': search_term})
@@ -1725,7 +1741,7 @@ def search_employees():
                 FROM {prefix}jphn j
                 LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
                 WHERE j.district = :district
-                AND (j.name ILIKE :term OR j.pen ILIKE :term)
+                AND (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term)
                 ORDER BY duration_days DESC
                 LIMIT 50
             """), {'district': district_filter, 'term': search_term})
@@ -1848,7 +1864,7 @@ def search_applied_employees():
                    j.weightage, t.special_priority
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
-            WHERE (j.name ILIKE :term OR j.pen ILIKE :term)
+            WHERE (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term)
         """
         params = {'term': search_term}
         
