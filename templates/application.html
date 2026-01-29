@@ -812,9 +812,21 @@ function performAjaxSearch(searchTerm) {
     // Show loading state
     document.getElementById('visibleCount').textContent = '...';
     
-    fetch(`/application/search?q=${encodeURIComponent(searchTerm)}&district=${encodeURIComponent(district)}`)
-        .then(response => response.json())
+    fetch(`/application/search?q=${encodeURIComponent(searchTerm)}&district=${encodeURIComponent(district)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+            return response.json();
+        })
         .then(data => {
+            if (data.error) {
+                console.error('Search error:', data.error);
+                document.getElementById('visibleCount').textContent = '?';
+                return;
+            }
             isSearchActive = true;
             
             // Hide original rows

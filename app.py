@@ -399,6 +399,9 @@ def requires_transfer_session(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'transfer_type' not in session:
+            # Handle AJAX requests differently
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+                return jsonify({'error': 'Session expired', 'redirect': url_for('select_transfer')}), 401
             flash('Please select a transfer type first.', 'warning')
             return redirect(url_for('select_transfer'))
         return f(*args, **kwargs)
