@@ -163,23 +163,37 @@ def register_custom_filters(app):
     @app.template_filter('format_date')
     def format_date_filter(date_str):
         """Format date string to DD-MM-YYYY format.
-        Handles multiple input formats: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, etc.
+        Handles multiple input formats including American MM/DD/YYYY format.
         """
         if not date_str or date_str == '-' or not str(date_str).strip():
             return '-'
         
         date_str = str(date_str).strip()
         
-        # Try different date formats
+        # Try different date formats - ORDER MATTERS!
         formats_to_try = [
-            '%Y-%m-%d',  # YYYY-MM-DD (HTML date input format)
-            '%d/%m/%Y',  # DD/MM/YYYY
-            '%d-%m-%Y',  # DD-MM-YYYY (already in target format)
-            '%Y/%m/%d',  # YYYY/MM/DD
-            '%d.%m.%Y',  # DD.MM.YYYY
-            '%Y.%m.%d',  # YYYY.MM.DD
-            '%d %m %Y',  # DD MM YYYY
-            '%Y %m %d',  # YYYY MM DD
+            # Unambiguous formats (year first or text month)
+            '%Y-%m-%d',      # YYYY-MM-DD (HTML date input format) - MOST COMMON
+            '%Y/%m/%d',      # YYYY/MM/DD
+            '%Y.%m.%d',      # YYYY.MM.DD
+            '%d %b %Y',      # 15 Jan 2024
+            '%d-%b-%Y',      # 15-Jan-2024
+            '%b %d %Y',      # Jan 15 2024
+            '%b %d, %Y',     # Jan 15, 2024
+            '%d %B %Y',      # 15 January 2024
+            '%B %d %Y',      # January 15 2024
+            '%B %d, %Y',     # January 15, 2024
+            
+            # DD/MM/YYYY formats (European - day first) - TRY FIRST for ambiguous
+            '%d/%m/%Y',      # DD/MM/YYYY (European)
+            '%d-%m-%Y',      # DD-MM-YYYY (European)
+            '%d.%m.%Y',      # DD.MM.YYYY (European)
+            '%d %m %Y',      # DD MM YYYY (European with spaces)
+            
+            # MM/DD/YYYY formats (American - month first)
+            '%m/%d/%Y',      # MM/DD/YYYY (American)
+            '%m-%d-%Y',      # MM-DD-YYYY (American)
+            '%m %d %Y',      # MM DD YYYY (American with spaces)
         ]
         
         for fmt in formats_to_try:
@@ -189,17 +203,40 @@ def register_custom_filters(app):
             except ValueError:
                 continue
         
-        # If no format matched, check if it's already in DD-MM-YYYY format
-        if len(date_str) >= 8 and len(date_str) <= 10:
-            # Might already be in desired format, return as-is
-            return date_str
+        # Special handling for ambiguous dates
+        for separator in ['/', '-', ' ', '.']:
+            parts = date_str.split(separator)
+            if len(parts) == 3:
+                try:
+                    first = int(parts[0])
+                    second = int(parts[1])
+                    third = int(parts[2])
+                    
+                    if third > 31:  # Year is last
+                        year = third
+                        if first > 12:  # First must be day (European)
+                            day, month = first, second
+                        elif second > 12:  # Second must be day (American)
+                            month, day = first, second
+                        else:  # Ambiguous - assume European DD/MM/YYYY
+                            day, month = first, second
+                    elif first > 31:  # Year is first
+                        year = first
+                        month, day = second, third
+                    else:
+                        continue
+                    
+                    if 1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2100:
+                        return f'{day:02d}-{month:02d}-{year}'
+                except (ValueError, IndexError):
+                    continue
         
         return date_str
     
     @app.template_filter('format_date_html')
     def format_date_html_filter(date_str):
         """Convert date string to YYYY-MM-DD format for HTML date input.
-        Handles DD-MM-YYYY format from database.
+        Handles various date formats from database including American format.
         """
         if not date_str or date_str == '-' or not str(date_str).strip():
             return ''
@@ -208,18 +245,51 @@ def register_custom_filters(app):
         
         # Try different date formats and convert to YYYY-MM-DD
         formats_to_try = [
-            ('%d-%m-%Y', '%Y-%m-%d'),  # DD-MM-YYYY -> YYYY-MM-DD
-            ('%d/%m/%Y', '%Y-%m-%d'),  # DD/MM/YYYY -> YYYY-MM-DD
-            ('%Y-%m-%d', '%Y-%m-%d'),  # Already in HTML format
-            ('%d.%m.%Y', '%Y-%m-%d'),  # DD.MM.YYYY -> YYYY-MM-DD
+            '%d-%m-%Y',      # DD-MM-YYYY (stored format)
+            '%d/%m/%Y',      # DD/MM/YYYY (European)
+            '%Y-%m-%d',      # Already in HTML format
+            '%d.%m.%Y',      # DD.MM.YYYY
+            '%m/%d/%Y',      # MM/DD/YYYY (American)
+            '%m-%d-%Y',      # MM-DD-YYYY (American)
+            '%m %d %Y',      # MM DD YYYY (American with spaces)
+            '%d %b %Y',      # 15 Jan 2024
+            '%b %d %Y',      # Jan 15 2024
         ]
         
-        for input_fmt, output_fmt in formats_to_try:
+        for fmt in formats_to_try:
             try:
-                date_obj = datetime.strptime(date_str, input_fmt)
-                return date_obj.strftime(output_fmt)
+                date_obj = datetime.strptime(date_str, fmt)
+                return date_obj.strftime('%Y-%m-%d')
             except ValueError:
                 continue
+        
+        # Special handling for ambiguous dates
+        for separator in ['/', '-', ' ', '.']:
+            parts = date_str.split(separator)
+            if len(parts) == 3:
+                try:
+                    first = int(parts[0])
+                    second = int(parts[1])
+                    third = int(parts[2])
+                    
+                    if third > 31:  # Year is last
+                        year = third
+                        if first > 12:  # First must be day
+                            day, month = first, second
+                        elif second > 12:  # Second must be day
+                            month, day = first, second
+                        else:  # Assume European DD/MM/YYYY
+                            day, month = first, second
+                    elif first > 31:  # Year is first
+                        year = first
+                        month, day = second, third
+                    else:
+                        continue
+                    
+                    if 1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2100:
+                        return f'{year}-{month:02d}-{day:02d}'
+                except (ValueError, IndexError):
+                    continue
         
         return ''
 
