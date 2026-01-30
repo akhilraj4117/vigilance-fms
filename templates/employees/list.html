@@ -274,6 +274,9 @@
                     <button type="button" class="btn btn-warning" onclick="fixEmployeeDates()" title="Convert all dates to DD-MM-YYYY format">
                         <i class="bi bi-calendar-check"></i> Fix Dates
                     </button>
+                    <button type="button" class="btn btn-danger" onclick="swapDayMonth()" title="Swap day and month in all dates (use if dates are reversed)">
+                        <i class="bi bi-arrow-repeat"></i> Swap Day/Month
+                    </button>
                     {% endif %}
                 </div>
             </form>
@@ -597,6 +600,33 @@ function fixEmployeeDates() {
     .catch(error => {
         console.error('Error:', error);
         alert('An error occurred while fixing dates.');
+    });
+}
+
+function swapDayMonth() {
+    if (!confirm('This will SWAP the day and month in all dates (e.g., 07-02-2013 becomes 02-07-2013).\n\nUse this ONLY if your dates were imported with American format and day/month are reversed.\n\nContinue?')) {
+        return;
+    }
+    
+    fetch('{{ url_for("employees.swap_day_month_dates") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while swapping dates.');
     });
 }
 

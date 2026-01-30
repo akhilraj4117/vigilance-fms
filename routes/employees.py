@@ -480,6 +480,64 @@ def fix_employee_dates():
         return jsonify({'success': False, 'message': f'Error fixing dates: {str(e)}'})
 
 
+@employees_bp.route('/swap-day-month', methods=['POST'])
+@login_required
+def swap_day_month_dates():
+    """Swap day and month in all employee dates.
+    Use this when dates were imported with DD/MM and MM/DD swapped.
+    Only swaps if both day and month values are valid (1-12 for swapped month).
+    """
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Only administrators can swap dates.'})
+    
+    try:
+        employees = Employee.query.all()
+        fixed_count = 0
+        skipped = []
+        
+        for emp in employees:
+            changed = False
+            
+            # Swap date_of_birth
+            if emp.date_of_birth and '-' in emp.date_of_birth:
+                parts = emp.date_of_birth.split('-')
+                if len(parts) == 3:
+                    try:
+                        day = int(parts[0])
+                        month = int(parts[1])
+                        year = parts[2]
+                        # Only swap if both can be valid months (1-12)
+                        if 1 <= day <= 12 and 1 <= month <= 31:
+                            emp.date_of_birth = f"{month:02d}-{day:02d}-{year}"
+                            changed = True
+                    except ValueError:
+                        pass
+            
+            # Swap joining_date
+            if emp.joining_date and '-' in emp.joining_date:
+                parts = emp.joining_date.split('-')
+                if len(parts) == 3:
+                    try:
+                        day = int(parts[0])
+                        month = int(parts[1])
+                        year = parts[2]
+                        # Only swap if both can be valid months (1-12)
+                        if 1 <= day <= 12 and 1 <= month <= 31:
+                            emp.joining_date = f"{month:02d}-{day:02d}-{year}"
+                            changed = True
+                    except ValueError:
+                        pass
+            
+            if changed:
+                fixed_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Swapped day/month for {fixed_count} employees.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error swapping dates: {str(e)}'})
+
+
 @employees_bp.route('/by-institution/<institution_name>')
 @login_required
 def by_institution(institution_name):
