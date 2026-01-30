@@ -1727,7 +1727,7 @@ def delete_statement():
 @files_bp.route('/statement-generator/generate-document', methods=['POST'])
 @login_required
 def generate_statement_document():
-    """Generate Word document for statement."""
+    """Generate Word document for statement - EXACTLY matching desktop app format."""
     from io import BytesIO
     from flask import send_file
     
@@ -1735,6 +1735,8 @@ def generate_statement_document():
         from docx import Document
         from docx.shared import Pt, Inches
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
     except ImportError:
         return jsonify({'success': False, 'message': 'python-docx library is not installed. Please install it with: pip install python-docx'})
     
@@ -1748,110 +1750,204 @@ def generate_statement_document():
     # Create Word document
     doc = Document()
     
-    # Set margins
-    for section in doc.sections:
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1.25)
-        section.right_margin = Inches(1.25)
+    # Set font for entire document (matching desktop app)
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Mandaram'
+    font._element.rPr.rFonts.set(qn('w:eastAsia'), 'Mandaram')
+    font._element.rPr.rFonts.set(qn('w:cs'), 'Mandaram')
+    font.size = Pt(14)
     
-    # Title
-    title_para = doc.add_paragraph()
-    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_run = title_para.add_run('മൊഴി' if inquiry_type == 'preliminary' else 'Rule 15(ii) മൊഴി')
-    title_run.bold = True
-    title_run.font.size = Pt(16)
+    # Title - exactly matching desktop: "സ്റ്റേറ്റ്മെന്റ്" centered, bold, underlined, 17pt
+    title = doc.add_paragraph("സ്റ്റേറ്റ്മെന്റ്")
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title.runs[0]
+    title_run.font.size = Pt(17)
+    title_run.font.bold = True
+    title_run.font.underline = True
     
-    doc.add_paragraph()
+    # File Number - matching desktop: "File No. " label
+    file_para = doc.add_paragraph()
+    file_label = file_para.add_run("File No. ")
+    file_label.font.size = Pt(15)
+    file_data = file_para.add_run(file_number)
+    file_data.font.bold = True
+    file_data.font.size = Pt(15)
+    file_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # File Information
-    info_para = doc.add_paragraph()
-    info_para.add_run('ഫയൽ നമ്പർ: ').bold = True
-    info_para.add_run(file_number)
-    
+    # Subject - matching desktop: "വിഷയം: " label, JUSTIFY alignment
     subject_para = doc.add_paragraph()
-    subject_para.add_run('വിഷയം: ').bold = True
-    subject_para.add_run(basic_info.get('subject', ''))
+    subject_label = subject_para.add_run("വിഷയം: ")
+    subject_label.font.size = Pt(15)
+    subject_data = subject_para.add_run(basic_info.get('subject', ''))
+    subject_data.font.bold = True
+    subject_data.font.size = Pt(15)
+    subject_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
+    # Date and Time on same line - matching desktop exactly
     date_para = doc.add_paragraph()
-    date_para.add_run('തീയതി: ').bold = True
-    date_para.add_run(basic_info.get('date', ''))
+    date_label = date_para.add_run("അന്വേഷണ തീയതി: ")
+    date_label.font.size = Pt(15)
+    date_data = date_para.add_run(basic_info.get('date', ''))
+    date_data.font.bold = True
+    date_data.font.size = Pt(15)
     
-    time_para = doc.add_paragraph()
-    time_para.add_run('സമയം: ').bold = True
-    time_para.add_run(basic_info.get('time', ''))
+    date_para.add_run(", ")
+    time_label = date_para.add_run("സമയം: ")
+    time_label.font.size = Pt(15)
+    time_data = date_para.add_run(basic_info.get('time', ''))
+    time_data.font.bold = True
+    time_data.font.size = Pt(15)
     
+    # Investigation Officer - matching desktop: "അന്വേഷണ ഉദ്യോഗസ്ഥ: " (without ൻ)
     officer_para = doc.add_paragraph()
-    officer_para.add_run('അന്വേഷണ ഉദ്യോഗസ്ഥൻ: ').bold = True
-    officer_para.add_run(basic_info.get('officer', ''))
+    officer_label = officer_para.add_run("അന്വേഷണ ഉദ്യോഗസ്ഥ: ")
+    officer_label.font.size = Pt(15)
+    officer_data = officer_para.add_run(basic_info.get('officer', ''))
+    officer_data.font.bold = True
+    officer_data.font.size = Pt(15)
     
-    doc.add_paragraph()
+    # Respondent Details - matching desktop: "മൊഴി നൽകിയത്:" label
+    respondent_para = doc.add_paragraph()
+    respondent_label = respondent_para.add_run("മൊഴി നൽകിയത്:")
+    respondent_label.font.size = Pt(15)
     
-    # Respondent Information
-    resp_title = doc.add_paragraph()
-    resp_title_run = resp_title.add_run('മൊഴി നൽകുന്നയാൾ:')
-    resp_title_run.bold = True
-    resp_title_run.underline = True
-    
+    # Respondent info with English labels (matching desktop)
     if respondent.get('type') == 'employee':
         if respondent.get('employee_type') == 'permanent':
-            doc.add_paragraph(f"പേര്: {respondent.get('perm_emp_name', '')}")
-            doc.add_paragraph(f"PEN: {respondent.get('perm_emp_pen', '')}")
-            doc.add_paragraph(f"ഉദ്യോഗപ്പേര്: {respondent.get('perm_emp_desig', '')}")
-            doc.add_paragraph(f"സ്ഥാപനം: {respondent.get('perm_emp_inst', '')}")
+            name_label = respondent_para.add_run("\nName: ")
+            name_data = respondent_para.add_run(respondent.get('perm_emp_name', ''))
+            name_data.font.bold = True
+            respondent_para.add_run(f"\nPEN: {respondent.get('perm_emp_pen', '')}")
+            respondent_para.add_run(f"\nDesignation: {respondent.get('perm_emp_desig', '')}")
+            respondent_para.add_run(f"\nInstitution: {respondent.get('perm_emp_inst', '')}")
         else:
-            doc.add_paragraph(f"പേര്: {respondent.get('temp_emp_name', '')}")
-            doc.add_paragraph(f"ഉദ്യോഗപ്പേര്: {respondent.get('temp_emp_desig', '')}")
-            doc.add_paragraph(f"{respondent.get('temp_emp_id_type', 'ആധാർ')}: {respondent.get('temp_emp_id_no', '')}")
-            doc.add_paragraph(f"മേൽവിലാസം: {respondent.get('temp_emp_address', '')}")
+            name_label = respondent_para.add_run("\nName: ")
+            name_data = respondent_para.add_run(respondent.get('temp_emp_name', ''))
+            name_data.font.bold = True
+            respondent_para.add_run(f"\nDesignation: {respondent.get('temp_emp_desig', '')}")
+            respondent_para.add_run(f"\nID Type: {respondent.get('temp_emp_id_type', '')}")
+            respondent_para.add_run(f"\nID No.: {respondent.get('temp_emp_id_no', '')}")
+            respondent_para.add_run(f"\nAddress: {respondent.get('temp_emp_address', '')}")
     else:
-        doc.add_paragraph(f"പേര്: {respondent.get('public_name', '')}")
-        doc.add_paragraph(f"{respondent.get('public_id_type', 'ആധാർ')}: {respondent.get('public_id_no', '')}")
-        doc.add_paragraph(f"മേൽവിലാസം: {respondent.get('public_address', '')}")
-    
-    doc.add_paragraph()
-    
-    # Questions and Answers
-    qa_title = doc.add_paragraph()
-    qa_title_run = qa_title.add_run('ചോദ്യോത്തരങ്ങൾ:')
-    qa_title_run.bold = True
-    qa_title_run.underline = True
-    
+        name_label = respondent_para.add_run("\nName: ")
+        name_data = respondent_para.add_run(respondent.get('public_name', ''))
+        name_data.font.bold = True
+        respondent_para.add_run(f"\nID Type: {respondent.get('public_id_type', '')}")
+        respondent_para.add_run(f"\nID No.: {respondent.get('public_id_no', '')}")
+        respondent_para.add_run(f"\nAddress: {respondent.get('public_address', '')}")
+
+    # Questions and Answers - matching desktop format exactly (no separate header)
     for i, qa in enumerate(qa_pairs, 1):
+        # Get question and answer (handle both dict and tuple/list formats)
+        if isinstance(qa, dict):
+            question = qa.get('question', '')
+            answer = qa.get('answer', '')
+        elif isinstance(qa, (tuple, list)) and len(qa) >= 2:
+            question = qa[0]
+            answer = qa[1]
+        else:
+            question = str(qa)
+            answer = ''
+        
+        # Question - matching desktop: "ചോദ്യം {i}: " with "?" added, JUSTIFY, 14pt
         q_para = doc.add_paragraph()
-        q_para.add_run(f'ചോദ്യം {i}: ').bold = True
-        question = qa.get('question', '') if isinstance(qa, dict) else (qa[0] if isinstance(qa, list) else str(qa))
-        q_para.add_run(question)
+        q_label = q_para.add_run(f"ചോദ്യം {i}: ")
+        q_label.font.size = Pt(14)
         
+        q_data = q_para.add_run(f"{question}?")
+        q_data.font.bold = True
+        q_data.font.size = Pt(14)
+        q_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        q_para.paragraph_format.space_after = Pt(6)
+        
+        # Answer - matching desktop: "ഉത്തരം {i}: ", JUSTIFY, 14pt
         a_para = doc.add_paragraph()
-        a_para.add_run(f'ഉത്തരം {i}: ').bold = True
-        answer = qa.get('answer', '') if isinstance(qa, dict) else (qa[1] if isinstance(qa, list) and len(qa) > 1 else '')
-        a_para.add_run(answer)
+        a_label = a_para.add_run(f"ഉത്തരം {i}: ")
+        a_label.font.size = Pt(14)
         
-        doc.add_paragraph()
+        a_data = a_para.add_run(answer)
+        a_data.font.bold = True
+        a_data.font.size = Pt(14)
+        a_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        
+        if i < len(qa_pairs):
+            a_para.paragraph_format.space_after = Pt(10)
     
-    # Signature section
-    doc.add_paragraph()
-    doc.add_paragraph()
+    # Add page numbers to header (matching desktop app)
+    def add_page_numbers(doc):
+        """Add page numbers in the format 'Page X of Y' to the header, right-aligned"""
+        try:
+            section = doc.sections[0]
+            header = section.header
+            header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+            header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            
+            run = header_para.add_run("Page ")
+            
+            # Add current page number field
+            fldChar1 = OxmlElement('w:fldChar')
+            fldChar1.set(qn('w:fldCharType'), 'begin')
+            run._r.append(fldChar1)
+            
+            instrText = OxmlElement('w:instrText')
+            instrText.text = ' PAGE '
+            run._r.append(instrText)
+            
+            fldChar2 = OxmlElement('w:fldChar')
+            fldChar2.set(qn('w:fldCharType'), 'end')
+            run._r.append(fldChar2)
+            
+            # Add " of " text
+            run2 = header_para.add_run(" of ")
+            
+            # Add total pages field
+            fldChar3 = OxmlElement('w:fldChar')
+            fldChar3.set(qn('w:fldCharType'), 'begin')
+            run2._r.append(fldChar3)
+            
+            instrText2 = OxmlElement('w:instrText')
+            instrText2.text = ' NUMPAGES '
+            run2._r.append(instrText2)
+            
+            fldChar4 = OxmlElement('w:fldChar')
+            fldChar4.set(qn('w:fldCharType'), 'end')
+            run2._r.append(fldChar4)
+        except Exception as e:
+            # Fallback: Add simple page text
+            try:
+                section = doc.sections[0]
+                header = section.header
+                header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+                header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                header_para.add_run("Page __ of __")
+            except:
+                pass
     
-    sig_para = doc.add_paragraph()
-    sig_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    sig_para.add_run('മൊഴി നൽകിയ ആളിന്റെ ഒപ്പ്')
-    
-    doc.add_paragraph()
-    
-    officer_sig = doc.add_paragraph()
-    officer_sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    officer_sig.add_run('അന്വേഷണ ഉദ്യോഗസ്ഥന്റെ ഒപ്പ്')
+    add_page_numbers(doc)
     
     # Save to BytesIO
     file_stream = BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
     
-    # Generate filename
-    safe_filename = file_number.replace('/', '_').replace('\\', '_').replace(':', '_')
-    filename = f'Statement_{safe_filename}.docx'
+    # Generate filename - matching desktop: "{respondent_name}_statement.docx"
+    import re
+    respondent_name = ""
+    if respondent.get('type') == 'employee':
+        if respondent.get('employee_type') == 'permanent':
+            respondent_name = respondent.get('perm_emp_name', '')
+        else:
+            respondent_name = respondent.get('temp_emp_name', '')
+    else:
+        respondent_name = respondent.get('public_name', '')
+    
+    if not respondent_name:
+        respondent_name = file_number
+    
+    # Clean filename from special characters
+    clean_name = re.sub(r'[<>:"/\\|?*]', '_', respondent_name)
+    filename = f'{clean_name}_statement.docx'
     
     return send_file(
         file_stream,
