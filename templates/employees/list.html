@@ -270,6 +270,11 @@
                     <button type="button" class="btn btn-primary" onclick="showUploadModal()">
                         <i class="bi bi-upload"></i> Upload from Excel
                     </button>
+                    {% if current_user.is_admin() %}
+                    <button type="button" class="btn btn-warning" onclick="fixEmployeeDates()" title="Convert all dates to DD-MM-YYYY format">
+                        <i class="bi bi-calendar-check"></i> Fix Dates
+                    </button>
+                    {% endif %}
                 </div>
             </form>
         </div>
@@ -302,9 +307,9 @@
                             data-id="{{ emp.id }}"
                             data-pen="{{ emp.pen or '' }}"
                             data-name="{{ emp.name or '' }}"
-                            data-dob="{{ emp.date_of_birth or '' }}"
+                            data-dob="{{ emp.date_of_birth|format_date_html }}"
                             data-designation="{{ emp.designation or '' }}"
-                            data-joining="{{ emp.joining_date or '' }}"
+                            data-joining="{{ emp.joining_date|format_date_html }}"
                             data-institution="{{ emp.institution_name or '' }}"
                             data-permanent="{{ emp.permanent_address or '' }}"
                             data-communication="{{ emp.communication_address or '' }}">
@@ -312,7 +317,7 @@
                             <td>{{ emp.name }}</td>
                             <td>{{ emp.date_of_birth|format_date }}</td>
                             <td>{{ emp.designation or '-' }}</td>
-                            <td>{{ emp.joining_date|format_date }}</td>
+                            <td>{{ emp.joining_date|format_date }}
                             <td>{{ emp.institution_name[:40] + '...' if emp.institution_name and emp.institution_name|length > 40 else emp.institution_name or '-' }}</td>
                             <td>{{ emp.permanent_address[:30] + '...' if emp.permanent_address and emp.permanent_address|length > 30 else emp.permanent_address or '-' }}</td>
                             <td>{{ emp.communication_address[:30] + '...' if emp.communication_address and emp.communication_address|length > 30 else emp.communication_address or '-' }}</td>
@@ -566,6 +571,33 @@ function saveEmployee() {
 function showUploadModal() {
     const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
     modal.show();
+}
+
+function fixEmployeeDates() {
+    if (!confirm('This will convert all employee dates to DD-MM-YYYY format. Continue?')) {
+        return;
+    }
+    
+    fetch('{{ url_for("employees.fix_employee_dates") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while fixing dates.');
+    });
 }
 
 // Keyboard shortcuts

@@ -440,6 +440,46 @@ def import_employees():
     return render_template('employees/import.html')
 
 
+@employees_bp.route('/fix-dates', methods=['POST'])
+@login_required
+def fix_employee_dates():
+    """Fix incorrectly stored dates by converting to DD-MM-YYYY format.
+    Handles dates that were imported in wrong format (MM/DD/YYYY interpreted as DD/MM/YYYY or vice versa).
+    """
+    if not current_user.is_admin():
+        return jsonify({'success': False, 'message': 'Only administrators can fix dates.'})
+    
+    try:
+        employees = Employee.query.all()
+        fixed_count = 0
+        
+        for emp in employees:
+            changed = False
+            
+            # Fix date_of_birth
+            if emp.date_of_birth:
+                new_dob = convert_date_format(emp.date_of_birth)
+                if new_dob != emp.date_of_birth:
+                    emp.date_of_birth = new_dob
+                    changed = True
+            
+            # Fix joining_date
+            if emp.joining_date:
+                new_joining = convert_date_format(emp.joining_date)
+                if new_joining != emp.joining_date:
+                    emp.joining_date = new_joining
+                    changed = True
+            
+            if changed:
+                fixed_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Fixed dates for {fixed_count} employees.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error fixing dates: {str(e)}'})
+
+
 @employees_bp.route('/by-institution/<institution_name>')
 @login_required
 def by_institution(institution_name):
