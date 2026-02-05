@@ -220,6 +220,13 @@
                 </label>
                 <p class="help-text">Add a column showing the weightage/protection reason for each employee</p>
             </div>
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" id="includeJoinDate">
+                    <span>Include Date of Joining Present District</span>
+                </label>
+                <p class="help-text">Add a column showing when each employee joined their current district</p>
+            </div>
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-secondary" onclick="closeExcelExportModal()">Cancel</button>
@@ -330,6 +337,7 @@ function exportExcel() {
     const toDistrict = document.getElementById('to_district').value;
     const sortBy = '{{ sort_by or "" }}';
     const includeWeightageDetails = document.getElementById('includeWeightageDetails').checked;
+    const includeJoinDate = document.getElementById('includeJoinDate').checked;
     
     let url = '/draft/export-excel?';
     const params = [];
@@ -337,6 +345,7 @@ function exportExcel() {
     if (toDistrict) params.push('to_district=' + encodeURIComponent(toDistrict));
     if (sortBy) params.push('sort=' + encodeURIComponent(sortBy));
     if (includeWeightageDetails) params.push('include_weightage_details=on');
+    if (includeJoinDate) params.push('include_join_date=on');
     
     closeExcelExportModal();
     window.location.href = url + params.join('&');

@@ -2871,6 +2871,7 @@ def export_draft_excel():
     to_district = request.args.get('to_district', '')
     sort_by = request.args.get('sort', '')
     include_weightage_details = request.args.get('include_weightage_details', '') == 'on'
+    include_join_date = request.args.get('include_join_date', '') == 'on'
     
     query = f"""
         SELECT j.pen, j.name, j.institution, j.district, d.transfer_to_district,
@@ -2878,7 +2879,8 @@ def export_draft_excel():
                     THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
                     ELSE 0 END as duration_days,
                j.weightage, j.weightage_details, d.remarks,
-               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+               t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
+               j.district_join_date, t.special_priority
         FROM {prefix}jphn j
         INNER JOIN {prefix}transfer_draft d ON j.pen = d.pen
         LEFT JOIN {prefix}transfer_applied t ON j.pen = t.pen
@@ -2960,7 +2962,7 @@ def export_draft_excel():
     center_align = Alignment(horizontal='center', vertical='center')
     left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
     
-    # Set column widths - dynamic based on include_weightage_details
+    # Set column widths - dynamic based on options
     ws.column_dimensions['A'].width = 8    # Sl. No.
     ws.column_dimensions['B'].width = 12   # PEN
     ws.column_dimensions['C'].width = 25   # Name
@@ -2970,19 +2972,26 @@ def export_draft_excel():
     ws.column_dimensions['G'].width = 12   # Duration
     ws.column_dimensions['H'].width = 10   # Weightage
     
+    # Determine columns dynamically based on options
+    col_idx = 9  # Next column after Weightage (H=8)
+    
+    if include_join_date:
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 16   # Join Date
+        col_idx += 1
+    
     if include_weightage_details:
-        ws.column_dimensions['I'].width = 30   # Weightage Details
-        ws.column_dimensions['J'].width = 18   # Remarks
-        ws.column_dimensions['K'].width = 14   # Pref 1
-        ws.column_dimensions['L'].width = 14   # Pref 2
-        ws.column_dimensions['M'].width = 14   # Pref 3
-        last_col = 'M'
-    else:
-        ws.column_dimensions['I'].width = 18   # Remarks
-        ws.column_dimensions['J'].width = 14   # Pref 1
-        ws.column_dimensions['K'].width = 14   # Pref 2
-        ws.column_dimensions['L'].width = 14   # Pref 3
-        last_col = 'L'
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 30   # Weightage Details
+        col_idx += 1
+    
+    ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 18   # Remarks
+    col_idx += 1
+    ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 14   # Pref 1
+    col_idx += 1
+    ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 14   # Pref 2
+    col_idx += 1
+    ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 14   # Pref 3
+    
+    last_col = openpyxl.utils.get_column_letter(col_idx)
     
     # Title rows
     ws.merge_cells(f'A1:{last_col}1')
@@ -3013,13 +3022,15 @@ def export_draft_excel():
     ws['A3'] = f'Generated: {get_ist_now().strftime("%d-%m-%Y %I:%M %p")}'
     ws['A3'].alignment = center_align
     
-    # Column headers (row 5) - dynamic based on include_weightage_details
+    # Column headers (row 5) - dynamic based on options
+    headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District', 'Duration', 'Weightage']
+    
+    if include_join_date:
+        headers.append('Date of Joining')
     if include_weightage_details:
-        headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
-                   'Duration', 'Weightage', 'Weightage Details', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
-    else:
-        headers = ['Sl. No.', 'PEN', 'Name', 'Institution', 'From District', 'To District',
-                   'Duration', 'Weightage', 'Remarks', 'Pref 1', 'Pref 2', 'Pref 3']
+        headers.append('Weightage Details')
+    
+    headers.extend(['Remarks', 'Pref 1', 'Pref 2', 'Pref 3'])
     
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=5, column=col_num, value=header)
@@ -3044,37 +3055,29 @@ def export_draft_excel():
             duration_str += f'{days}D'
         duration_str = duration_str.strip() or '-'
         
+        # Build data row dynamically based on options
+        data = [
+            idx,                           # Sl. No.
+            transfer[0],                   # PEN
+            transfer[1],                   # Name
+            transfer[2],                   # Institution
+            transfer[3],                   # From District
+            transfer[4],                   # To District
+            duration_str,                  # Duration
+            transfer[6] or 'No',           # Weightage
+        ]
+        
+        if include_join_date:
+            data.append(transfer[17] or '')  # Date of Joining (district_join_date)
         if include_weightage_details:
-            data = [
-                idx,                           # Sl. No.
-                transfer[0],                   # PEN
-                transfer[1],                   # Name
-                transfer[2],                   # Institution
-                transfer[3],                   # From District
-                transfer[4],                   # To District
-                duration_str,                  # Duration
-                transfer[6] or 'No',           # Weightage
-                transfer[7] or '',             # Weightage Details
-                transfer[8] or '',             # Remarks
-                transfer[9] or '',             # Pref 1
-                transfer[10] or '',            # Pref 2
-                transfer[11] or ''             # Pref 3
-            ]
-        else:
-            data = [
-                idx,                           # Sl. No.
-                transfer[0],                   # PEN
-                transfer[1],                   # Name
-                transfer[2],                   # Institution
-                transfer[3],                   # From District
-                transfer[4],                   # To District
-                duration_str,                  # Duration
-                transfer[6] or 'No',           # Weightage
-                transfer[8] or '',             # Remarks
-                transfer[9] or '',             # Pref 1
-                transfer[10] or '',            # Pref 2
-                transfer[11] or ''             # Pref 3
-            ]
+            data.append(transfer[7] or '')   # Weightage Details
+        
+        data.extend([
+            transfer[8] or '',             # Remarks
+            transfer[9] or '',             # Pref 1
+            transfer[10] or '',            # Pref 2
+            transfer[11] or ''             # Pref 3
+        ])
         
         for col_num, value in enumerate(data, 1):
             cell = ws.cell(row=row_num, column=col_num, value=value)
