@@ -1864,7 +1864,7 @@ def search_applied_employees():
                         ELSE 0 END as duration_days,
                    t.receipt_numbers, t.applied_date,
                    t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8,
-                   j.weightage, t.special_priority
+                   j.weightage, t.special_priority, t.locked, t.weightage_consider
             FROM {prefix}jphn j
             INNER JOIN {prefix}transfer_applied t ON j.pen = t.pen
             WHERE (j.name ILIKE :term OR CAST(j.pen AS TEXT) ILIKE :term)
@@ -1898,8 +1898,18 @@ def search_applied_employees():
                 'receipt': row[5] or '',
                 'applied_date': row[6] or '',
                 'preferences': prefs_str,
+                'pref1': row[7] or '',
+                'pref2': row[8] or '',
+                'pref3': row[9] or '',
+                'pref4': row[10] or '',
+                'pref5': row[11] or '',
+                'pref6': row[12] or '',
+                'pref7': row[13] or '',
+                'pref8': row[14] or '',
                 'weightage': row[15] or 'No',
-                'special_priority': row[16] or 'No'
+                'special_priority': row[16] or 'No',
+                'locked': row[17] or 'No',
+                'weightage_consider': row[18] or 'Yes'
             })
         
         return jsonify({'employees': employees, 'count': len(employees)})
@@ -3375,39 +3385,34 @@ def auto_fill_stream():
                 allocated_count += 1
                 return True
             
-            def try_allocate_pref1_reported(pen, name, current_district, pref1):
-                if not pref1:
-                    return False
-                if pref1 in vacancy_status:
-                    if vacancy_status[pref1]['remaining'] > 0:
-                        if allocate(pen, name, current_district, pref1, "Pref 1:"):
-                            return True
-                return False
-            
-            def try_allocate_pref1_cascade(pen, name, current_district, pref1):
-                if not pref1:
-                    return False
-                if pref1 in vacancy_status:
-                    available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
-                    if available > 0:
-                        is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
-                        remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
-                        if allocate(pen, name, current_district, pref1, remarks):
-                            return True
-                return False
-            
-            def try_allocate_pref2_to_8(pen, name, current_district, preferences):
-                for pref_idx, pref in enumerate(preferences[1:], start=2):
+            def try_allocate_all_preferences(pen, name, current_district, preferences):
+                """
+                Try to allocate an employee to any of their preferences.
+                Priority: reported vacancies first (Pref1-8), then cascade vacancies (Pref1-8).
+                Returns True if allocated, False otherwise.
+                """
+                # First pass: try all preferences with reported vacancies only
+                for pref_idx, pref in enumerate(preferences, start=1):
                     if not pref:
                         continue
                     if pref in vacancy_status:
-                        available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
-                        if available > 0:
-                            is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
-                            remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
+                        if vacancy_status[pref]['remaining'] > 0:
+                            remarks = f"Pref {pref_idx}:"
                             if allocate(pen, name, current_district, pref, remarks):
-                                return True, pref_idx
-                return False, -1
+                                return True
+                
+                # Second pass: try all preferences with cascade vacancies
+                for pref_idx, pref in enumerate(preferences, start=1):
+                    if not pref:
+                        continue
+                    if pref in vacancy_status:
+                        # Only consider cascade if no reported vacancy
+                        if vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0:
+                            remarks = f"Pref {pref_idx}: Vacancy by Transfer"
+                            if allocate(pen, name, current_district, pref, remarks):
+                                return True
+                
+                return False
             
             def try_against_transfer(pen, name, pref_district):
                 nonlocal against_count
@@ -3461,9 +3466,9 @@ def auto_fill_stream():
                     'not_allocated': not_allocated_count
                 }
             
-            yield send_progress(20, 'Pass 1: Pref1 Reported', 'Processing Special Priority employees...', get_stats())
+            yield send_progress(20, 'Processing', 'Processing Special Priority employees by seniority...', get_stats())
             
-            # PASS 1: PREF1 WITH REPORTED VACANCIES
+            # PROCESS SPECIAL PRIORITY EMPLOYEES (by seniority - each employee tries all preferences)
             special_result = db.session.execute(db.text(f"""
                 SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                        t.pref5, t.pref6, t.pref7, t.pref8
@@ -3480,17 +3485,18 @@ def auto_fill_stream():
             """))
             special_employees = special_result.fetchall()
             
-            waiting_pref1_special = []
+            still_waiting_special = []
             for row in special_employees:
                 pen, name, district = row[0], row[1], row[2]
                 prefs = [row[i] for i in range(3, 11)]
-                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                if try_allocate_all_preferences(pen, name, district, prefs):
                     special_count += 1
                 else:
-                    waiting_pref1_special.append((pen, name, district, prefs))
+                    still_waiting_special.append((pen, name, district, prefs))
             
-            yield send_progress(30, 'Pass 1: Pref1 Reported', 'Processing Weightage employees...', get_stats())
+            yield send_progress(40, 'Processing', 'Processing Weightage employees by seniority...', get_stats())
             
+            # PROCESS WEIGHTAGE EMPLOYEES (by seniority - each employee tries all preferences)
             weightage_result = db.session.execute(db.text(f"""
                 SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                        t.pref5, t.pref6, t.pref7, t.pref8
@@ -3509,17 +3515,18 @@ def auto_fill_stream():
             """))
             weightage_employees = weightage_result.fetchall()
             
-            waiting_pref1_weightage = []
+            still_waiting_weightage = []
             for row in weightage_employees:
                 pen, name, district = row[0], row[1], row[2]
                 prefs = [row[i] for i in range(3, 11)]
-                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+                if try_allocate_all_preferences(pen, name, district, prefs):
                     weightage_count += 1
                 else:
-                    waiting_pref1_weightage.append((pen, name, district, prefs))
+                    still_waiting_weightage.append((pen, name, district, prefs))
             
-            yield send_progress(40, 'Pass 1: Pref1 Reported', 'Processing Normal employees...', get_stats())
+            yield send_progress(60, 'Processing', 'Processing Normal employees by seniority...', get_stats())
             
+            # PROCESS NORMAL EMPLOYEES (by seniority - each employee tries all preferences)
             normal_result = db.session.execute(db.text(f"""
                 SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                        t.pref5, t.pref6, t.pref7, t.pref8
@@ -3537,74 +3544,11 @@ def auto_fill_stream():
             """))
             normal_employees = normal_result.fetchall()
             
-            waiting_pref1_normal = []
+            still_waiting_normal = []
             for row in normal_employees:
                 pen, name, district = row[0], row[1], row[2]
                 prefs = [row[i] for i in range(3, 11)]
-                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
-                    normal_count += 1
-                else:
-                    waiting_pref1_normal.append((pen, name, district, prefs))
-            
-            yield send_progress(50, 'Pass 2: Pref1 Cascade', 'Trying cascade vacancies for Pref1...', get_stats())
-            
-            # PASS 2: PREF1 WITH CASCADE VACANCIES
-            waiting_pref2_special = []
-            for pen, name, district, prefs in waiting_pref1_special:
-                if pen in allocated_pens:
-                    continue
-                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                    special_count += 1
-                else:
-                    waiting_pref2_special.append((pen, name, district, prefs))
-            
-            waiting_pref2_weightage = []
-            for pen, name, district, prefs in waiting_pref1_weightage:
-                if pen in allocated_pens:
-                    continue
-                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                    weightage_count += 1
-                else:
-                    waiting_pref2_weightage.append((pen, name, district, prefs))
-            
-            waiting_pref2_normal = []
-            for pen, name, district, prefs in waiting_pref1_normal:
-                if pen in allocated_pens:
-                    continue
-                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                    normal_count += 1
-                else:
-                    waiting_pref2_normal.append((pen, name, district, prefs))
-            
-            yield send_progress(65, 'Pass 3: Pref2-8', 'Trying alternative preferences...', get_stats())
-            
-            # PASS 3: PREF2-8 FOR REMAINING
-            still_waiting_special = []
-            for pen, name, district, prefs in waiting_pref2_special:
-                if pen in allocated_pens:
-                    continue
-                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-                if allocated:
-                    special_count += 1
-                else:
-                    still_waiting_special.append((pen, name, district, prefs))
-            
-            still_waiting_weightage = []
-            for pen, name, district, prefs in waiting_pref2_weightage:
-                if pen in allocated_pens:
-                    continue
-                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-                if allocated:
-                    weightage_count += 1
-                else:
-                    still_waiting_weightage.append((pen, name, district, prefs))
-            
-            still_waiting_normal = []
-            for pen, name, district, prefs in waiting_pref2_normal:
-                if pen in allocated_pens:
-                    continue
-                allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-                if allocated:
+                if try_allocate_all_preferences(pen, name, district, prefs):
                     normal_count += 1
                 else:
                     still_waiting_normal.append((pen, name, district, prefs))
@@ -3612,7 +3556,7 @@ def auto_fill_stream():
             yield send_progress(80, 'Against Transfers' if enable_against else 'Finalizing', 
                               'Processing against transfers...' if enable_against else 'Counting unallocated...', get_stats())
             
-            # PASS 4 (OPTIONAL): AGAINST TRANSFERS
+            # OPTIONAL: AGAINST TRANSFERS for employees who could not be allocated
             if enable_against:
                 for pen, name, district, prefs in still_waiting_special:
                     if pen in allocated_pens:
@@ -3769,33 +3713,33 @@ def auto_fill_ajax():
             allocated_count += 1
             return True
         
-        def try_allocate_pref1_reported(pen, name, current_district, pref1):
-            if not pref1 or pref1 not in vacancy_status:
-                return False
-            if vacancy_status[pref1]['remaining'] > 0:
-                return allocate(pen, name, current_district, pref1, "Pref 1:")
-            return False
-        
-        def try_allocate_pref1_cascade(pen, name, current_district, pref1):
-            if not pref1 or pref1 not in vacancy_status:
-                return False
-            available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
-            if available > 0:
-                is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
-                remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
-                return allocate(pen, name, current_district, pref1, remarks)
-            return False
-        
-        def try_allocate_pref2_to_8(pen, name, current_district, preferences):
-            for pref_idx, pref in enumerate(preferences[1:], start=2):
-                if not pref or pref not in vacancy_status:
+        def try_allocate_all_preferences(pen, name, current_district, preferences):
+            """
+            Try to allocate an employee to any of their preferences.
+            Priority: reported vacancies first (Pref1-8), then cascade vacancies (Pref1-8).
+            Returns True if allocated, False otherwise.
+            """
+            # First pass: try all preferences with reported vacancies only
+            for pref_idx, pref in enumerate(preferences, start=1):
+                if not pref:
                     continue
-                available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
-                if available > 0:
-                    is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
-                    remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
-                    if allocate(pen, name, current_district, pref, remarks):
-                        return True
+                if pref in vacancy_status:
+                    if vacancy_status[pref]['remaining'] > 0:
+                        remarks = f"Pref {pref_idx}:"
+                        if allocate(pen, name, current_district, pref, remarks):
+                            return True
+            
+            # Second pass: try all preferences with cascade vacancies
+            for pref_idx, pref in enumerate(preferences, start=1):
+                if not pref:
+                    continue
+                if pref in vacancy_status:
+                    # Only consider cascade if no reported vacancy
+                    if vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0:
+                        remarks = f"Pref {pref_idx}: Vacancy by Transfer"
+                        if allocate(pen, name, current_district, pref, remarks):
+                            return True
+            
             return False
         
         def try_against_transfer(pen, name, pref_district):
@@ -3828,75 +3772,76 @@ def auto_fill_ajax():
             against_count += 1
             return True
         
-        # Process employees in priority order
-        waiting_pref1_special, waiting_pref1_weightage, waiting_pref1_normal = [], [], []
+        # Process employees in priority order - each employee tries all preferences before moving to next
+        # This ensures seniority is respected over preference order
         
-        # PASS 1: Pref1 with reported vacancies
-        for category, query_condition, counter_name in [
-            ('special', "t.special_priority = 'Yes'", 'special_count'),
-            ('weightage', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes')", 'weightage_count'),
-            ('normal', "(t.special_priority IS NULL OR t.special_priority != 'Yes') AND ((j.weightage IS NULL OR j.weightage != 'Yes') OR t.weightage_consider = 'No')", 'normal_count')
-        ]:
-            result = db.session.execute(db.text(f"""
-                SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
-                FROM {prefix}transfer_applied t
-                INNER JOIN {prefix}jphn j ON t.pen = j.pen
-                WHERE {query_condition} AND (t.locked IS NULL OR t.locked != 'Yes')
-                AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
-                AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL)
-                ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
-                              THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
-            """))
-            waiting_list = []
-            for row in result.fetchall():
-                pen, name, district = row[0], row[1], row[2]
-                prefs = list(row[3:11])
-                if try_allocate_pref1_reported(pen, name, district, prefs[0]):
-                    if category == 'special': special_count += 1
-                    elif category == 'weightage': weightage_count += 1
-                    else: normal_count += 1
-                else:
-                    waiting_list.append((pen, name, district, prefs))
-            
-            if category == 'special': waiting_pref1_special = waiting_list
-            elif category == 'weightage': waiting_pref1_weightage = waiting_list
-            else: waiting_pref1_normal = waiting_list
-        
-        # PASS 2: Pref1 with cascade vacancies
-        waiting_pref2_special, waiting_pref2_weightage, waiting_pref2_normal = [], [], []
-        for category, waiting_list in [('special', waiting_pref1_special), ('weightage', waiting_pref1_weightage), ('normal', waiting_pref1_normal)]:
-            new_waiting = []
-            for pen, name, district, prefs in waiting_list:
-                if pen in allocated_pens:
-                    continue
-                if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                    if category == 'special': special_count += 1
-                    elif category == 'weightage': weightage_count += 1
-                    else: normal_count += 1
-                else:
-                    new_waiting.append((pen, name, district, prefs))
-            if category == 'special': waiting_pref2_special = new_waiting
-            elif category == 'weightage': waiting_pref2_weightage = new_waiting
-            else: waiting_pref2_normal = new_waiting
-        
-        # PASS 3: Pref2-8
         still_waiting_special, still_waiting_weightage, still_waiting_normal = [], [], []
-        for category, waiting_list in [('special', waiting_pref2_special), ('weightage', waiting_pref2_weightage), ('normal', waiting_pref2_normal)]:
-            new_waiting = []
-            for pen, name, district, prefs in waiting_list:
-                if pen in allocated_pens:
-                    continue
-                if try_allocate_pref2_to_8(pen, name, district, prefs):
-                    if category == 'special': special_count += 1
-                    elif category == 'weightage': weightage_count += 1
-                    else: normal_count += 1
-                else:
-                    new_waiting.append((pen, name, district, prefs))
-            if category == 'special': still_waiting_special = new_waiting
-            elif category == 'weightage': still_waiting_weightage = new_waiting
-            else: still_waiting_normal = new_waiting
         
-        # PASS 4 (Optional): Against transfers
+        # PROCESS SPECIAL PRIORITY EMPLOYEES (by seniority)
+        special_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE t.special_priority = 'Yes' AND (t.locked IS NULL OR t.locked != 'Yes')
+            AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+            AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                 OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
+        """))
+        for row in special_result.fetchall():
+            pen, name, district = row[0], row[1], row[2]
+            prefs = list(row[3:11])
+            if try_allocate_all_preferences(pen, name, district, prefs):
+                special_count += 1
+            else:
+                still_waiting_special.append((pen, name, district, prefs))
+        
+        # PROCESS WEIGHTAGE EMPLOYEES (by seniority)
+        weightage_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND j.weightage = 'Yes' AND (t.weightage_consider IS NULL OR t.weightage_consider = 'Yes')
+            AND (t.locked IS NULL OR t.locked != 'Yes')
+            AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+            AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                 OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
+        """))
+        for row in weightage_result.fetchall():
+            pen, name, district = row[0], row[1], row[2]
+            prefs = list(row[3:11])
+            if try_allocate_all_preferences(pen, name, district, prefs):
+                weightage_count += 1
+            else:
+                still_waiting_weightage.append((pen, name, district, prefs))
+        
+        # PROCESS NORMAL EMPLOYEES (by seniority)
+        normal_result = db.session.execute(db.text(f"""
+            SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4, t.pref5, t.pref6, t.pref7, t.pref8
+            FROM {prefix}transfer_applied t
+            INNER JOIN {prefix}jphn j ON t.pen = j.pen
+            WHERE (t.special_priority IS NULL OR t.special_priority != 'Yes')
+            AND ((j.weightage IS NULL OR j.weightage != 'Yes') OR t.weightage_consider = 'No')
+            AND (t.locked IS NULL OR t.locked != 'Yes')
+            AND t.pen NOT IN (SELECT pen FROM {prefix}transfer_draft)
+            AND (t.pref1 IS NOT NULL OR t.pref2 IS NOT NULL OR t.pref3 IS NOT NULL OR t.pref4 IS NOT NULL
+                 OR t.pref5 IS NOT NULL OR t.pref6 IS NOT NULL OR t.pref7 IS NOT NULL OR t.pref8 IS NOT NULL)
+            ORDER BY CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                          THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY') ELSE 0 END DESC
+        """))
+        for row in normal_result.fetchall():
+            pen, name, district = row[0], row[1], row[2]
+            prefs = list(row[3:11])
+            if try_allocate_all_preferences(pen, name, district, prefs):
+                normal_count += 1
+            else:
+                still_waiting_normal.append((pen, name, district, prefs))
+        
+        # OPTIONAL: AGAINST TRANSFERS for employees who could not be allocated
         if enable_against:
             for category, waiting_list in [('special', still_waiting_special), ('weightage', still_waiting_weightage), ('normal', still_waiting_normal)]:
                 for pen, name, district, prefs in waiting_list:
@@ -4084,64 +4029,54 @@ def auto_fill_vacancies():
             return True, senior_name
         
         # ============================================================================
-        # MULTI-PASS ALLOCATION ALGORITHM (Pref1-First Strategy)
+        # SENIORITY-BASED ALLOCATION ALGORITHM
         # ============================================================================
         # Priority Order: 1) Special Priority  2) Weightage  3) Normal (all by seniority)
         # 
-        # KEY PRINCIPLE: A senior should NEVER get Pref2 if a junior with same Pref1 gets Pref1
+        # KEY PRINCIPLE: Seniority takes precedence over preference order.
+        # A senior employee should get a vacancy before a junior employee,
+        # regardless of which preference number matches.
         # 
-        # Solution: Three-pass approach focusing on Pref1 first
-        # - Pass 1: Try ONLY Pref1 with reported vacancies
-        # - Pass 2: Try ONLY Pref1 with cascade vacancies (for those who didn't get Pref1)
-        # - Pass 3: Try Pref2-8 for those who couldn't get Pref1 at all
+        # Each employee tries ALL their preferences (Pref1-8) before moving to next.
+        # Reported vacancies are tried first, then cascade vacancies.
         # ============================================================================
         
-        def try_allocate_pref1_reported(pen, name, current_district, pref1):
-            """Try to allocate ONLY Pref1 using reported vacancies"""
-            if not pref1:
-                return False
-            if pref1 in vacancy_status:
-                if vacancy_status[pref1]['remaining'] > 0:
-                    if allocate(pen, name, current_district, pref1, "Pref 1:"):
-                        return True
-            return False
-        
-        def try_allocate_pref1_cascade(pen, name, current_district, pref1):
-            """Try to allocate ONLY Pref1 using cascade vacancies"""
-            if not pref1:
-                return False
-            if pref1 in vacancy_status:
-                available = vacancy_status[pref1]['remaining'] + vacancy_status[pref1]['cascade']
-                if available > 0:
-                    is_cascade = vacancy_status[pref1]['remaining'] <= 0 and vacancy_status[pref1]['cascade'] > 0
-                    remarks = "Pref 1: Vacancy by Transfer" if is_cascade else "Pref 1:"
-                    if allocate(pen, name, current_district, pref1, remarks):
-                        return True
-            return False
-        
-        def try_allocate_pref2_to_8(pen, name, current_district, preferences):
-            """Try to allocate Pref2 through Pref8 using any available vacancy"""
-            # preferences[0] is pref1, we start from preferences[1] which is pref2
-            for pref_idx, pref in enumerate(preferences[1:], start=2):
+        def try_allocate_all_preferences(pen, name, current_district, preferences):
+            """
+            Try to allocate an employee to any of their preferences.
+            Priority: reported vacancies first (Pref1-8), then cascade vacancies (Pref1-8).
+            Returns True if allocated, False otherwise.
+            """
+            # First pass: try all preferences with reported vacancies only
+            for pref_idx, pref in enumerate(preferences, start=1):
                 if not pref:
                     continue
                 if pref in vacancy_status:
-                    available = vacancy_status[pref]['remaining'] + vacancy_status[pref]['cascade']
-                    if available > 0:
-                        is_cascade = vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0
-                        remarks = f"Pref {pref_idx}:" + (" Vacancy by Transfer" if is_cascade else "")
+                    if vacancy_status[pref]['remaining'] > 0:
+                        remarks = f"Pref {pref_idx}:"
                         if allocate(pen, name, current_district, pref, remarks):
-                            return True, pref_idx
-            return False, -1
+                            return True
+            
+            # Second pass: try all preferences with cascade vacancies
+            for pref_idx, pref in enumerate(preferences, start=1):
+                if not pref:
+                    continue
+                if pref in vacancy_status:
+                    # Only consider cascade if no reported vacancy
+                    if vacancy_status[pref]['remaining'] <= 0 and vacancy_status[pref]['cascade'] > 0:
+                        remarks = f"Pref {pref_idx}: Vacancy by Transfer"
+                        if allocate(pen, name, current_district, pref, remarks):
+                            return True
+            
+            return False
         
-        # Track employees at each stage
-        waiting_pref1_special = []
-        waiting_pref1_weightage = []
-        waiting_pref1_normal = []
+        # Track employees who could not be allocated
+        still_waiting_special = []
+        still_waiting_weightage = []
+        still_waiting_normal = []
         
-        # ===================== PASS 1: PREF1 WITH REPORTED VACANCIES ONLY =====================
+        # ===================== PROCESS SPECIAL PRIORITY EMPLOYEES (by seniority) =====================
         
-        # STEP 1A: Process employees WITH SPECIAL PRIORITY first
         special_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -4160,13 +4095,13 @@ def auto_fill_vacancies():
         for row in special_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+            if try_allocate_all_preferences(pen, name, district, prefs):
                 special_count += 1
             else:
-                waiting_pref1_special.append((pen, name, district, prefs))
+                still_waiting_special.append((pen, name, district, prefs))
         
-        # STEP 1B: Process employees WITH WEIGHTAGE (sorted by seniority)
-        # Only include if weightage_consider is Yes (or not set)
+        # ===================== PROCESS WEIGHTAGE EMPLOYEES (by seniority) =====================
+        
         weightage_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -4187,13 +4122,13 @@ def auto_fill_vacancies():
         for row in weightage_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
+            if try_allocate_all_preferences(pen, name, district, prefs):
                 weightage_count += 1
             else:
-                waiting_pref1_weightage.append((pen, name, district, prefs))
+                still_waiting_weightage.append((pen, name, district, prefs))
         
-        # STEP 1C: Process employees WITHOUT WEIGHTAGE (sorted by seniority)
-        # Also includes weightage employees where weightage_consider is set to 'No'
+        # ===================== PROCESS NORMAL EMPLOYEES (by seniority) =====================
+        
         normal_result = db.session.execute(db.text(f"""
             SELECT t.pen, j.name, j.district, t.pref1, t.pref2, t.pref3, t.pref4,
                    t.pref5, t.pref6, t.pref7, t.pref8
@@ -4213,75 +4148,12 @@ def auto_fill_vacancies():
         for row in normal_result.fetchall():
             pen, name, district = row[0], row[1], row[2]
             prefs = [row[i] for i in range(3, 11)]
-            if try_allocate_pref1_reported(pen, name, district, prefs[0]):
-                normal_count += 1
-            else:
-                waiting_pref1_normal.append((pen, name, district, prefs))
-        
-        # ===================== PASS 2: PREF1 WITH CASCADE VACANCIES =====================
-        # Give everyone a chance at Pref1 cascade before moving to Pref2-8
-        
-        waiting_pref2_special = []
-        for pen, name, district, prefs in waiting_pref1_special:
-            if pen in allocated_pens:
-                continue
-            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                special_count += 1
-            else:
-                waiting_pref2_special.append((pen, name, district, prefs))
-        
-        waiting_pref2_weightage = []
-        for pen, name, district, prefs in waiting_pref1_weightage:
-            if pen in allocated_pens:
-                continue
-            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                weightage_count += 1
-            else:
-                waiting_pref2_weightage.append((pen, name, district, prefs))
-        
-        waiting_pref2_normal = []
-        for pen, name, district, prefs in waiting_pref1_normal:
-            if pen in allocated_pens:
-                continue
-            if try_allocate_pref1_cascade(pen, name, district, prefs[0]):
-                normal_count += 1
-            else:
-                waiting_pref2_normal.append((pen, name, district, prefs))
-        
-        # ===================== PASS 3: PREF2-8 FOR REMAINING EMPLOYEES =====================
-        # Only after all Pref1 opportunities exhausted, try Pref2-8
-        
-        still_waiting_special = []
-        for pen, name, district, prefs in waiting_pref2_special:
-            if pen in allocated_pens:
-                continue
-            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-            if allocated:
-                special_count += 1
-            else:
-                still_waiting_special.append((pen, name, district, prefs))
-        
-        still_waiting_weightage = []
-        for pen, name, district, prefs in waiting_pref2_weightage:
-            if pen in allocated_pens:
-                continue
-            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-            if allocated:
-                weightage_count += 1
-            else:
-                still_waiting_weightage.append((pen, name, district, prefs))
-        
-        still_waiting_normal = []
-        for pen, name, district, prefs in waiting_pref2_normal:
-            if pen in allocated_pens:
-                continue
-            allocated, _ = try_allocate_pref2_to_8(pen, name, district, prefs)
-            if allocated:
+            if try_allocate_all_preferences(pen, name, district, prefs):
                 normal_count += 1
             else:
                 still_waiting_normal.append((pen, name, district, prefs))
         
-        # ===================== PASS 3 (OPTIONAL): AGAINST TRANSFERS =====================
+        # ===================== OPTIONAL: AGAINST TRANSFERS =====================
         # Try against transfers for remaining employees if enabled
         
         if enable_against:
@@ -4484,6 +4356,7 @@ def final_list():
     
     from_district = request.args.get('from_district', '')
     to_district = request.args.get('to_district', '')
+    sort_by = request.args.get('sort', '')  # 'from_district' for From District Sort
     
     # Pagination parameters
     page = request.args.get('page', 1, type=int)
@@ -4528,26 +4401,49 @@ def final_list():
         query += " AND f.transfer_to_district = :to_district"
         params['to_district'] = to_district
     
-    # Order by transfer_to_district from South to North (Kerala geography), then by seniority
-    query += """ ORDER BY CASE f.transfer_to_district
-        WHEN 'Thiruvananthapuram' THEN 1
-        WHEN 'Kollam' THEN 2
-        WHEN 'Pathanamthitta' THEN 3
-        WHEN 'Alappuzha' THEN 4
-        WHEN 'Kottayam' THEN 5
-        WHEN 'Idukki' THEN 6
-        WHEN 'Ernakulam' THEN 7
-        WHEN 'Thrissur' THEN 8
-        WHEN 'Palakkad' THEN 9
-        WHEN 'Malappuram' THEN 10
-        WHEN 'Kozhikode' THEN 11
-        WHEN 'Wayanad' THEN 12
-        WHEN 'Kannur' THEN 13
-        WHEN 'Kasaragod' THEN 14
-        ELSE 15 END,
-        CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
-             THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
-             ELSE 0 END DESC"""
+    # Order based on sort option
+    if sort_by == 'from_district':
+        # From District Sort: by current district (South to North), then by seniority
+        query += """ ORDER BY CASE j.district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END,
+            CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                 THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                 ELSE 0 END DESC"""
+    else:
+        # Default: To District Sort - by transfer_to_district from South to North, then by seniority
+        query += """ ORDER BY CASE f.transfer_to_district
+            WHEN 'Thiruvananthapuram' THEN 1
+            WHEN 'Kollam' THEN 2
+            WHEN 'Pathanamthitta' THEN 3
+            WHEN 'Alappuzha' THEN 4
+            WHEN 'Kottayam' THEN 5
+            WHEN 'Idukki' THEN 6
+            WHEN 'Ernakulam' THEN 7
+            WHEN 'Thrissur' THEN 8
+            WHEN 'Palakkad' THEN 9
+            WHEN 'Malappuram' THEN 10
+            WHEN 'Kozhikode' THEN 11
+            WHEN 'Wayanad' THEN 12
+            WHEN 'Kannur' THEN 13
+            WHEN 'Kasaragod' THEN 14
+            ELSE 15 END,
+            CASE WHEN j.district_join_date IS NOT NULL AND j.district_join_date != '' 
+                 THEN CURRENT_DATE - TO_DATE(j.district_join_date, 'DD-MM-YYYY')
+                 ELSE 0 END DESC"""
     
     # Add pagination
     query += f" LIMIT {per_page} OFFSET {offset}"
@@ -4560,7 +4456,9 @@ def final_list():
                          districts=DISTRICTS,
                          from_district=from_district,
                          to_district=to_district,
+                         sort_by=sort_by,
                          format_duration=format_duration,
+                         now=datetime.now,
                          page=page,
                          total_pages=total_pages,
                          total_count=total_count,

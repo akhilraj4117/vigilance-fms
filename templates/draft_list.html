@@ -35,6 +35,9 @@
                     <a href="javascript:void(0)" onclick="exportPDF()" class="dropdown-item">
                         <i class="fas fa-file-pdf"></i> PDF
                     </a>
+                    <a href="javascript:void(0)" onclick="exportHTML()" class="dropdown-item">
+                        <i class="fas fa-code"></i> HTML
+                    </a>
                 </div>
             </div>
             <form method="POST" action="{{ url_for('clear_draft_list') }}" style="display:inline" 
@@ -418,6 +421,99 @@ function exportPDF() {
     });
     
     doc.save(getFileName('pdf'));
+}
+
+function exportHTML() {
+    // Group by district
+    const groupedData = {};
+    transferData.forEach(t => {
+        const key = transferType === 'regular' ? t.toDistrict : t.fromDistrict;
+        if (!groupedData[key]) groupedData[key] = [];
+        groupedData[key].push(t);
+    });
+    
+    let titleText = transferType === 'regular' 
+        ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
+        : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
+    
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Draft Transfer List</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 11pt; margin: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 5px 0; font-size: 14pt; }
+        .header h3 { margin: 5px 0; font-size: 12pt; }
+        .district-header { font-weight: bold; margin: 15px 0 8px 0; font-size: 11pt; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+        th, td { border: 1px solid #333; padding: 5px 6px; font-size: 10pt; }
+        th { background-color: #f0f0f0; text-align: center; font-weight: bold; }
+        td.center { text-align: center; }
+        .footer { margin-top: 30px; text-align: right; }
+        .badge-draft { color: #856404; background-color: #fff3cd; padding: 2px 6px; border-radius: 4px; }
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Government of Kerala</h2>
+        <h3>Department: Health Services</h3>
+        <h3>${titleText}</h3>
+        <h3><span class="badge-draft">DRAFT</span> Transfer List</h3>
+    </div>
+    <p><strong>Post/Cadre Name:</strong> Junior Public Health Nurse</p>
+`;
+    
+    let slNo = 1;
+    
+    districts.forEach(district => {
+        if (!groupedData[district]) return;
+        
+        const districtLabel = transferType === 'regular' ? 'Allotted District' : 'District';
+        html += `<p class="district-header">${districtLabel}: ${district.toUpperCase()}</p>`;
+        html += `<table>
+            <tr>
+                <th style="width:5%">Sl. No.</th>
+                <th style="width:8%">PEN</th>
+                <th style="width:18%">Name</th>
+                <th style="width:10%">Designation</th>
+                <th style="width:24%">Office</th>
+                <th style="width:12%">From District</th>
+                <th style="width:12%">To District</th>
+                <th style="width:11%">Protection</th>
+            </tr>`;
+        
+        groupedData[district].forEach(t => {
+            const protection = t.weightage === 'Yes' ? (t.weightageDetails || '') : '';
+            html += `<tr>
+                <td class="center">${slNo++}</td>
+                <td>${t.pen}</td>
+                <td>${t.name || ''}</td>
+                <td>JPHN Gr I</td>
+                <td>${t.institution || ''}</td>
+                <td>${t.fromDistrict || ''}</td>
+                <td>${t.toDistrict || ''}</td>
+                <td>${protection}</td>
+            </tr>`;
+        });
+        html += '</table>';
+    });
+    
+    html += `
+    <div class="footer">
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+        <p><em>This is a DRAFT transfer list pending confirmation.</em></p>
+    </div>
+</body>
+</html>`;
+    
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    saveAs(blob, getFileName('html'));
 }
 
 function exportWord() {

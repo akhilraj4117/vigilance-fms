@@ -6,8 +6,17 @@
     <div class="page-header">
         <h1><i class="fas fa-check-double"></i> Final Transfer List</h1>
         <div class="header-actions">
+            <a href="{{ url_for('final_list', sort='from_district') }}" class="btn btn-info {% if sort_by == 'from_district' %}active{% endif %}" title="Sort by From District (South to North) → Seniority">
+                <i class="fas fa-sort-amount-down"></i> From District Sort
+            </a>
+            <a href="{{ url_for('final_list') }}" class="btn btn-primary {% if not sort_by %}active{% endif %}" title="Sort by Transfer To District (South to North) → Seniority">
+                <i class="fas fa-map-marker-alt"></i> To District Sort
+            </a>
             <button type="button" class="btn btn-info" onclick="showExcluded()">
                 <i class="fas fa-user-minus"></i> Not Included
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="printTable()">
+                <i class="fas fa-print"></i> Print
             </button>
             <div class="export-dropdown">
                 <button class="btn btn-secondary dropdown-toggle" onclick="toggleDropdown('exportDropdownFinal')">
@@ -25,6 +34,9 @@
                     </a>
                     <a href="javascript:void(0)" onclick="exportPDF()" class="dropdown-item">
                         <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                    <a href="javascript:void(0)" onclick="exportHTML()" class="dropdown-item">
+                        <i class="fas fa-code"></i> HTML
                     </a>
                 </div>
             </div>
@@ -79,6 +91,13 @@
             </a>
             {% endif %}
         </form>
+    </div>
+    
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header">
+        <h2>JPHN Transfer Management System - Final Transfer List</h2>
+        <p>Generated on: {{ now().strftime('%d-%m-%Y %I:%M %p') if now else '' }}</p>
+        <p>Total Transfers: {{ total_count }}</p>
     </div>
     
     <div class="table-container">
@@ -143,10 +162,10 @@
         {% if total_pages > 1 %}
         <div class="pagination">
             {% if page > 1 %}
-            <a href="{{ url_for('final_list', page=1, from_district=from_district, to_district=to_district) }}" class="page-btn" title="First Page">
+            <a href="{{ url_for('final_list', page=1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="First Page">
                 <i class="fas fa-angle-double-left"></i>
             </a>
-            <a href="{{ url_for('final_list', page=page-1, from_district=from_district, to_district=to_district) }}" class="page-btn" title="Previous Page">
+            <a href="{{ url_for('final_list', page=page-1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Previous Page">
                 <i class="fas fa-angle-left"></i>
             </a>
             {% endif %}
@@ -155,15 +174,15 @@
             {% set end_page = [total_pages, page + 2]|min %}
             
             {% for p in range(start_page, end_page + 1) %}
-            <a href="{{ url_for('final_list', page=p, from_district=from_district, to_district=to_district) }}" 
+            <a href="{{ url_for('final_list', page=p, from_district=from_district, to_district=to_district, sort=sort_by) }}" 
                class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
             {% endfor %}
             
             {% if page < total_pages %}
-            <a href="{{ url_for('final_list', page=page+1, from_district=from_district, to_district=to_district) }}" class="page-btn" title="Next Page">
+            <a href="{{ url_for('final_list', page=page+1, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Next Page">
                 <i class="fas fa-angle-right"></i>
             </a>
-            <a href="{{ url_for('final_list', page=total_pages, from_district=from_district, to_district=to_district) }}" class="page-btn" title="Last Page">
+            <a href="{{ url_for('final_list', page=total_pages, from_district=from_district, to_district=to_district, sort=sort_by) }}" class="page-btn" title="Last Page">
                 <i class="fas fa-angle-double-right"></i>
             </a>
             {% endif %}
@@ -429,6 +448,118 @@ function exportPDF() {
         console.error('Export error:', err);
         alert('Error exporting PDF');
     });
+}
+
+function exportHTML() {
+    // Fetch ALL data from server
+    fetch('/final/export-data', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        const allTransfers = data.transfers;
+        
+        // Group by district
+        const groupedData = {};
+        allTransfers.forEach(t => {
+            const key = transferType === 'regular' ? t.toDistrict : t.fromDistrict;
+            if (!groupedData[key]) groupedData[key] = [];
+            groupedData[key].push(t);
+        });
+        
+        let titleText = transferType === 'regular' 
+            ? `Regular Transfer for Junior Public Health Nurse Gr. I - ${transferMonth} ${transferYear}`
+            : `Norms Based General Transfer for Junior Public Health Nurse Gr. I - ${transferYear}`;
+        
+        let html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Final Transfer List</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 11pt; margin: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 5px 0; font-size: 14pt; }
+        .header h3 { margin: 5px 0; font-size: 12pt; }
+        .district-header { font-weight: bold; margin: 15px 0 8px 0; font-size: 11pt; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+        th, td { border: 1px solid #333; padding: 5px 6px; font-size: 10pt; }
+        th { background-color: #f0f0f0; text-align: center; font-weight: bold; }
+        td.center { text-align: center; }
+        .footer { margin-top: 30px; text-align: right; }
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Government of Kerala</h2>
+        <h3>Department: Health Services</h3>
+        <h3>${titleText}</h3>
+        <h3>Final Transfer List</h3>
+    </div>
+    <p><strong>Post/Cadre Name:</strong> Junior Public Health Nurse</p>
+`;
+        
+        let slNo = 1;
+        
+        districts.forEach(district => {
+            if (!groupedData[district]) return;
+            
+            const districtLabel = transferType === 'regular' ? 'Allotted District' : 'District';
+            html += `<p class="district-header">${districtLabel}: ${district.toUpperCase()}</p>`;
+            html += `<table>
+                <tr>
+                    <th style="width:5%">Sl. No.</th>
+                    <th style="width:8%">PEN</th>
+                    <th style="width:18%">Name</th>
+                    <th style="width:10%">Designation</th>
+                    <th style="width:24%">Office</th>
+                    <th style="width:12%">From District</th>
+                    <th style="width:12%">To District</th>
+                    <th style="width:11%">Protection</th>
+                </tr>`;
+            
+            groupedData[district].forEach(t => {
+                const protection = t.weightage === 'Yes' ? (t.weightageDetails || '') : '';
+                html += `<tr>
+                    <td class="center">${slNo++}</td>
+                    <td>${t.pen}</td>
+                    <td>${t.name || ''}</td>
+                    <td>JPHN Gr I</td>
+                    <td>${t.institution || ''}</td>
+                    <td>${t.fromDistrict || ''}</td>
+                    <td>${t.toDistrict || ''}</td>
+                    <td>${protection}</td>
+                </tr>`;
+            });
+            html += '</table>';
+        });
+        
+        html += `
+    <div class="footer">
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+        <p>_________________________<br><strong>Authorized Signatory</strong></p>
+    </div>
+</body>
+</html>`;
+        
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+        saveAs(blob, getFileName('html'));
+    })
+    .catch(err => {
+        console.error('Export error:', err);
+        alert('Error exporting HTML');
+    });
+}
+
+function printTable() {
+    window.print();
 }
 
 function exportWord() {
@@ -1069,6 +1200,12 @@ window.onclick = function(e) {
 </script>
 
 <style>
+/* Active button state for sort buttons */
+.header-actions .btn.active {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 52, 152, 219), 0.4);
+    font-weight: bold;
+}
+
 .search-group {
     min-width: 250px;
 }
@@ -1152,6 +1289,83 @@ window.onclick = function(e) {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
+    }
+    
+    html {
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin: 5mm;
+    }
+    
+    .page-header, .filter-section, .header-actions, 
+    .btn, .modal-overlay, .sidebar, nav, 
+    .search-group, footer, .record-count,
+    .export-dropdown, .summary-cards, .summary-section,
+    .pagination {
+        display: none !important;
+    }
+    
+    .page-container {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .table-container {
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+    
+    .data-table {
+        font-size: 8pt !important;
+        width: 100% !important;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 3px 5px !important;
+        border: 1px solid #333 !important;
+    }
+    
+    .data-table th {
+        background: #ddd !important;
+        font-weight: bold !important;
+    }
+    
+    .data-table th:last-child,
+    .data-table td.action-cell {
+        display: none !important;
+    }
+    
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    
+    .print-header h2 {
+        margin: 0;
+        font-size: 14pt;
+    }
+    
+    .print-header p {
+        margin: 5px 0;
+        font-size: 10pt;
+    }
+}
+
+.print-header {
+    display: none;
 }
 
 /* Excluded Modal Styles */

@@ -901,23 +901,49 @@ function performAjaxSearch(searchTerm) {
             data.employees.forEach((emp, index) => {
                 const weightageClass = emp.weightage === 'Yes' ? 'weightage-yes' : '';
                 const spClass = emp.special_priority === 'Yes' ? 'sp-yes' : '';
+                const lockedClass = emp.locked === 'Yes' ? 'row-locked' : '';
+                const lockBtnClass = emp.locked === 'Yes' ? 'btn-danger' : 'btn-secondary';
+                const lockIcon = emp.locked === 'Yes' ? 'fa-lock' : 'fa-unlock';
+                const lockTitle = emp.locked === 'Yes' ? 'Unlock - Include in Auto-fill' : 'Lock - Exclude from Auto-fill';
+                const lockIconHtml = emp.locked === 'Yes' ? ' <i class="fas fa-lock text-danger" title="Locked - Will not be included in Auto-fill"></i>' : '';
+                
+                // Escape quotes for JavaScript function calls
+                const escapedName = emp.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 
                 html += `
-                    <tr data-pen="${emp.pen}" class="${weightageClass} ${spClass}">
+                    <tr data-pen="${emp.pen}" data-locked="${emp.locked}" data-weightage="${emp.weightage}" data-weightage-consider="${emp.weightage_consider}" class="${weightageClass} ${spClass} ${lockedClass}">
                         <td>${index + 1}</td>
-                        <td>${emp.pen}</td>
+                        <td>${emp.pen}${lockIconHtml}</td>
                         <td>${emp.name}</td>
                         <td>${emp.institution}</td>
                         <td>${emp.district}</td>
                         <td>${emp.duration}</td>
-                        <td>${emp.receipt}</td>
-                        <td>${emp.applied_date}</td>
-                        <td class="prefs-cell">${emp.preferences}</td>
-                        <td>${emp.weightage}</td>
-                        <td>
-                            <a href="/applied/edit/${emp.pen}" class="btn btn-sm btn-warning" title="Edit">
+                        <td>${emp.weightage === 'Yes' ? '<span class="badge badge-warning">Yes</span>' : '<span class="badge badge-secondary">No</span>'}</td>
+                        <td>${emp.weightage === 'Yes' ? '-' : '<span class="badge badge-secondary">NA</span>'}</td>
+                        <td class="pref-cell">${emp.pref1 || '-'}</td>
+                        <td>${emp.receipt || '-'}</td>
+                        <td class="action-cell">
+                            <button type="button" class="btn btn-sm ${lockBtnClass} btn-lock" 
+                                    onclick="toggleLock('${emp.pen}')"
+                                    title="${lockTitle}">
+                                <i class="fas ${lockIcon}"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info" 
+                                    onclick="showDetails('${emp.pen}', '${escapedName}', '${emp.pref1}', '${emp.pref2}', '${emp.pref3}', '${emp.pref4}', '${emp.pref5}', '${emp.pref6}', '${emp.pref7}', '${emp.pref8}')"
+                                    title="View All Preferences">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning" 
+                                    onclick="openEditModal('${emp.pen}')"
+                                    title="Edit Application">
                                 <i class="fas fa-edit"></i>
-                            </a>
+                            </button>
+                            <form method="POST" action="/applied/remove/${emp.pen}" 
+                                  style="display:inline" onsubmit="return confirm('Remove this employee from applied list?')">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 `;
