@@ -812,10 +812,11 @@ def upload_cadre_data():
                 return redirect(url_for('cadre_list'))
             
             # Save file temporarily
+            import os
             import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-                file.save(tmp.name)
-                tmp_path = tmp.name
+            fd, tmp_path = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)
+            file.save(tmp_path)
             
             try:
                 with pdfplumber.open(tmp_path) as pdf:
@@ -919,10 +920,11 @@ def upload_cadre_data():
                 flash('openpyxl library not installed. Please install with: pip install openpyxl', 'error')
                 return redirect(url_for('cadre_list'))
             
+            import os
             import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-                file.save(tmp.name)
-                tmp_path = tmp.name
+            fd, tmp_path = tempfile.mkstemp(suffix='.xlsx')
+            os.close(fd)
+            file.save(tmp_path)
             
             try:
                 wb = openpyxl.load_workbook(tmp_path)
